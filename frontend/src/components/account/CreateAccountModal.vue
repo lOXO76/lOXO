@@ -235,7 +235,7 @@
             :class="[
               'flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-all',
               form.platform === 'minimax'
-                ? 'bg-white text-rose-600 shadow-sm dark:bg-dark-600 dark:text-rose-400'
+                ? 'bg-white text-red-600 shadow-sm dark:bg-dark-600 dark:text-red-400'
                 : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
             ]"
           >
@@ -4515,7 +4515,7 @@ const cnAccentActiveClass = computed(() => {
     case 'deepseek':
       return 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
     case 'minimax':
-      return 'border-rose-500 bg-rose-50 dark:bg-rose-900/20'
+      return 'border-red-500 bg-red-50 dark:bg-red-900/20'
     case 'opencode_go':
       return 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
     default:
@@ -4531,7 +4531,7 @@ const cnAccentIconClass = computed(() => {
     case 'deepseek':
       return 'bg-teal-500 text-white'
     case 'minimax':
-      return 'bg-rose-500 text-white'
+      return 'bg-red-500 text-white'
     case 'opencode_go':
       return 'bg-amber-500 text-white'
     default:

@@ -198,7 +198,7 @@ const platformClass = computed(() => {
     return 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
   }
   if (props.platform === 'minimax') {
-    return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+    return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
   }
   return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
 })
@@ -226,7 +226,7 @@ const typeClass = computed(() => {
     return 'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400'
   }
   if (props.platform === 'minimax') {
-    return 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
+    return 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
   }
   return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
 })
