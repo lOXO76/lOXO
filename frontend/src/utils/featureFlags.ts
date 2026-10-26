@@ -119,6 +119,11 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Plugin Management',
   }),
+  apiDocs: defineFlag({
+    key: 'api_docs_enabled',
+    mode: 'opt-out',
+    label: 'API Docs',
+  }),
   payment: defineFlag({
     key: 'payment_enabled',
     mode: 'opt-out',

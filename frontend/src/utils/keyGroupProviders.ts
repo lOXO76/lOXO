@@ -1,12 +1,13 @@
 import type { GroupPlatform } from '@/types'
 
-export type KeyGroupProvider = 'anthropic' | 'openai' | 'domestic' | 'other'
+export type KeyGroupProvider = 'anthropic' | 'openai' | 'video' | 'domestic' | 'other'
 
-export const KEY_GROUP_PROVIDERS = ['anthropic', 'openai', 'domestic', 'other'] as const
+export const KEY_GROUP_PROVIDERS = ['anthropic', 'openai', 'video', 'domestic', 'other'] as const
 
 // Classify by the configured upstream platform, never by a group's display name.
+// Video is a standalone provider for the upstream `video` platform and async video task groups.
 const PROVIDER_BY_PLATFORM: Record<GroupPlatform, KeyGroupProvider> = {
-  video: 'other',
+  video: 'video',
   anthropic: 'anthropic',
   openai: 'openai',
   kimi: 'domestic',
@@ -31,6 +32,7 @@ export function getKeyGroupProvider(platform: GroupPlatform): KeyGroupProvider {
 export const KEY_GROUP_PROVIDER_ICONS: Record<KeyGroupProvider, GroupPlatform[]> = {
   anthropic: ['anthropic'],
   openai: ['openai'],
+  video: ['video'],
   domestic: ['deepseek', 'kimi'],
   other: ['gemini', 'grok']
 }

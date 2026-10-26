@@ -45,6 +45,12 @@ export default {
           enabled: '启用可用渠道',
           enabledHint: '关闭后用户端侧边栏入口隐藏，接口返回空数组。',
         },
+        apiDocs: {
+          title: 'API 文档',
+          description: '控制侧边栏是否显示「API 文档」入口，默认开启。关闭只隐藏入口，路由不拦截。',
+          enabled: '显示 API 文档入口',
+          enabledHint: '关闭后普通模式与简易模式均隐藏入口，仍可直接访问 /docs/api。',
+        },
         siteBillingMode: {
           title: '站点类型',
           description: '决定用户端提供哪些购买方式。默认「充值 & 订阅」。',

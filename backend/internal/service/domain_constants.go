@@ -561,6 +561,11 @@ const (
 	// not stop or otherwise change already loaded plugin runtimes.
 	SettingKeyPluginManagementEnabled = "plugin_management_enabled"
 
+	// SettingKeyAPIDocsEnabled is a DB-backed soft switch for the user-facing
+	// API documentation sidebar entry. Defaults to true (opt-out); disabling it
+	// only hides the entry and does not block direct access to /docs/api.
+	SettingKeyAPIDocsEnabled = "api_docs_enabled"
+
 	// SettingKeyUpstreamBillingProbeSettings stores the global enable switch and interval
 	// for probing remote Sub2API API-key billing metadata.
 	SettingKeyUpstreamBillingProbeSettings = "upstream_billing_probe_settings"

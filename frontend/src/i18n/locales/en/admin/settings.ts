@@ -45,6 +45,12 @@ export default {
           enabled: 'Enable Available Channels',
           enabledHint: 'When off, the sidebar entry is hidden and the endpoint returns an empty list.',
         },
+        apiDocs: {
+          title: 'API Docs',
+          description: 'Controls whether API Docs appears in the sidebar. Enabled by default. Turning it off only hides the entry and does not block the route.',
+          enabled: 'Show API Docs entry',
+          enabledHint: 'When off, the entry is hidden in both normal and simple modes. Direct access to /docs/api remains available.',
+        },
         siteBillingMode: {
           title: 'Site Billing Mode',
           description: 'Controls which purchase options users see. Defaults to "Recharge & Subscription".',

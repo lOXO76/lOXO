@@ -224,6 +224,7 @@ type SystemSettings struct {
 	ModelPlazaRequireAuth   bool   `json:"model_plaza_require_auth"`
 	ModelPlazaDescription   string `json:"model_plaza_description"`
 	PluginManagementEnabled bool   `json:"plugin_management_enabled"`
+	APIDocsEnabled          bool   `json:"api_docs_enabled"`
 
 	// Claude Code version check
 	MinClaudeCodeVersion string
@@ -411,6 +412,7 @@ type PublicSettings struct {
 	ModelPlazaEnabled       bool `json:"model_plaza_enabled"`
 	ModelPlazaRequireAuth   bool `json:"model_plaza_require_auth"`
 	PluginManagementEnabled bool `json:"plugin_management_enabled"`
+	APIDocsEnabled          bool `json:"api_docs_enabled"`
 
 	// Affiliate (邀请返利) feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`
