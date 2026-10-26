@@ -28,7 +28,7 @@ var (
 )
 
 // UpdateGitHubRepo 是系统更新检查、下载与回滚所用的 GitHub Releases 仓库。
-const UpdateGitHubRepo = "FluxCode666/TERALEMO-CODE"
+const UpdateGitHubRepo = "lOXO76/lOXO"
 
 const (
 	updateCacheKey = "update_check_cache"
