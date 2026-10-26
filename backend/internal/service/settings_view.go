@@ -17,6 +17,9 @@ type SystemSettings struct {
 	RegistrationEmailSuffixWhitelist    []string
 	RegistrationEmailDomainQuotaEnabled bool // 白名单非空时放行非白名单域名限量注册（默认关闭）
 	PromoCodeEnabled                    bool
+	CheckInEnabled                      bool
+	CheckInCaptchaEnabled               bool
+	CheckInTiers                        []CheckInTier
 	PasswordResetEnabled                bool
 	FrontendURL                         string
 	InvitationCodeEnabled               bool
@@ -334,6 +337,7 @@ type PublicSettings struct {
 	RegistrationEmailSuffixWhitelist    []string
 	RegistrationEmailDomainQuotaEnabled bool
 	PromoCodeEnabled                    bool
+	CheckInEnabled                      bool
 	PasswordResetEnabled                bool
 	InvitationCodeEnabled               bool
 	TotpEnabled                         bool // TOTP 双因素认证

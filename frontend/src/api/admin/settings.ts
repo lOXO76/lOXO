@@ -19,6 +19,13 @@ export interface DefaultSubscriptionSetting {
   validity_days: number;
 }
 
+export interface CheckInTier {
+  min: number;
+  max: number;
+  weight: number;
+  percent?: number;
+}
+
 // ── 平台限额类型 ──────────────────────────────────────────────────
 /** 可设置默认限额的平台：平台清单中的全部具体平台（与后端 AllowedQuotaPlatforms 同源）。 */
 export type PlatformType = AccountPlatform
@@ -750,6 +757,9 @@ export interface SystemSettings {
   model_plaza_require_auth: boolean;
   model_plaza_description: string;
   plugin_management_enabled: boolean;
+  check_in_enabled: boolean;
+  check_in_captcha_enabled: boolean;
+  check_in_tiers: CheckInTier[];
   api_docs_enabled: boolean;
 
   // Affiliate (邀请返利) feature switch
@@ -1063,6 +1073,9 @@ export interface UpdateSettingsRequest {
   model_plaza_require_auth?: boolean;
   model_plaza_description?: string;
   plugin_management_enabled?: boolean;
+  check_in_enabled?: boolean;
+  check_in_captcha_enabled?: boolean;
+  check_in_tiers?: CheckInTier[];
   api_docs_enabled?: boolean;
 
   // Affiliate (邀请返利) feature switch

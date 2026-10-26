@@ -126,6 +126,15 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	if err := s.normalizeOpenAIAdvancedSchedulerOverrides(settings); err != nil {
 		return nil, err
 	}
+	normalizedCheckInTiers, err := ValidateCheckInSettings(settings.CheckInEnabled, settings.CheckInTiers)
+	if err != nil {
+		return nil, infraerrors.BadRequest("CHECK_IN_INVALID_TIERS", err.Error())
+	}
+	checkInTiersValue, err := encodeCheckInTiers(normalizedCheckInTiers)
+	if err != nil {
+		return nil, err
+	}
+	settings.CheckInTiers = normalizedCheckInTiers
 	settings.PaymentVisibleMethodAlipaySource = alipaySource
 	settings.PaymentVisibleMethodWxpaySource = wxpaySource
 	settings.WeChatConnectAppID = strings.TrimSpace(settings.WeChatConnectAppID)
@@ -164,6 +173,9 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	// 注册设置
 	updates[SettingKeyRegistrationEnabled] = strconv.FormatBool(settings.RegistrationEnabled)
 	updates[SettingKeyEmailVerifyEnabled] = strconv.FormatBool(settings.EmailVerifyEnabled)
+	updates[SettingKeyCheckInEnabled] = strconv.FormatBool(settings.CheckInEnabled)
+	updates[SettingKeyCheckInCaptchaEnabled] = strconv.FormatBool(settings.CheckInCaptchaEnabled)
+	updates[SettingKeyCheckInTiers] = checkInTiersValue
 	registrationEmailSuffixWhitelistJSON, err := json.Marshal(settings.RegistrationEmailSuffixWhitelist)
 	if err != nil {
 		return nil, fmt.Errorf("marshal registration email suffix whitelist: %w", err)

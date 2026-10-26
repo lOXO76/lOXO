@@ -2329,6 +2329,29 @@ var (
 			},
 		},
 	}
+	// UserCheckInsColumns holds the columns for the "user_check_ins" table.
+	UserCheckInsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "user_id", Type: field.TypeInt64},
+		{Name: "check_in_date", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "date"}},
+		{Name: "reward", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "tier_index", Type: field.TypeInt, Default: 0},
+	}
+	// UserCheckInsTable holds the schema information for the "user_check_ins" table.
+	UserCheckInsTable = &schema.Table{
+		Name:       "user_check_ins",
+		Columns:    UserCheckInsColumns,
+		PrimaryKey: []*schema.Column{UserCheckInsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "usercheckin_user_id_check_in_date",
+				Unique:  true,
+				Columns: []*schema.Column{UserCheckInsColumns[3], UserCheckInsColumns[4]},
+			},
+		},
+	}
 	// UserPlatformQuotasColumns holds the columns for the "user_platform_quotas" table.
 	UserPlatformQuotasColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -2513,6 +2536,7 @@ var (
 		UserAllowedGroupsTable,
 		UserAttributeDefinitionsTable,
 		UserAttributeValuesTable,
+		UserCheckInsTable,
 		UserPlatformQuotasTable,
 		UserSubscriptionsTable,
 	}
@@ -2696,6 +2720,9 @@ func init() {
 	UserAttributeValuesTable.ForeignKeys[1].RefTable = UserAttributeDefinitionsTable
 	UserAttributeValuesTable.Annotation = &entsql.Annotation{
 		Table: "user_attribute_values",
+	}
+	UserCheckInsTable.Annotation = &entsql.Annotation{
+		Table: "user_check_ins",
 	}
 	UserPlatformQuotasTable.ForeignKeys[0].RefTable = UsersTable
 	UserPlatformQuotasTable.Annotation = &entsql.Annotation{

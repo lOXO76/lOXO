@@ -258,12 +258,13 @@ import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
 import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
-import { Building2 } from '@lucide/vue'
+import { Building2, CalendarCheck2 } from '@lucide/vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { canAccessEnterprise, enterpriseSectionPath } from '@/features/enterprise/navigation'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
 
 const BuildingIcon = { render: () => h(Building2, { strokeWidth: 1.5 }) }
+const CheckInIcon = { render: () => h(CalendarCheck2, { strokeWidth: 1.5 }) }
 
 interface NavItem {
   path: string
@@ -787,6 +788,7 @@ const purchaseNavLabel = computed(() => {
   }
 })
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
+const flagCheckIn = makeSidebarFlag(FeatureFlags.checkIn)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagPluginManagement = makeSidebarFlag(FeatureFlags.pluginManagement)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
@@ -831,6 +833,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/purchase', label: purchaseNavLabel.value, icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPersonalPayment },
     { path: '/orders', label: t('nav.myOrders'), icon: OrderListIcon, hideInSimpleMode: true, featureFlag: flagPersonalPayment },
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true, featureFlag: flagPersonalWallet },
+    { path: '/check-in', label: t('nav.checkIn'), icon: CheckInIcon, hideInSimpleMode: true, featureFlag: flagCheckIn },
     { path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({

@@ -28,6 +28,9 @@ type UpdateSettingsRequest struct {
 	RegistrationEmailSuffixWhitelist    []string                     `json:"registration_email_suffix_whitelist"`
 	RegistrationEmailDomainQuotaEnabled *bool                        `json:"registration_email_domain_quota_enabled"` // 非白名单域名限量注册开关（省略=保持现值）
 	PromoCodeEnabled                    bool                         `json:"promo_code_enabled"`
+	CheckInEnabled                      bool                         `json:"check_in_enabled"`
+	CheckInCaptchaEnabled               bool                         `json:"check_in_captcha_enabled"`
+	CheckInTiers                        []dto.CheckInTier            `json:"check_in_tiers"`
 	PasswordResetEnabled                bool                         `json:"password_reset_enabled"`
 	FrontendURL                         string                       `json:"frontend_url"`
 	InvitationCodeEnabled               bool                         `json:"invitation_code_enabled"`
@@ -1523,6 +1526,18 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		response.BadRequest(c, "cyber_session_block_ttl_seconds must be > 0")
 		return
 	}
+	checkInEnabled := req.CheckInEnabled
+	if _, sent := sentFields["check_in_enabled"]; !sent {
+		checkInEnabled = previousSettings.CheckInEnabled
+	}
+	checkInCaptchaEnabled := req.CheckInCaptchaEnabled
+	if _, sent := sentFields["check_in_captcha_enabled"]; !sent {
+		checkInCaptchaEnabled = previousSettings.CheckInCaptchaEnabled
+	}
+	checkInTiers := req.CheckInTiers
+	if _, sent := sentFields["check_in_tiers"]; !sent {
+		checkInTiers = previousSettings.CheckInTiers
+	}
 
 	settings := &service.SystemSettings{
 		// 系统全局 platform quota 默认值（整体替换语义）
@@ -1534,6 +1549,9 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		RegistrationEmailSuffixWhitelist:    req.RegistrationEmailSuffixWhitelist,
 		RegistrationEmailDomainQuotaEnabled: registrationEmailDomainQuotaEnabled,
 		PromoCodeEnabled:                    req.PromoCodeEnabled,
+		CheckInEnabled:                      checkInEnabled,
+		CheckInCaptchaEnabled:               checkInCaptchaEnabled,
+		CheckInTiers:                        checkInTiers,
 		PasswordResetEnabled:                req.PasswordResetEnabled,
 		FrontendURL:                         req.FrontendURL,
 		InvitationCodeEnabled:               req.InvitationCodeEnabled,
@@ -2205,6 +2223,9 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		RegistrationEmailSuffixWhitelist:                       updatedSettings.RegistrationEmailSuffixWhitelist,
 		RegistrationEmailDomainQuotaEnabled:                    updatedSettings.RegistrationEmailDomainQuotaEnabled,
 		PromoCodeEnabled:                                       updatedSettings.PromoCodeEnabled,
+		CheckInEnabled:                                         updatedSettings.CheckInEnabled,
+		CheckInCaptchaEnabled:                                  updatedSettings.CheckInCaptchaEnabled,
+		CheckInTiers:                                           updatedSettings.CheckInTiers,
 		PasswordResetEnabled:                                   updatedSettings.PasswordResetEnabled,
 		FrontendURL:                                            updatedSettings.FrontendURL,
 		InvitationCodeEnabled:                                  updatedSettings.InvitationCodeEnabled,

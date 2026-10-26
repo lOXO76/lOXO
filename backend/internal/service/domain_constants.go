@@ -243,6 +243,10 @@ const (
 	SettingKeyLoginAgreementMode                  = "login_agreement_mode"             // 条款确认展示模式：modal / checkbox
 	SettingKeyLoginAgreementUpdatedAt             = "login_agreement_updated_at"       // 条款更新日期（展示用）
 	SettingKeyLoginAgreementDocuments             = "login_agreement_documents"        // 条款文档列表（JSON，Markdown 内容）
+	// 每日签到设置
+	SettingKeyCheckInEnabled        = "check_in_enabled"
+	SettingKeyCheckInCaptchaEnabled = "check_in_captcha_enabled"
+	SettingKeyCheckInTiers          = "check_in_tiers"
 
 	// 邮件服务设置
 	SettingKeySMTPHost     = "smtp_host"      // SMTP服务器地址
