@@ -59,6 +59,8 @@ var auditExtraAllowedKeys = map[string]struct{}{
 	"event_id": {}, "requested_count": {}, "deleted_events": {}, "deleted_jobs": {},
 	"matched_count": {}, "snapshot_max_id": {}, "filter_hash": {}, "confirm": {},
 	"reservation_id": {}, "resolution_reason": {},
+	// 每日签到结果：签到额度（发放到余额的签到奖励，非充值）、签到日期（服务器时区）、连续天数。
+	"check_in_reward": {}, "check_in_date": {}, "streak_days": {},
 }
 
 // SetAuditExtra adds allowlisted, scalar details to the current audit entry.
@@ -132,6 +134,7 @@ var auditActionOverrides = map[string]string{
 	"POST /api/v1/auth/register":                              service.AuditActionRegister,
 	"POST /api/v1/auth/refresh":                               service.AuditActionTokenRefresh,
 	"POST /api/v1/user/totp/step-up":                          service.AuditActionStepUpVerify,
+	"POST /api/v1/user/check-in":                              service.AuditActionCheckIn,
 	"POST /api/v1/admin/audit-logs/clear":                     service.AuditActionAuditLogClear,
 	"POST /api/v1/admin/accounts/data":                        "admin.accounts.import",
 	"POST /api/v1/admin/backups":                              "admin.backups.create",
@@ -151,8 +154,10 @@ var auditActionOverrides = map[string]string{
 // auditBodyOmittedRoutes 请求体几乎整体由凭证构成的路由（如整块粘贴 auth JSON 的导入接口）。
 // 这类 body 的凭证内嵌在普通字符串值里，键级脱敏无法覆盖，整体不入库。
 var auditBodyOmittedRoutes = map[string]struct{}{
-	"POST /api/v1/auth/passkey/login/finish":                    {},
-	"POST /api/v1/user/passkeys/register/finish":                {},
+	"POST /api/v1/auth/passkey/login/finish":     {},
+	"POST /api/v1/user/passkeys/register/finish": {},
+	// 签到请求体只有人机验证凭据（tencent_ticket 等不在键名脱敏清单内），对追责无用，整体不入库。
+	"POST /api/v1/user/check-in":                                {},
 	"POST /api/v1/admin/accounts/import/codex-session":          {},
 	"PUT /api/v1/admin/accounts/:id/ollama-cloud-usage/session": {},
 	"PUT /api/v1/admin/prompt-audit/config":                     {},

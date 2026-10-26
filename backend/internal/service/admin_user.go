@@ -746,8 +746,12 @@ func (s *adminServiceImpl) GetUserUsageStats(ctx context.Context, userID int64, 
 // GetUserBalanceHistory returns paginated balance/concurrency change records for a user.
 func (s *adminServiceImpl) GetUserBalanceHistory(ctx context.Context, userID int64, page, pageSize int, codeType string) ([]RedeemCode, int64, float64, error) {
 	params := pagination.PaginationParams{Page: page, PageSize: pageSize}
-	if codeType == RedeemTypeAffiliateBalance {
-		codes, total, err := s.listAffiliateBalanceHistory(ctx, userID, params)
+	if codeType == RedeemTypeAffiliateBalance || codeType == RedeemTypeCheckIn {
+		list := s.listAffiliateBalanceHistory
+		if codeType == RedeemTypeCheckIn {
+			list = s.listCheckInBalanceHistory
+		}
+		codes, total, err := list(ctx, userID, params)
 		if err != nil {
 			return nil, 0, 0, err
 		}
@@ -789,13 +793,17 @@ func (s *adminServiceImpl) getAllUserBalanceHistory(ctx context.Context, userID 
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	codes := mergeBalanceHistoryCodes(redeemCodes, affiliateCodes, params)
+	checkInCodes, checkInTotal, err := s.listCheckInBalanceHistoryForMerge(ctx, userID, needed)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	codes := mergeBalanceHistoryCodes(redeemCodes, append(affiliateCodes, checkInCodes...), params)
 
 	totalRecharged, err := s.redeemCodeRepo.SumPositiveBalanceByUser(ctx, userID)
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	return codes, redeemTotal + affiliateTotal, totalRecharged, nil
+	return codes, redeemTotal + affiliateTotal + checkInTotal, totalRecharged, nil
 }
 
 func (s *adminServiceImpl) listRedeemBalanceHistoryForMerge(ctx context.Context, userID int64, needed int) ([]RedeemCode, int64, error) {
@@ -828,6 +836,20 @@ func (s *adminServiceImpl) listRedeemBalanceHistoryForMerge(ctx context.Context,
 }
 
 func (s *adminServiceImpl) listAffiliateBalanceHistoryForMerge(ctx context.Context, userID int64, needed int) ([]RedeemCode, int64, error) {
+	return collectBalanceHistoryForMerge(ctx, userID, needed, s.listAffiliateBalanceHistory)
+}
+
+func (s *adminServiceImpl) listCheckInBalanceHistoryForMerge(ctx context.Context, userID int64, needed int) ([]RedeemCode, int64, error) {
+	return collectBalanceHistoryForMerge(ctx, userID, needed, s.listCheckInBalanceHistory)
+}
+
+// collectBalanceHistoryForMerge 按页拉取某一流水来源，直到凑够合并分页所需的前 needed 条。
+func collectBalanceHistoryForMerge(
+	ctx context.Context,
+	userID int64,
+	needed int,
+	list func(context.Context, int64, pagination.PaginationParams) ([]RedeemCode, int64, error),
+) ([]RedeemCode, int64, error) {
 	if needed <= 0 {
 		return nil, 0, nil
 	}
@@ -838,7 +860,7 @@ func (s *adminServiceImpl) listAffiliateBalanceHistoryForMerge(ctx context.Conte
 	)
 	for page := 1; len(out) < needed; page++ {
 		params := pagination.PaginationParams{Page: page, PageSize: 1000}
-		codes, currentTotal, err := s.listAffiliateBalanceHistory(ctx, userID, params)
+		codes, currentTotal, err := list(ctx, userID, params)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -852,6 +874,84 @@ func (s *adminServiceImpl) listAffiliateBalanceHistoryForMerge(ctx context.Conte
 		out = out[:needed]
 	}
 	return out, total, nil
+}
+
+// listCheckInBalanceHistory 把每日签到记录合成为余额流水条目，作为签到入账的流水凭证。
+func (s *adminServiceImpl) listCheckInBalanceHistory(ctx context.Context, userID int64, params pagination.PaginationParams) ([]RedeemCode, int64, error) {
+	if s == nil || s.entClient == nil || userID <= 0 {
+		return nil, 0, nil
+	}
+
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id,
+       reward::double precision,
+       check_in_date,
+       created_at
+FROM user_check_ins
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+OFFSET $2
+LIMIT $3`, userID, params.Offset(), params.Limit())
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	codes := make([]RedeemCode, 0, params.Limit())
+	for rows.Next() {
+		var id int64
+		var reward float64
+		var checkInDate, createdAt time.Time
+		if err := rows.Scan(&id, &reward, &checkInDate, &createdAt); err != nil {
+			return nil, 0, err
+		}
+		codes = append(codes, checkInBalanceHistoryCode(userID, id, reward, checkInDate, createdAt))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	total, err := countCheckInBalanceHistory(ctx, s.entClient, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+	return codes, total, nil
+}
+
+// checkInBalanceHistoryCode 生成签到流水条目。ID 与返利流水同样取负，前端以「类型+ID」区分；
+// Code 带上签到日期（服务器时区自然日），可直接对应到 user_check_ins 中的那一天。
+func checkInBalanceHistoryCode(userID, checkInID int64, reward float64, checkInDate, createdAt time.Time) RedeemCode {
+	usedBy := userID
+	usedAt := createdAt
+	return RedeemCode{
+		ID:        -checkInID,
+		Code:      "CHECKIN-" + formatCheckInDate(checkInDate),
+		Type:      RedeemTypeCheckIn,
+		Value:     reward,
+		Status:    StatusUsed,
+		UsedBy:    &usedBy,
+		UsedAt:    &usedAt,
+		CreatedAt: createdAt,
+	}
+}
+
+func countCheckInBalanceHistory(ctx context.Context, client *dbent.Client, userID int64) (int64, error) {
+	rows, err := client.QueryContext(ctx, `SELECT COUNT(*) FROM user_check_ins WHERE user_id = $1`, userID)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var total sql.NullInt64
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return 0, err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	return total.Int64, nil
 }
 
 func (s *adminServiceImpl) listAffiliateBalanceHistory(ctx context.Context, userID int64, params pagination.PaginationParams) ([]RedeemCode, int64, error) {

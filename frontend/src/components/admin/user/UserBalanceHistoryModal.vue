@@ -94,7 +94,7 @@
       <div v-else class="max-h-[28rem] space-y-3 overflow-y-auto">
         <div
           v-for="item in history"
-          :key="item.id"
+          :key="`${item.type}:${item.id}`"
           class="rounded-xl border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-800"
         >
           <div class="flex items-start justify-between">
@@ -135,6 +135,12 @@
                 class="text-xs text-gray-400 dark:text-dark-500"
               >
                 {{ t('redeem.adminAdjustment') }}
+              </p>
+              <p
+                v-else-if="isCheckInType(item.type)"
+                class="text-xs text-gray-400 dark:text-dark-500"
+              >
+                {{ t('redeem.checkInSource', { date: checkInDate(item) }) }}
               </p>
               <p
                 v-else
@@ -203,6 +209,7 @@ const typeOptions = computed(() => [
   { value: '', label: t('admin.users.allTypes') },
   { value: 'balance', label: t('admin.users.typeBalance') },
   { value: 'affiliate_balance', label: t('admin.users.typeAffiliateBalance') },
+  { value: 'check_in', label: t('admin.users.typeCheckIn') },
   { value: 'admin_balance', label: t('admin.users.typeAdminBalance') },
   { value: 'concurrency', label: t('admin.users.typeConcurrency') },
   { value: 'admin_concurrency', label: t('admin.users.typeAdminConcurrency') },
@@ -246,13 +253,21 @@ const loadHistory = async (page: number) => {
 const isAdminType = (type: string) => type === 'admin_balance' || type === 'admin_concurrency'
 
 // Helper: check if balance type (includes admin_balance)
-const isBalanceType = (type: string) => type === 'balance' || type === 'admin_balance' || type === 'affiliate_balance'
+const isBalanceType = (type: string) =>
+  type === 'balance' || type === 'admin_balance' || type === 'affiliate_balance' || type === 'check_in'
+
+// 签到额度：签到奖励发放到余额的记录，不是真实充值，需与充值类记录明确区分
+const isCheckInType = (type: string) => type === 'check_in'
+
+// 签到流水的 code 形如 CHECKIN-2026-10-27，日期为服务器时区的签到自然日
+const checkInDate = (item: BalanceHistoryItem) => item.code.replace(/^CHECKIN-/, '')
 
 // Helper: check if subscription type
 const isSubscriptionType = (type: string) => type === 'subscription'
 
 // Icon name based on type
 const getIconName = (item: BalanceHistoryItem) => {
+  if (isCheckInType(item.type)) return 'calendar'
   if (isBalanceType(item.type)) return 'dollar'
   if (isSubscriptionType(item.type)) return 'badge'
   return 'bolt' // concurrency
@@ -260,6 +275,7 @@ const getIconName = (item: BalanceHistoryItem) => {
 
 // Icon background color
 const getIconBg = (item: BalanceHistoryItem) => {
+  if (isCheckInType(item.type)) return 'bg-amber-100 dark:bg-amber-900/30'
   if (isBalanceType(item.type)) {
     return item.value >= 0
       ? 'bg-emerald-100 dark:bg-emerald-900/30'
@@ -273,6 +289,7 @@ const getIconBg = (item: BalanceHistoryItem) => {
 
 // Icon text color
 const getIconColor = (item: BalanceHistoryItem) => {
+  if (isCheckInType(item.type)) return 'text-amber-600 dark:text-amber-400'
   if (isBalanceType(item.type)) {
     return item.value >= 0
       ? 'text-emerald-600 dark:text-emerald-400'
@@ -286,6 +303,7 @@ const getIconColor = (item: BalanceHistoryItem) => {
 
 // Value text color
 const getValueColor = (item: BalanceHistoryItem) => {
+  if (isCheckInType(item.type)) return 'text-amber-600 dark:text-amber-400'
   if (isBalanceType(item.type)) {
     return item.value >= 0
       ? 'text-emerald-600 dark:text-emerald-400'
@@ -304,6 +322,8 @@ const getItemTitle = (item: BalanceHistoryItem) => {
       return t('redeem.balanceAddedRedeem')
     case 'affiliate_balance':
       return t('redeem.balanceAddedAffiliate')
+    case 'check_in':
+      return t('redeem.balanceAddedCheckIn')
     case 'admin_balance':
       return item.value >= 0 ? t('redeem.balanceAddedAdmin') : t('redeem.balanceDeductedAdmin')
     case 'concurrency':
@@ -317,11 +337,16 @@ const getItemTitle = (item: BalanceHistoryItem) => {
   }
 }
 
+// 签到奖励多为小额：不足 $1 时最多保留 4 位小数（至少 2 位），与实际入账金额一致
+const formatCheckInAmount = (value: number) =>
+  Math.abs(value) >= 1 ? value.toFixed(2) : value.toFixed(4).replace(/(\.\d{2}\d*?)0+$/, '$1')
+
 // Format display value
 const formatValue = (item: BalanceHistoryItem) => {
   if (isBalanceType(item.type)) {
     const sign = item.value >= 0 ? '+' : ''
-    return `${sign}$${item.value.toFixed(2)}`
+    const amount = isCheckInType(item.type) ? formatCheckInAmount(item.value) : item.value.toFixed(2)
+    return `${sign}$${amount}`
   }
   if (isSubscriptionType(item.type)) {
     const days = item.validity_days || Math.round(item.value)

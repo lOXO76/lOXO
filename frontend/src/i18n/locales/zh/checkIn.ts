@@ -1,6 +1,7 @@
 export default {
   nav: {
     checkIn: '每日签到',
+    checkInStats: '签到统计',
   },
   checkIn: {
     title: '每日签到',

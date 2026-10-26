@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -56,7 +57,8 @@ func (h *CheckInHandler) GetCalendar(c *gin.Context) {
 	response.Success(c, calendar)
 }
 
-type CheckInRequest struct {	TurnstileToken string `json:"turnstile_token"`
+type CheckInRequest struct {
+	TurnstileToken string `json:"turnstile_token"`
 	TencentTicket  string `json:"tencent_ticket"`
 	TencentRandstr string `json:"tencent_randstr"`
 }
@@ -78,8 +80,16 @@ func (h *CheckInHandler) PerformCheckIn(c *gin.Context) {
 		TencentRandstr: req.TencentRandstr,
 	}, c.ClientIP())
 	if err != nil {
+		middleware2.SetAuditExtra(c, map[string]any{"result": "failed", "error_code": infraerrors.Reason(err)})
 		response.ErrorFrom(c, err)
 		return
 	}
+	// 操作日志留存本次签到额度的入账结果，便于与余额流水中的「签到额度」记录核对。
+	middleware2.SetAuditExtra(c, map[string]any{
+		"result":          "success",
+		"check_in_reward": result.Reward,
+		"check_in_date":   result.CheckInDate,
+		"streak_days":     result.StreakDays,
+	})
 	response.Success(c, result)
 }
