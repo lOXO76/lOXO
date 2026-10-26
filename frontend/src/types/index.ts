@@ -214,6 +214,8 @@ export interface LoginAgreementDocument {
 }
 
 export interface PublicSettings {
+  /** 签到功能是否已开启（旧版公开设置可能未返回） */
+  check_in_enabled?: boolean
   registration_enabled: boolean
   email_verify_enabled: boolean
   force_email_on_third_party_signup: boolean

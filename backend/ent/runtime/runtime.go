@@ -52,6 +52,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/usercheckin"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
@@ -2702,6 +2703,29 @@ func init() {
 	userattributevalueDescValue := userattributevalueFields[2].Descriptor()
 	// userattributevalue.DefaultValue holds the default value on creation for the value field.
 	userattributevalue.DefaultValue = userattributevalueDescValue.Default.(string)
+	usercheckinMixin := schema.UserCheckIn{}.Mixin()
+	usercheckinMixinFields0 := usercheckinMixin[0].Fields()
+	_ = usercheckinMixinFields0
+	usercheckinFields := schema.UserCheckIn{}.Fields()
+	_ = usercheckinFields
+	// usercheckinDescCreatedAt is the schema descriptor for created_at field.
+	usercheckinDescCreatedAt := usercheckinMixinFields0[0].Descriptor()
+	// usercheckin.DefaultCreatedAt holds the default value on creation for the created_at field.
+	usercheckin.DefaultCreatedAt = usercheckinDescCreatedAt.Default.(func() time.Time)
+	// usercheckinDescUpdatedAt is the schema descriptor for updated_at field.
+	usercheckinDescUpdatedAt := usercheckinMixinFields0[1].Descriptor()
+	// usercheckin.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	usercheckin.DefaultUpdatedAt = usercheckinDescUpdatedAt.Default.(func() time.Time)
+	// usercheckin.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	usercheckin.UpdateDefaultUpdatedAt = usercheckinDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// usercheckinDescReward is the schema descriptor for reward field.
+	usercheckinDescReward := usercheckinFields[2].Descriptor()
+	// usercheckin.DefaultReward holds the default value on creation for the reward field.
+	usercheckin.DefaultReward = usercheckinDescReward.Default.(float64)
+	// usercheckinDescTierIndex is the schema descriptor for tier_index field.
+	usercheckinDescTierIndex := usercheckinFields[3].Descriptor()
+	// usercheckin.DefaultTierIndex holds the default value on creation for the tier_index field.
+	usercheckin.DefaultTierIndex = usercheckinDescTierIndex.Default.(int)
 	userplatformquotaMixin := schema.UserPlatformQuota{}.Mixin()
 	userplatformquotaMixinHooks1 := userplatformquotaMixin[1].Hooks()
 	userplatformquota.Hooks[0] = userplatformquotaMixinHooks1[0]

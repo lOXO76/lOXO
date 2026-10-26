@@ -7,6 +7,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
+// CheckInTier is the JSON representation shared by admin settings and the
+// user-facing check-in status response.
+type CheckInTier = service.CheckInTier
+
 // CustomMenuItem represents a user-configured custom menu entry.
 type CustomMenuItem struct {
 	ID             string `json:"id"`
@@ -33,6 +37,9 @@ type SystemSettings struct {
 	RegistrationEmailSuffixWhitelist    []string                 `json:"registration_email_suffix_whitelist"`
 	RegistrationEmailDomainQuotaEnabled bool                     `json:"registration_email_domain_quota_enabled"`
 	PromoCodeEnabled                    bool                     `json:"promo_code_enabled"`
+	CheckInEnabled                      bool                     `json:"check_in_enabled"`
+	CheckInCaptchaEnabled               bool                     `json:"check_in_captcha_enabled"`
+	CheckInTiers                        []CheckInTier            `json:"check_in_tiers"`
 	PasswordResetEnabled                bool                     `json:"password_reset_enabled"`
 	FrontendURL                         string                   `json:"frontend_url"`
 	InvitationCodeEnabled               bool                     `json:"invitation_code_enabled"`
@@ -372,6 +379,7 @@ type PublicSettings struct {
 	RegistrationEmailSuffixWhitelist    []string                 `json:"registration_email_suffix_whitelist"`
 	RegistrationEmailDomainQuotaEnabled bool                     `json:"registration_email_domain_quota_enabled"`
 	PromoCodeEnabled                    bool                     `json:"promo_code_enabled"`
+	CheckInEnabled                      bool                     `json:"check_in_enabled"`
 	PasswordResetEnabled                bool                     `json:"password_reset_enabled"`
 	InvitationCodeEnabled               bool                     `json:"invitation_code_enabled"`
 	TotpEnabled                         bool                     `json:"totp_enabled"` // TOTP 双因素认证

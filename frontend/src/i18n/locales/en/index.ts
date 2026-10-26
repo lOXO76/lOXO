@@ -8,6 +8,7 @@ import admin from './admin'
 import misc from './misc'
 import asyncTasks from './asyncTasks'
 import apiDocs from './apiDocs'
+import checkIn from './checkIn'
 
 export default {
   ...landing,
@@ -20,4 +21,6 @@ export default {
   ...misc,
   ...asyncTasks,
   ...apiDocs,
+  ...checkIn,
+  nav: { ...common.nav, ...checkIn.nav },
 }

@@ -600,6 +600,15 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.AffiliateEnabled != after.AffiliateEnabled {
 		changed = append(changed, "affiliate_enabled")
 	}
+	if before.CheckInEnabled != after.CheckInEnabled {
+		changed = append(changed, "check_in_enabled")
+	}
+	if before.CheckInCaptchaEnabled != after.CheckInCaptchaEnabled {
+		changed = append(changed, "check_in_captcha_enabled")
+	}
+	if !equalCheckInTiers(before.CheckInTiers, after.CheckInTiers) {
+		changed = append(changed, "check_in_tiers")
+	}
 	if before.RiskControlEnabled != after.RiskControlEnabled {
 		changed = append(changed, "risk_control_enabled")
 	}
@@ -875,4 +884,17 @@ func stringSetting(value *string, fallback string) string {
 		return fallback
 	}
 	return *value
+}
+
+// equalCheckInTiers 逐档比较签到奖励配置，避免把指针/切片地址差异误判为变更。
+func equalCheckInTiers(before, after []service.CheckInTier) bool {
+	if len(before) != len(after) {
+		return false
+	}
+	for i := range before {
+		if before[i].Min != after[i].Min || before[i].Max != after[i].Max || before[i].Weight != after[i].Weight {
+			return false
+		}
+	}
+	return true
 }

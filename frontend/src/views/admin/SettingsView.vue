@@ -7457,6 +7457,152 @@
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.features.checkIn.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.features.checkIn.description') }}
+            </p>
+          </div>
+          <div class="space-y-5 p-6">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.features.checkIn.enabledLabel') }}
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.features.checkIn.enabledHint') }}
+                </p>
+              </div>
+              <Toggle v-model="form.check_in_enabled" />
+            </div>
+
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.features.checkIn.captchaLabel') }}
+                </label>
+              </div>
+              <Toggle v-model="form.check_in_captcha_enabled" />
+            </div>
+            <p class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:bg-dark-800 dark:text-gray-400">
+              {{ t('admin.settings.features.checkIn.captchaHint') }}
+            </p>
+
+            <div class="border-t border-gray-100 pt-5 dark:border-dark-700">
+              <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <label class="font-medium text-gray-900 dark:text-white">
+                    {{ t('admin.settings.features.checkIn.tiersTitle') }}
+                  </label>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.features.checkIn.tiersHint') }}
+                  </p>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-300">
+                  {{ t('admin.settings.features.checkIn.totalTiers', {
+                    count: form.check_in_tiers.length,
+                    weight: checkInTotalWeight.toFixed(2),
+                  }) }}
+                </p>
+              </div>
+
+              <div
+                v-if="form.check_in_enabled && form.check_in_tiers.length === 0"
+                class="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+              >
+                {{ t('admin.settings.features.checkIn.validation.enabledRequiresTier') }}
+              </div>
+
+              <div
+                v-if="form.check_in_tiers.length === 0"
+                class="rounded border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 dark:border-dark-600 dark:text-gray-400"
+              >
+                {{ t('admin.settings.features.checkIn.emptyTiers') }}
+              </div>
+              <div v-else class="overflow-x-auto rounded border border-gray-200 dark:border-dark-600">
+                <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-600">
+                  <thead class="bg-gray-50 dark:bg-dark-800">
+                    <tr>
+                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {{ t('admin.settings.features.checkIn.tierMin') }}
+                      </th>
+                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {{ t('admin.settings.features.checkIn.tierMax') }}
+                      </th>
+                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {{ t('admin.settings.features.checkIn.tierWeight') }}
+                      </th>
+                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {{ t('admin.settings.features.checkIn.tierPercent') }}
+                      </th>
+                      <th class="px-3 py-2"><span class="sr-only">{{ t('admin.settings.features.checkIn.removeTier') }}</span></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-dark-700">
+                    <tr v-for="(tier, index) in form.check_in_tiers" :key="`check-in-tier-${index}`">
+                      <td class="px-3 py-2">
+                        <input
+                          v-model.number="tier.min"
+                          type="number"
+                          min="0"
+                          max="100000"
+                          step="any"
+                          class="input input-sm w-full min-w-24"
+                        />
+                      </td>
+                      <td class="px-3 py-2">
+                        <input
+                          v-model.number="tier.max"
+                          type="number"
+                          min="0"
+                          max="100000"
+                          step="any"
+                          class="input input-sm w-full min-w-24"
+                        />
+                      </td>
+                      <td class="px-3 py-2">
+                        <input
+                          v-model.number="tier.weight"
+                          type="number"
+                          min="0"
+                          step="any"
+                          class="input input-sm w-full min-w-24"
+                        />
+                      </td>
+                      <td class="whitespace-nowrap px-3 py-2 text-gray-700 dark:text-gray-300">
+                        {{ checkInTierPercent(index).toFixed(1) }}%
+                      </td>
+                      <td class="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-xs text-red-500 hover:text-red-700"
+                          :aria-label="t('admin.settings.features.checkIn.removeTier')"
+                          @click="removeCheckInTier(index)"
+                        >
+                          {{ t('admin.settings.features.checkIn.removeTier') }}
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm mt-3 inline-flex items-center gap-1"
+                :disabled="form.check_in_tiers.length >= 20"
+                @click="addCheckInTier"
+              >
+                <span aria-hidden="true">+</span>
+                {{ t('admin.settings.features.checkIn.addTier') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
               {{ t('admin.settings.features.riskControl.title') }}
             </h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -9019,6 +9165,7 @@ import {
 import type {
   AuthSourceDefaultsState,
   AuthSourceType,
+  CheckInTier,
   SystemSettings,
   UpdateSettingsRequest,
   DefaultSubscriptionSetting,
@@ -10089,6 +10236,10 @@ const form = reactive<SettingsForm>({
   model_plaza_description: '',
   // Plugin management menu visibility; plugin runtime is unaffected.
   plugin_management_enabled: false,
+  // Daily check-in feature and weighted reward tiers.
+  check_in_enabled: false,
+  check_in_captcha_enabled: false,
+  check_in_tiers: [] as CheckInTier[],
   // API documentation menu visibility; direct route access is unaffected.
   api_docs_enabled: true,
   // Affiliate (邀请返利) feature switch
@@ -10096,6 +10247,30 @@ const form = reactive<SettingsForm>({
   // Allow user view error requests
   allow_user_view_error_requests: false,
 });
+
+const checkInTotalWeight = computed(() =>
+  form.check_in_tiers.reduce((total, tier) => {
+    const weight = Number(tier.weight);
+    return Number.isFinite(weight) && weight > 0 ? total + weight : total;
+  }, 0),
+);
+
+function checkInTierPercent(index: number): number {
+  const weight = Number(form.check_in_tiers[index]?.weight);
+  if (!Number.isFinite(weight) || checkInTotalWeight.value <= 0) {
+    return 0;
+  }
+  return (weight / checkInTotalWeight.value) * 100;
+}
+
+function addCheckInTier() {
+  if (form.check_in_tiers.length >= 20) return;
+  form.check_in_tiers.push({ min: 0, max: 0, weight: 1 });
+}
+
+function removeCheckInTier(index: number) {
+  form.check_in_tiers.splice(index, 1);
+}
 
 // 人机验证 UI 状态：单卡片「总开关 + 服务商单选」，落库仍是三个独立
 // enabled 键（与上游一致），由下面的映射保证同一时间至多一家启用。
@@ -11081,6 +11256,9 @@ async function loadSettings() {
         (form as Record<string, unknown>)[key] = value;
       }
     }
+    form.check_in_tiers = (settings.check_in_tiers ?? []).map((tier) => ({
+      ...tier,
+    }));
     form.api_docs_enabled = settings.api_docs_enabled !== false;
     // For this optional override, null explicitly selects per-account rates.
     if (settings.openai_oauth_scheduling_rate_multiplier === null) {
@@ -11343,9 +11521,78 @@ const siteBillingModeHint = computed(() =>
   t(`admin.settings.features.siteBillingMode.hints.${SITE_BILLING_MODE_I18N_KEYS[siteBillingMode.value]}`),
 );
 
+function normalizeCheckInNumber(value: unknown): number {
+  if (typeof value === "string" && value.trim() === "") {
+    return Number.NaN;
+  }
+  const number = Number(value);
+  return Number.isFinite(number) ? number : Number.NaN;
+}
+
+function validateCheckInTiers(): CheckInTier[] | null {
+  const tiers = form.check_in_tiers || [];
+  if (tiers.length > 20) {
+    appStore.showError(t("admin.settings.features.checkIn.validation.maxTiers"));
+    return null;
+  }
+  if (form.check_in_enabled && tiers.length === 0) {
+    appStore.showError(
+      t("admin.settings.features.checkIn.validation.enabledRequiresTier"),
+    );
+    return null;
+  }
+
+  const normalized = tiers.map((tier, index) => {
+    const min = normalizeCheckInNumber(tier.min);
+    const max = normalizeCheckInNumber(tier.max);
+    const weight = normalizeCheckInNumber(tier.weight);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || !Number.isFinite(weight)) {
+      appStore.showError(
+        t("admin.settings.features.checkIn.validation.number", {
+          index: index + 1,
+        }),
+      );
+      return null;
+    }
+    if (min < 0 || min > max || max > 100000) {
+      appStore.showError(
+        t("admin.settings.features.checkIn.validation.minMax", {
+          index: index + 1,
+        }),
+      );
+      return null;
+    }
+    if (weight <= 0) {
+      appStore.showError(
+        t("admin.settings.features.checkIn.validation.weight", {
+          index: index + 1,
+        }),
+      );
+      return null;
+    }
+    return { min, max, weight };
+  });
+
+  if (normalized.some((tier) => tier === null)) {
+    return null;
+  }
+  return normalized.filter(
+    (tier): tier is CheckInTier =>
+      tier !== null &&
+      Number.isFinite(Number(tier.min)) &&
+      Number.isFinite(Number(tier.max)) &&
+      Number.isFinite(Number(tier.weight)),
+  );
+}
+
 async function saveSettings() {
   saving.value = true;
   try {
+    const normalizedCheckInTiers = validateCheckInTiers();
+    if (!normalizedCheckInTiers) {
+      return;
+    }
+
     const normalizedTableDefaultPageSize = Math.floor(
       Number(form.table_default_page_size),
     );
@@ -11826,6 +12073,20 @@ async function saveSettings() {
       model_plaza_require_auth: form.model_plaza_require_auth,
       model_plaza_description: form.model_plaza_description,
       plugin_management_enabled: form.plugin_management_enabled,
+      check_in_enabled: form.check_in_enabled,
+      check_in_captcha_enabled: form.check_in_captcha_enabled,
+      check_in_tiers: normalizedCheckInTiers
+        .map((tier) => ({
+          min: Number(tier.min),
+          max: Number(tier.max),
+          weight: Number(tier.weight),
+        }))
+        .filter(
+          (tier) =>
+            Number.isFinite(tier.min) &&
+            Number.isFinite(tier.max) &&
+            Number.isFinite(tier.weight),
+        ),
       api_docs_enabled: form.api_docs_enabled,
       // Affiliate (邀请返利) feature switch
       affiliate_enabled: form.affiliate_enabled,

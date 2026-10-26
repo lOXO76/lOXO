@@ -92,6 +92,14 @@ func ProvideAuthService(
 	return svc
 }
 
+func ProvideCaptchaVerifier(auth *AuthService) CaptchaVerifier {
+	return auth
+}
+
+func ProvideEnterpriseMembershipReader(enterprises EnterpriseRepository) EnterpriseMembershipReader {
+	return enterprises
+}
+
 // ProvideOAuthRefreshAPI creates OAuthRefreshAPI with the default lock TTL.
 func ProvideOAuthRefreshAPI(accountRepo AccountRepository, tokenCache GeminiTokenCache) *OAuthRefreshAPI {
 	return NewOAuthRefreshAPI(accountRepo, tokenCache)
@@ -912,6 +920,8 @@ var ProviderSet = wire.NewSet(
 	NewEnterpriseUsageService,
 	// Core services
 	ProvideAuthService,
+	ProvideCaptchaVerifier,
+	ProvideEnterpriseMembershipReader,
 	NewPasskeyService,
 	ProvideUserService,
 	ProvideAPIKeyService,
@@ -1039,6 +1049,7 @@ var ProviderSet = wire.NewSet(
 	NewChannelMonitorQuotaFetcher,
 	ProvideChannelMonitorV2Service,
 	ProvideChannelMonitorV2Aggregator,
+	NewCheckInService,
 	NewChannelMonitorRequestTemplateService,
 	ProvideUserPlatformQuotaUsageFlusher,
 )
