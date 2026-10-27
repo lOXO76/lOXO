@@ -823,6 +823,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
       }))
     },
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
+    { path: '/import-clients', label: t('nav.importClients'), icon: KeyIcon },
     { path: '/batch-image', label: t('nav.batchImage'), icon: BatchImageIcon, hideInSimpleMode: true, featureFlag: flagBatchImageAccess },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/async-tasks', label: t('nav.asyncTasks'), icon: ServerIcon },
@@ -950,6 +951,7 @@ const adminNavItems = computed((): NavItem[] => {
   if (authStore.isSimpleMode) {
     const filtered = visible.filter(item => !item.hideInSimpleMode)
     filtered.push({ path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon })
+    filtered.push({ path: '/import-clients', label: t('nav.importClients'), icon: KeyIcon })
     filtered.push({ path: '/async-tasks', label: t('nav.asyncTasks'), icon: ServerIcon })
     if (flagApiDocs()) {
       filtered.push({ path: '/docs/api', label: t('nav.apiDocs'), icon: BookIcon })

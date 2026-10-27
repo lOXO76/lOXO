@@ -51,9 +51,9 @@ describe('AppSidebar 异步任务入口', () => {
   })
   it.each([
     { isAdmin: false, isSimpleMode: false, previousPath: '/usage' },
-    { isAdmin: false, isSimpleMode: true, previousPath: '/keys' },
+    { isAdmin: false, isSimpleMode: true, previousPath: '/import-clients' },
     { isAdmin: true, isSimpleMode: false, previousPath: '/usage' },
-    { isAdmin: true, isSimpleMode: true, previousPath: '/keys' },
+    { isAdmin: true, isSimpleMode: true, previousPath: '/import-clients' },
   ])('管理员=$isAdmin，简易模式=$isSimpleMode 时提供唯一且可高亮的入口', ({ isAdmin, isSimpleMode, previousPath }) => {
     mocks.auth.isAdmin = isAdmin
     mocks.auth.isSimpleMode = isSimpleMode

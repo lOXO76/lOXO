@@ -9,6 +9,7 @@ import misc from './misc'
 import asyncTasks from './asyncTasks'
 import apiDocs from './apiDocs'
 import checkIn from './checkIn'
+import clientImport from './clientImport'
 
 export default {
   ...landing,
@@ -22,5 +23,6 @@ export default {
   ...asyncTasks,
   ...apiDocs,
   ...checkIn,
-  nav: { ...common.nav, ...checkIn.nav },
+  ...clientImport,
+  nav: { ...common.nav, ...checkIn.nav, ...clientImport.nav },
 }

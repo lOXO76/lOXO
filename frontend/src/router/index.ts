@@ -242,6 +242,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/import-clients',
+    name: 'ImportClients',
+    component: () => import('@/views/user/ImportClientsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Import to Clients',
+      titleKey: 'clientImport.title',
+      descriptionKey: 'clientImport.description'
+    }
+  },
+  {
     path: '/batch-image',
     name: 'BatchImageGuide',
     alias: '/docs/batch-image',
