@@ -1,6 +1,7 @@
 export default {
   nav: {
     checkIn: 'Daily Check-in',
+    checkInStats: 'Check-in Stats',
   },
   checkIn: {
     title: 'Daily Check-in',

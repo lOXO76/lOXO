@@ -38,6 +38,8 @@ type CheckInService struct {
 	settingService       *SettingService
 	captchaVerifier      CaptchaVerifier
 	enterpriseMembership EnterpriseMembershipReader
+	billingCacheService  *BillingCacheService
+	authCacheInvalidator APIKeyAuthCacheInvalidator
 	randomFloat          func() (float64, error)
 }
 
@@ -47,6 +49,8 @@ func NewCheckInService(
 	settingService *SettingService,
 	captchaVerifier CaptchaVerifier,
 	enterpriseMembership EnterpriseMembershipReader,
+	billingCacheService *BillingCacheService,
+	authCacheInvalidator APIKeyAuthCacheInvalidator,
 ) *CheckInService {
 	return &CheckInService{
 		entClient:            entClient,
@@ -54,6 +58,8 @@ func NewCheckInService(
 		settingService:       settingService,
 		captchaVerifier:      captchaVerifier,
 		enterpriseMembership: enterpriseMembership,
+		billingCacheService:  billingCacheService,
+		authCacheInvalidator: authCacheInvalidator,
 		randomFloat:          cryptoRandomFloat,
 	}
 }
@@ -303,12 +309,18 @@ func (s *CheckInService) PerformCheckIn(ctx context.Context, userID int64, proof
 		}
 		return nil, fmt.Errorf("insert check-in record: %w", err)
 	}
-	if err := s.userRepo.UpdateBalance(txCtx, userID, reward); err != nil {
-		return nil, fmt.Errorf("update check-in balance: %w", err)
+	// 签到额度只增加余额，不计入 total_recharged（累计充值）：它是签到奖励而不是充值，
+	// 计入会抬高按累计充值百分比计算的余额不足提醒阈值。也不做非负校验，透支用户同样可以签到。
+	if err := tx.User.UpdateOneID(userID).AddBalance(reward).Exec(txCtx); err != nil {
+		if dbent.IsNotFound(err) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("credit check-in balance: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit check-in transaction: %w", err)
 	}
+	s.invalidateBalanceCaches(ctx, userID)
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("reload check-in balance: %w", err)
@@ -318,6 +330,22 @@ func (s *CheckInService) PerformCheckIn(ctx context.Context, userID int64, proof
 		return nil, err
 	}
 	return &CheckInResult{Reward: reward, Balance: user.Balance, CheckInDate: todayDate, StreakDays: status.StreakDays}, nil
+}
+
+// invalidateBalanceCaches 与兑换码充值一致：余额变更后清理鉴权缓存与计费余额缓存，
+// 否则网关在缓存过期前仍按旧余额校验，刚领到的签到额度无法立即使用。
+func (s *CheckInService) invalidateBalanceCaches(ctx context.Context, userID int64) {
+	if s.authCacheInvalidator != nil {
+		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
+	}
+	if s.billingCacheService == nil {
+		return
+	}
+	go func() {
+		cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = s.billingCacheService.InvalidateUserBalance(cacheCtx, userID)
+	}()
 }
 
 func (s *CheckInService) drawReward(tiers []CheckInTier) (int, float64, error) {

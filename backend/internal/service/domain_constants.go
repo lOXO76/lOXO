@@ -174,6 +174,8 @@ const (
 	RedeemTypeSubscription     = domain.RedeemTypeSubscription
 	RedeemTypeInvitation       = domain.RedeemTypeInvitation
 	RedeemTypeAffiliateBalance = "affiliate_balance"
+	// RedeemTypeCheckIn 仅用于余额流水展示：由 user_check_ins 合成，不对应真实兑换码。
+	RedeemTypeCheckIn = "check_in"
 )
 
 // PromoCode status constants

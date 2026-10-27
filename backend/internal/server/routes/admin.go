@@ -140,6 +140,9 @@ func RegisterAdminRoutes(
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h)
 
+		// 每日签到统计与明细
+		registerCheckInRoutes(admin, h)
+
 		// 操作审计日志
 		registerAuditLogRoutes(admin, h, stepUpAuth)
 	}
@@ -854,6 +857,15 @@ func registerChannelMonitorRoutes(admin *gin.RouterGroup, h *handler.Handlers, s
 		templates.DELETE("/:id", h.Admin.ChannelMonitorTemplate.Delete)
 		templates.GET("/:id/monitors", h.Admin.ChannelMonitorTemplate.AssociatedMonitors)
 		templates.POST("/:id/apply", h.Admin.ChannelMonitorTemplate.Apply)
+	}
+}
+
+// registerCheckInRoutes 注册每日签到的管理端统计与明细路由
+func registerCheckInRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	checkIns := admin.Group("/check-ins")
+	{
+		checkIns.GET("/stats", h.Admin.CheckIn.GetStats)
+		checkIns.GET("/records", h.Admin.CheckIn.ListRecords)
 	}
 }
 
