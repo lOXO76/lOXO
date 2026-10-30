@@ -15,6 +15,22 @@
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('apiDocs.keySelectHint') }}</p>
       </div>
 
+      <div class="flex gap-2 overflow-x-auto pb-1" role="group" data-test="api-docs-categories" :aria-label="t('apiDocs.categories')">
+        <button
+          v-for="category in categories"
+          :key="category.id"
+          type="button"
+          data-test="api-docs-category"
+          :data-category-id="category.id"
+          :aria-pressed="docs.id === category.id"
+          class="shrink-0 rounded-lg border px-4 py-2 text-sm font-medium"
+          :class="docs.id === category.id
+            ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-500'
+            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-300 dark:hover:bg-dark-700'"
+          @click="selectCategory(category.id)"
+        >{{ category.category }}</button>
+      </div>
+
       <div class="lg:flex lg:items-start lg:gap-6">
         <nav :aria-label="t('apiDocs.contents')" data-test="api-docs-toc" class="mb-4 flex gap-2 overflow-x-auto pb-1 lg:sticky lg:top-20 lg:mb-0 lg:max-h-[calc(100vh-6rem)] lg:w-56 lg:shrink-0 lg:flex-col lg:overflow-y-auto">
           <span class="shrink-0 rounded-md bg-primary-50 px-3 py-1.5 text-sm font-medium text-primary-700 dark:bg-primary-950 dark:text-primary-300">{{ docs.category }}</span>
@@ -30,12 +46,12 @@
 
           <div class="shrink-0 lg:w-full">
             <a
-              href="#api-docs-protocols"
+              :href="`#api-docs-${docs.protocolsId}`"
               data-test="api-docs-toc-protocols"
-              data-toc-id="protocols"
-              @click.prevent="jumpTo('protocols')"
+              :data-toc-id="docs.protocolsId"
+              @click.prevent="jumpTo(docs.protocolsId)"
               class="block rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-dark-700"
-              :class="tocItemClass('protocols')"
+              :class="tocItemClass(docs.protocolsId)"
             >{{ docs.protocolsTitle }}</a>
             <div class="pl-2">
               <div v-for="protocol in docs.protocols" :key="protocol.id" class="mt-1">
@@ -107,7 +123,7 @@
             <DocBlocks class="mt-3" :blocks="section.blocks" :resolve-code="resolveCode" />
           </section>
 
-          <section id="api-docs-protocols" data-scrollspy-id="protocols" class="card scroll-mt-20 p-5">
+          <section :id="`api-docs-${docs.protocolsId}`" :data-scrollspy-id="docs.protocolsId" class="card scroll-mt-20 p-5">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ docs.protocolsTitle }}</h2>
             <select id="api-docs-protocol" v-model="activeProtocol" class="input mt-4 md:hidden" :aria-label="docs.protocolsTitle">
               <option v-for="protocol in docs.protocols" :key="protocol.id" :value="protocol.id">{{ protocol.name }}</option>
@@ -138,7 +154,7 @@
                 <option value="">{{ docs.protocolsTitle }}</option>
                 <option v-for="example in protocolExamples(protocol)" :key="example.id" :value="example.id">{{ example.title }}</option>
               </select>
-              <div v-for="section in protocol.sections" :id="`api-docs-${protocol.id}-${section.id}`" :data-scrollspy-id="protocolSectionToken(protocol.id, section.id)" :key="section.id" class="scroll-mt-20">
+              <div v-for="section in protocol.sections" :id="`api-docs-${protocol.id}-${section.id}`" :data-scrollspy-id="protocolSectionToken(protocol.id, section.id)" data-scrollspy-depth="1" :key="section.id" class="scroll-mt-20">
                 <h3 class="font-medium text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
                 <DocBlocks class="mt-3" :blocks="section.blocks" :resolve-code="resolveCode" :example-prefix="protocol.id" />
               </div>
@@ -163,13 +179,14 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import DocBlocks from '@/components/docs/DocBlocks.vue'
 import { keysAPI } from '@/api/keys'
 import type { ApiKey } from '@/types'
-import type { VideoDocsContent } from '@/docs/video/types'
-import zhDocs from '@/docs/video/zh'
-import enDocs from '@/docs/video/en'
+import type { DocsCategory } from '@/docs/types'
+import { enCategories, zhCategories } from '@/docs'
 
 const { t, locale } = useI18n()
 const router = useRouter()
-const docs = computed<VideoDocsContent>(() => (locale.value === 'zh' ? zhDocs : enDocs))
+const categories = computed<DocsCategory[]>(() => (locale.value === 'zh' ? zhCategories : enCategories))
+const activeCategoryId = ref(categories.value[0]!.id)
+const docs = computed<DocsCategory>(() => categories.value.find(category => category.id === activeCategoryId.value) ?? categories.value[0]!)
 
 const SELECTED_KEY_STORAGE = 'apiDocs.selectedKeyId'
 
@@ -185,9 +202,10 @@ function readStoredKeyId(): number {
 
 const apiKeys = ref<ApiKey[]>([])
 const selectedKeyId = ref(readStoredKeyId())
-const activeProtocol = ref('seedance')
-const activeTocId = ref('seedance')
-const expandedProtocols = ref<Set<string>>(new Set(['seedance']))
+const initialProtocolId = docs.value.protocols[0]?.id ?? ''
+const activeProtocol = ref(initialProtocolId)
+const activeTocId = ref(initialProtocolId)
+const expandedProtocols = ref<Set<string>>(new Set(initialProtocolId ? [initialProtocolId] : []))
 const selectedExamples = ref<Record<string, string>>({})
 let scrollSpy: IntersectionObserver | null = null
 // While a catalog jump scrolls smoothly, sections it passes must not steal
@@ -210,7 +228,7 @@ watch(selectedKeyId, id => {
 const baseUrl = window.location.origin.replace(/\/$/, '')
 const exampleKey = computed(() => apiKeys.value.find(key => key.id === selectedKeyId.value)?.key || 'sk-YOUR_KEY')
 
-type Protocol = VideoDocsContent['protocols'][number]
+type Protocol = DocsCategory['protocols'][number]
 type ExampleSummary = { id: string, title: string }
 
 function sectionExamples(section: Protocol['sections'][number]): ExampleSummary[] {
@@ -255,6 +273,34 @@ function toggleProtocol(protocolId: string): void {
   if (next.has(protocolId)) next.delete(protocolId)
   else next.add(protocolId)
   expandedProtocols.value = next
+}
+
+function categoryHasToken(category: DocsCategory, token: string): boolean {
+  if (token === category.protocolsId) return true
+  if ([...category.beforeProtocols, ...category.afterProtocols].some(section => section.id === token)) return true
+  return category.protocols.some(protocol => token === protocol.id || token.startsWith(`${protocol.id}-`))
+}
+
+// Shows a category and resets the protocol tab state to its first protocol.
+// Returns false when the category is already active or unknown.
+function activateCategory(categoryId: string): boolean {
+  if (categoryId === docs.value.id || !categories.value.some(category => category.id === categoryId)) return false
+  activeCategoryId.value = categoryId
+  const firstProtocolId = docs.value.protocols[0]?.id ?? ''
+  activeProtocol.value = firstProtocolId
+  expandedProtocols.value = new Set(firstProtocolId ? [firstProtocolId] : [])
+  selectedExamples.value = {}
+  return true
+}
+
+async function selectCategory(categoryId: string): Promise<void> {
+  if (!activateCategory(categoryId)) return
+  await nextTick()
+  setupScrollSpy()
+  // Record the category in the hash so a reload or shared link reopens it.
+  const firstToken = docs.value.beforeProtocols[0]?.id ?? docs.value.protocolsId
+  activeTocId.value = firstToken
+  history.replaceState(history.state, '', `#api-docs-${firstToken}`)
 }
 
 function maskKey(key: string): string {
@@ -311,6 +357,11 @@ function onExampleSelect(protocolId: string, event: Event): void {
 }
 
 async function navigateToToken(token: string, behavior: 'auto' | 'smooth' = 'auto'): Promise<void> {
+  const category = categories.value.find(item => categoryHasToken(item, token))
+  if (category && activateCategory(category.id)) {
+    await nextTick()
+    setupScrollSpy()
+  }
   const protocol = docs.value.protocols.find(item => token === item.id || token.startsWith(`${item.id}-`))
   if (!protocol) {
     jumpTo(token, behavior)
@@ -340,15 +391,11 @@ function setupScrollSpy(): void {
   const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-scrollspy-id]'))
   scrollSpy = new IntersectionObserver(entries => {
     if (performance.now() < spyLockedUntil) return
+    // Prefer the most specific visible target: example > protocol section > card.
+    const depth = (element: HTMLElement): number => element.matches('[data-doc-example-id]') ? 2 : Number(element.dataset.scrollspyDepth || 0)
     const visible = entries
       .filter(entry => entry.isIntersecting !== false)
-      .sort((left, right) => {
-        const leftElement = left.target as HTMLElement
-        const rightElement = right.target as HTMLElement
-        const leftDepth = leftElement.matches('[data-doc-example-id]') ? 2 : leftElement.dataset.scrollspyId?.includes('-') ? 1 : 0
-        const rightDepth = rightElement.matches('[data-doc-example-id]') ? 2 : rightElement.dataset.scrollspyId?.includes('-') ? 1 : 0
-        return rightDepth - leftDepth || left.boundingClientRect.top - right.boundingClientRect.top
-      })
+      .sort((left, right) => depth(right.target as HTMLElement) - depth(left.target as HTMLElement) || left.boundingClientRect.top - right.boundingClientRect.top)
     const current = visible[0]?.target as HTMLElement | undefined
     const token = current?.dataset.scrollspyId
     if (!token) return
@@ -373,11 +420,23 @@ watch(locale, async () => {
   setupScrollSpy()
 })
 
+function currentHashToken(): string {
+  return window.location.hash.startsWith('#api-docs-') ? window.location.hash.slice('#api-docs-'.length) : ''
+}
+
+// Hash-only navigation does not remount the view, so a shared or hand-edited
+// #api-docs-{token} link must be resolved here as well.
+function onHashChange(): void {
+  const token = currentHashToken()
+  if (token) void navigateToToken(token, 'auto')
+}
+
 onMounted(async () => {
-  const initial = window.location.hash.startsWith('#api-docs-') ? window.location.hash.slice('#api-docs-'.length) : ''
+  const initial = currentHashToken()
   await nextTick()
   setupScrollSpy()
   window.addEventListener('scrollend', unlockScrollSpy)
+  window.addEventListener('hashchange', onHashChange)
   if (initial) {
     // Wait for the router's own scroll-to-top after the initial navigation.
     await router?.isReady()
@@ -398,6 +457,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('scrollend', unlockScrollSpy)
+  window.removeEventListener('hashchange', onHashChange)
   scrollSpy?.disconnect()
   scrollSpy = null
 })

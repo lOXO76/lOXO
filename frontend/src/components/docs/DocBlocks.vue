@@ -81,7 +81,7 @@
 import { onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useClipboard } from '@/composables/useClipboard'
-import type { DocBlock } from '@/docs/video/types'
+import type { DocBlock } from '@/docs/types'
 
 const props = defineProps<{
   blocks: DocBlock[]

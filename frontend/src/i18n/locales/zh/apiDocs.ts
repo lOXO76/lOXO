@@ -1,8 +1,9 @@
 export default {
   "apiDocs": {
     "title": "API 文档",
-    "description": "面向持有系统 API Key 的开发者对接参考。",
+    "description": "面向持有系统 API Key 的开发者对接参考，涵盖文本对话、图片生成与视频生成。",
     "contents": "目录",
+    "categories": "接口分类",
     "keySelectLabel": "示例中使用的 API Key",
     "keyPlaceholderOption": "不填入 Key（使用占位符）",
     "keySelectHint": "选择后示例使用完整 Key；未选择时示例显示 sk-YOUR_KEY 占位符。",

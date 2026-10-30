@@ -72,11 +72,19 @@ export interface DocProtocol {
   sections: DocSection[]
 }
 
-export interface VideoDocsContent {
+export interface DocsCategory {
+  /** Stable category id, e.g. chat / image / video. */
+  id: string
   /** Category name shown in the catalog, e.g. 视频生成 / Video Generation. */
   category: string
   /** Sections rendered before the protocol tabs: overview, billing, download. */
   beforeProtocols: DocSection[]
+  /**
+   * Anchor id of the section that hosts the per-protocol tabs. Every section,
+   * protocol and example id must be unique across all categories, because
+   * deep links (#api-docs-{id}) are resolved without a category prefix.
+   */
+  protocolsId: string
   /** Title of the section that hosts the per-protocol tabs. */
   protocolsTitle: string
   protocols: DocProtocol[]

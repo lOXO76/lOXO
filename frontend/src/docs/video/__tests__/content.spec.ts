@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import zh from '../zh'
 import en from '../en'
-import type { DocBlock, DocSection, VideoDocsContent } from '../types'
+import type { DocBlock, DocSection, DocsCategory } from '../../types'
 
 const OPAQUE_RESOURCES = [
   'c2VlZGFuY2U6Y2d0LWV4YW1wbGUtdGFzay1pZA',
@@ -17,7 +17,7 @@ const FORBIDDEN_RAW_ID_URLS = [
   '/v1/video-tasks/models/'
 ]
 
-function allSections(docs: VideoDocsContent): DocSection[] {
+function allSections(docs: DocsCategory): DocSection[] {
   return [
     ...docs.beforeProtocols,
     ...docs.protocols.flatMap(protocol => protocol.sections),
@@ -25,26 +25,26 @@ function allSections(docs: VideoDocsContent): DocSection[] {
   ]
 }
 
-function allBlocks(docs: VideoDocsContent): DocBlock[] {
+function allBlocks(docs: DocsCategory): DocBlock[] {
   return allSections(docs).flatMap(section => section.blocks)
 }
 
-function serialized(docs: VideoDocsContent): string {
+function serialized(docs: DocsCategory): string {
   return JSON.stringify(docs)
 }
 
-function protocolExamples(protocol: VideoDocsContent['protocols'][number]) {
+function protocolExamples(protocol: DocsCategory['protocols'][number]) {
   return protocol.sections
     .flatMap(section => section.blocks)
     .filter((block): block is Extract<DocBlock, { type: 'example' }> => block.type === 'example')
 }
 
-function responseTables(protocol: VideoDocsContent['protocols'][number]) {
+function responseTables(protocol: DocsCategory['protocols'][number]) {
   const endpointSection = protocol.sections.find(section => section.id.endsWith('-endpoints'))
   return (endpointSection?.blocks ?? []).filter((block): block is Extract<DocBlock, { type: 'table' }> => block.type === 'table').slice(1)
 }
 
-function examples(docs: VideoDocsContent) {
+function examples(docs: DocsCategory) {
   return docs.protocols.flatMap(protocol => protocol.sections.flatMap(section => section.blocks.filter((block): block is Extract<DocBlock, { type: 'example' }> => block.type === 'example')))
 }
 
@@ -225,7 +225,7 @@ describe('video docs content', () => {
   })
 
   it('has the same number of error-code rows in both locales', () => {
-    const errorRows = (docs: VideoDocsContent) => {
+    const errorRows = (docs: DocsCategory) => {
       const section = docs.afterProtocols.find(entry => entry.id === 'errors')!
       const table = section.blocks.find((block): block is Extract<DocBlock, { type: 'table' }> => block.type === 'table')!
       return table.rows.length

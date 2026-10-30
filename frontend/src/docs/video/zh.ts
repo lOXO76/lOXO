@@ -1,6 +1,7 @@
-import type { DocBlock, DocExample, VideoDocsContent } from './types'
+import type { DocBlock, DocExample, DocsCategory } from '../types'
 
-const zhBase: VideoDocsContent = {
+const zhBase: DocsCategory = {
+  id: 'video',
   category: '视频生成',
   beforeProtocols: [
     {
@@ -72,6 +73,7 @@ const zhBase: VideoDocsContent = {
       ]
     }
   ],
+  protocolsId: 'protocols',
   protocolsTitle: '按协议接入',
   protocols: [
     {
@@ -703,7 +705,7 @@ const exampleSpecs: Record<string, ExampleSpec[]> = {
   ]
 }
 
-function enrichDocs(base: VideoDocsContent): VideoDocsContent {
+function enrichDocs(base: DocsCategory): DocsCategory {
   const formatJson = (value: string): string => {
     try {
       return JSON.stringify(JSON.parse(value), null, 2)
