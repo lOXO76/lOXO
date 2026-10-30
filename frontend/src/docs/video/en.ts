@@ -1,6 +1,7 @@
-import type { DocBlock, DocExample, VideoDocsContent } from './types'
+import type { DocBlock, DocExample, DocsCategory } from '../types'
 
-const enBase: VideoDocsContent = {
+const enBase: DocsCategory = {
+  id: 'video',
   category: 'Video Generation',
   beforeProtocols: [
     {
@@ -72,6 +73,7 @@ const enBase: VideoDocsContent = {
       ]
     }
   ],
+  protocolsId: 'protocols',
   protocolsTitle: 'Per-Protocol Integration',
   protocols: [
     {
@@ -703,7 +705,7 @@ const exampleSpecs: Record<string, ExampleSpec[]> = {
   ]
 }
 
-function enrichDocs(base: VideoDocsContent): VideoDocsContent {
+function enrichDocs(base: DocsCategory): DocsCategory {
   const formatJson = (value: string): string => {
     try {
       return JSON.stringify(JSON.parse(value), null, 2)

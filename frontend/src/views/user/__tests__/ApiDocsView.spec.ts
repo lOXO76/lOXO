@@ -35,6 +35,20 @@ function render() {
   })
 }
 
+type Wrapper = ReturnType<typeof render>
+
+async function showCategory(wrapper: Wrapper, id: string) {
+  await wrapper.get(`[data-test="api-docs-category"][data-category-id="${id}"]`).trigger('click')
+  await flushPromises()
+}
+
+async function renderVideo() {
+  const wrapper = render()
+  await flushPromises()
+  await showCategory(wrapper, 'video')
+  return wrapper
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   sessionStorage.clear()
@@ -50,9 +64,82 @@ beforeEach(() => {
 })
 
 describe('ApiDocsView', () => {
-  it('renders the video category, catalog entries and all four protocol tabs', async () => {
+  it('opens the text chat category by default and lists every category', async () => {
     const wrapper = render()
     await flushPromises()
+    const buttons = wrapper.findAll('[data-test="api-docs-category"]')
+    expect(buttons.map(button => button.text())).toEqual(['Text Chat', 'Image Generation', 'Video Generation'])
+    expect(buttons[0]!.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('[role="tab"]').map(tab => tab.text())).toEqual(['OpenAI', 'Anthropic', 'Google Gemini'])
+    expect(wrapper.find('[data-protocol="seedance"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('switches categories, resets the protocol tabs and records the category in the hash', async () => {
+    const replaceState = vi.spyOn(window.history, 'replaceState')
+    const wrapper = render()
+    await flushPromises()
+    try {
+      await showCategory(wrapper, 'image')
+      expect(wrapper.get('[data-category-id="image"]').attributes('aria-pressed')).toBe('true')
+      expect(wrapper.get('[data-category-id="chat"]').attributes('aria-pressed')).toBe('false')
+      expect(wrapper.findAll('[role="tab"]')[0]!.attributes('aria-selected')).toBe('true')
+      expect(wrapper.get('[data-protocol="image-sync"]').isVisible()).toBe(true)
+      expect(wrapper.find('[data-protocol="chat-openai"]').exists()).toBe(false)
+      expect(replaceState).toHaveBeenLastCalledWith(window.history.state, '', '#api-docs-image-overview')
+      expect(wrapper.get('[data-test="api-docs-toc-protocols"]').attributes('href')).toBe('#api-docs-image-protocols')
+    } finally {
+      replaceState.mockRestore()
+      wrapper.unmount()
+    }
+  })
+
+  it('opens the category that owns a deep-linked example', async () => {
+    window.history.replaceState(null, '', '#api-docs-image-async-query')
+    const scrollIntoView = vi.fn()
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = scrollIntoView
+    const wrapper = render()
+    try {
+      await flushPromises()
+      await new Promise(resolve => window.setTimeout(resolve, 25))
+      await nextTick()
+      expect(wrapper.get('[data-category-id="image"]').attributes('aria-pressed')).toBe('true')
+      expect((wrapper.get('#api-docs-protocol').element as HTMLSelectElement).value).toBe('image-async')
+      expect(scrollIntoView.mock.contexts.some(context => context === wrapper.get('#api-docs-image-async-query').element)).toBe(true)
+    } finally {
+      Element.prototype.scrollIntoView = original
+      wrapper.unmount()
+    }
+  })
+
+  it('resolves a hash change without a remount, switching to the owning category', async () => {
+    const scrollIntoView = vi.fn()
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = scrollIntoView
+    const wrapper = render()
+    await flushPromises()
+    try {
+      expect(wrapper.get('[data-category-id="chat"]').attributes('aria-pressed')).toBe('true')
+      window.location.hash = '#api-docs-minimax-v1-query'
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+      // The jump waits for router.isReady() and one render tick.
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        await flushPromises()
+        await nextTick()
+        if (wrapper.get('[data-category-id="video"]').attributes('aria-pressed') === 'true') break
+      }
+      expect(wrapper.get('[data-category-id="video"]').attributes('aria-pressed')).toBe('true')
+      expect((wrapper.get('#api-docs-protocol').element as HTMLSelectElement).value).toBe('minimax-v1')
+      expect(scrollIntoView.mock.contexts.some(context => context === wrapper.get('#api-docs-minimax-v1-query').element)).toBe(true)
+    } finally {
+      Element.prototype.scrollIntoView = original
+      wrapper.unmount()
+    }
+  })
+
+  it('renders the video category, catalog entries and all four protocol tabs', async () => {
+    const wrapper = await renderVideo()
     expect(wrapper.text()).toContain('Video Generation')
     for (const anchor of ['Overview', 'Billing & Balance', 'Downloading Results', 'Per-Protocol Integration', 'Request Validation Rules', 'Error Codes']) {
       expect(wrapper.text()).toContain(anchor)
@@ -64,8 +151,7 @@ describe('ApiDocsView', () => {
   })
 
   it('switches protocol tabs and toggles panel visibility', async () => {
-    const wrapper = render()
-    await flushPromises()
+    const wrapper = await renderVideo()
     expect(wrapper.get('[data-protocol="seedance"]').isVisible()).toBe(true)
     expect(wrapper.get('[data-protocol="gemini"]').isVisible()).toBe(false)
     const tabs = wrapper.findAll('[role="tab"]')
@@ -113,8 +199,7 @@ describe('ApiDocsView', () => {
   })
 
   it('switches the docs body between English and Chinese with the locale', async () => {
-    const wrapper = render()
-    await flushPromises()
+    const wrapper = await renderVideo()
     expect(wrapper.text()).toContain('Overview')
     expect(wrapper.text()).not.toContain('概览')
     mocks.setLocale('zh')
@@ -122,6 +207,8 @@ describe('ApiDocsView', () => {
     expect(wrapper.text()).toContain('概览')
     expect(wrapper.text()).toContain('计费与余额')
     expect(wrapper.text()).not.toContain('Billing & Balance')
+    expect(wrapper.get('[data-category-id="video"]').text()).toBe('视频生成')
+    expect(wrapper.get('[data-category-id="video"]').attributes('aria-pressed')).toBe('true')
     mocks.setLocale('en')
     await nextTick()
     expect(wrapper.text()).toContain('Billing & Balance')
@@ -165,9 +252,8 @@ describe('ApiDocsView', () => {
     const scrollIntoView = vi.fn()
     const original = Element.prototype.scrollIntoView
     Element.prototype.scrollIntoView = scrollIntoView
+    const wrapper = await renderVideo()
     const replaceState = vi.spyOn(window.history, 'replaceState')
-    const wrapper = render()
-    await flushPromises()
     try {
       const link = wrapper.get('[data-test="api-docs-toc"] a[href="#api-docs-errors"]')
       const event = new MouseEvent('click', { bubbles: true, cancelable: true })
@@ -184,8 +270,7 @@ describe('ApiDocsView', () => {
   })
 
   it('renders a mobile protocol select that mirrors the tab list', async () => {
-    const wrapper = render()
-    await flushPromises()
+    const wrapper = await renderVideo()
     const select = wrapper.get('#api-docs-protocol')
     expect(select.classes()).toContain('md:hidden')
     expect(select.findAll('option').map(option => option.text())).toEqual([
@@ -201,8 +286,7 @@ describe('ApiDocsView', () => {
   })
 
   it('renders one protocol directory with interface and example children per protocol', async () => {
-    const wrapper = render()
-    await flushPromises()
+    const wrapper = await renderVideo()
     expect(wrapper.findAll('[data-test="api-docs-toc-protocol"]')).toHaveLength(4)
     expect(wrapper.findAll('[data-test="api-docs-toc-interface"]').length).toBeGreaterThan(0)
     const tocExamples = wrapper.findAll('[data-test="api-docs-toc-example"]')
@@ -218,16 +302,25 @@ describe('ApiDocsView', () => {
   it('keeps each protocol directory anchor order identical to the page DOM order', async () => {
     const wrapper = render()
     await flushPromises()
-    const toc = wrapper.get('[data-test="api-docs-toc"]')
-    for (const protocol of ['seedance', 'gemini', 'minimax-v2', 'minimax-v1']) {
-      const tocOrder = toc.findAll('[data-protocol-id]')
-        .filter(item => ['api-docs-toc-interface', 'api-docs-toc-example'].includes(item.attributes('data-test') || ''))
-        .filter(item => item.attributes('data-protocol-id') === protocol)
-        .map(item => item.attributes('data-toc-id'))
-      const pageOrder = wrapper.get(`[data-protocol="${protocol}"]`).findAll('[data-scrollspy-id]')
-        .map(item => item.attributes('data-scrollspy-id'))
-        .filter(token => token?.startsWith(`${protocol}-`))
-      expect(tocOrder).toEqual(pageOrder)
+    const protocolsByCategory: Record<string, string[]> = {
+      chat: ['chat-openai', 'chat-anthropic', 'chat-gemini'],
+      image: ['image-sync', 'image-async', 'image-gemini'],
+      video: ['seedance', 'gemini', 'minimax-v2', 'minimax-v1']
+    }
+    for (const [category, protocols] of Object.entries(protocolsByCategory)) {
+      await showCategory(wrapper, category)
+      const toc = wrapper.get('[data-test="api-docs-toc"]')
+      for (const protocol of protocols) {
+        const tocOrder = toc.findAll('[data-protocol-id]')
+          .filter(item => ['api-docs-toc-interface', 'api-docs-toc-example'].includes(item.attributes('data-test') || ''))
+          .filter(item => item.attributes('data-protocol-id') === protocol)
+          .map(item => item.attributes('data-toc-id'))
+        const pageOrder = wrapper.get(`[data-protocol="${protocol}"]`).findAll('[data-scrollspy-id]')
+          .map(item => item.attributes('data-scrollspy-id'))
+          .filter(token => token?.startsWith(`${protocol}-`))
+        expect(tocOrder.length).toBeGreaterThan(0)
+        expect(tocOrder).toEqual(pageOrder)
+      }
     }
     wrapper.unmount()
   })
@@ -236,9 +329,8 @@ describe('ApiDocsView', () => {
     const scrollIntoView = vi.fn()
     const original = Element.prototype.scrollIntoView
     Element.prototype.scrollIntoView = scrollIntoView
+    const wrapper = await renderVideo()
     const replaceState = vi.spyOn(window.history, 'replaceState')
-    const wrapper = render()
-    await flushPromises()
     try {
       const link = wrapper.get('[data-test="api-docs-toc-example"][data-protocol-id="gemini"][data-example-id="query"]')
       await link.trigger('click')
@@ -265,8 +357,7 @@ describe('ApiDocsView', () => {
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
     const original = Element.prototype.scrollIntoView
     Element.prototype.scrollIntoView = vi.fn()
-    const wrapper = render()
-    await flushPromises()
+    const wrapper = await renderVideo()
     const exampleLink = (protocol: string, example: string) => wrapper.get(`[data-test="api-docs-toc-example"][data-protocol-id="${protocol}"][data-example-id="${example}"]`)
     try {
       await exampleLink('minimax-v2', 'reference-image').trigger('click')
@@ -322,11 +413,12 @@ describe('ApiDocsView', () => {
       }
     }
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
+    const wrapper = await renderVideo()
     const replaceState = vi.spyOn(window.history, 'replaceState')
-    const wrapper = render()
-    await flushPromises()
     try {
-      expect(observers).toHaveLength(1)
+      // Switching category rebuilds the observer; earlier ones are released.
+      expect(observers).toHaveLength(2)
+      expect(observers[0]!.disconnect).toHaveBeenCalled()
       const target = wrapper.get('#api-docs-gemini-reference-image').element
       callback?.([{ isIntersecting: true, target, boundingClientRect: { top: 10 } }])
       await nextTick()
