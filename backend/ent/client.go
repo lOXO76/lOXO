@@ -30,6 +30,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/compositemodelroute"
+	"github.com/Wei-Shaw/sub2api/ent/degradationprobe"
+	"github.com/Wei-Shaw/sub2api/ent/degradationrun"
+	"github.com/Wei-Shaw/sub2api/ent/degradationtarget"
 	"github.com/Wei-Shaw/sub2api/ent/enterprise"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseauditlog"
@@ -103,6 +106,12 @@ type Client struct {
 	ChannelMonitorRequestTemplate *ChannelMonitorRequestTemplateClient
 	// CompositeModelRoute is the client for interacting with the CompositeModelRoute builders.
 	CompositeModelRoute *CompositeModelRouteClient
+	// DegradationProbe is the client for interacting with the DegradationProbe builders.
+	DegradationProbe *DegradationProbeClient
+	// DegradationRun is the client for interacting with the DegradationRun builders.
+	DegradationRun *DegradationRunClient
+	// DegradationTarget is the client for interacting with the DegradationTarget builders.
+	DegradationTarget *DegradationTargetClient
 	// Enterprise is the client for interacting with the Enterprise builders.
 	Enterprise *EnterpriseClient
 	// EnterpriseAllowedGroup is the client for interacting with the EnterpriseAllowedGroup builders.
@@ -197,6 +206,9 @@ func (c *Client) init() {
 	c.ChannelMonitorHistory = NewChannelMonitorHistoryClient(c.config)
 	c.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(c.config)
 	c.CompositeModelRoute = NewCompositeModelRouteClient(c.config)
+	c.DegradationProbe = NewDegradationProbeClient(c.config)
+	c.DegradationRun = NewDegradationRunClient(c.config)
+	c.DegradationTarget = NewDegradationTargetClient(c.config)
 	c.Enterprise = NewEnterpriseClient(c.config)
 	c.EnterpriseAllowedGroup = NewEnterpriseAllowedGroupClient(c.config)
 	c.EnterpriseAuditLog = NewEnterpriseAuditLogClient(c.config)
@@ -338,6 +350,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
 		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
 		CompositeModelRoute:           NewCompositeModelRouteClient(cfg),
+		DegradationProbe:              NewDegradationProbeClient(cfg),
+		DegradationRun:                NewDegradationRunClient(cfg),
+		DegradationTarget:             NewDegradationTargetClient(cfg),
 		Enterprise:                    NewEnterpriseClient(cfg),
 		EnterpriseAllowedGroup:        NewEnterpriseAllowedGroupClient(cfg),
 		EnterpriseAuditLog:            NewEnterpriseAuditLogClient(cfg),
@@ -406,6 +421,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
 		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
 		CompositeModelRoute:           NewCompositeModelRouteClient(cfg),
+		DegradationProbe:              NewDegradationProbeClient(cfg),
+		DegradationRun:                NewDegradationRunClient(cfg),
+		DegradationTarget:             NewDegradationTargetClient(cfg),
 		Enterprise:                    NewEnterpriseClient(cfg),
 		EnterpriseAllowedGroup:        NewEnterpriseAllowedGroupClient(cfg),
 		EnterpriseAuditLog:            NewEnterpriseAuditLogClient(cfg),
@@ -473,7 +491,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.BatchImageEvent, c.BatchImageItem,
 		c.BatchImageJob, c.ChannelMonitor, c.ChannelMonitorDailyRollup,
 		c.ChannelMonitorHistory, c.ChannelMonitorRequestTemplate,
-		c.CompositeModelRoute, c.Enterprise, c.EnterpriseAllowedGroup,
+		c.CompositeModelRoute, c.DegradationProbe, c.DegradationRun,
+		c.DegradationTarget, c.Enterprise, c.EnterpriseAllowedGroup,
 		c.EnterpriseAuditLog, c.EnterpriseBalanceLog, c.EnterpriseDepartment,
 		c.EnterpriseGroupWhitelist, c.EnterpriseGroupWhitelistScope,
 		c.EnterpriseMember, c.EnterpriseQuota, c.ErrorPassthroughRule, c.Group,
@@ -496,7 +515,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.BatchImageEvent, c.BatchImageItem,
 		c.BatchImageJob, c.ChannelMonitor, c.ChannelMonitorDailyRollup,
 		c.ChannelMonitorHistory, c.ChannelMonitorRequestTemplate,
-		c.CompositeModelRoute, c.Enterprise, c.EnterpriseAllowedGroup,
+		c.CompositeModelRoute, c.DegradationProbe, c.DegradationRun,
+		c.DegradationTarget, c.Enterprise, c.EnterpriseAllowedGroup,
 		c.EnterpriseAuditLog, c.EnterpriseBalanceLog, c.EnterpriseDepartment,
 		c.EnterpriseGroupWhitelist, c.EnterpriseGroupWhitelistScope,
 		c.EnterpriseMember, c.EnterpriseQuota, c.ErrorPassthroughRule, c.Group,
@@ -544,6 +564,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ChannelMonitorRequestTemplate.mutate(ctx, m)
 	case *CompositeModelRouteMutation:
 		return c.CompositeModelRoute.mutate(ctx, m)
+	case *DegradationProbeMutation:
+		return c.DegradationProbe.mutate(ctx, m)
+	case *DegradationRunMutation:
+		return c.DegradationRun.mutate(ctx, m)
+	case *DegradationTargetMutation:
+		return c.DegradationTarget.mutate(ctx, m)
 	case *EnterpriseMutation:
 		return c.Enterprise.mutate(ctx, m)
 	case *EnterpriseAllowedGroupMutation:
@@ -2966,6 +2992,409 @@ func (c *CompositeModelRouteClient) mutate(ctx context.Context, m *CompositeMode
 		return (&CompositeModelRouteDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CompositeModelRoute mutation op: %q", m.Op())
+	}
+}
+
+// DegradationProbeClient is a client for the DegradationProbe schema.
+type DegradationProbeClient struct {
+	config
+}
+
+// NewDegradationProbeClient returns a client for the DegradationProbe from the given config.
+func NewDegradationProbeClient(c config) *DegradationProbeClient {
+	return &DegradationProbeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `degradationprobe.Hooks(f(g(h())))`.
+func (c *DegradationProbeClient) Use(hooks ...Hook) {
+	c.hooks.DegradationProbe = append(c.hooks.DegradationProbe, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `degradationprobe.Intercept(f(g(h())))`.
+func (c *DegradationProbeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DegradationProbe = append(c.inters.DegradationProbe, interceptors...)
+}
+
+// Create returns a builder for creating a DegradationProbe entity.
+func (c *DegradationProbeClient) Create() *DegradationProbeCreate {
+	mutation := newDegradationProbeMutation(c.config, OpCreate)
+	return &DegradationProbeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DegradationProbe entities.
+func (c *DegradationProbeClient) CreateBulk(builders ...*DegradationProbeCreate) *DegradationProbeCreateBulk {
+	return &DegradationProbeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DegradationProbeClient) MapCreateBulk(slice any, setFunc func(*DegradationProbeCreate, int)) *DegradationProbeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DegradationProbeCreateBulk{err: fmt.Errorf("calling to DegradationProbeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DegradationProbeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DegradationProbeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DegradationProbe.
+func (c *DegradationProbeClient) Update() *DegradationProbeUpdate {
+	mutation := newDegradationProbeMutation(c.config, OpUpdate)
+	return &DegradationProbeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DegradationProbeClient) UpdateOne(_m *DegradationProbe) *DegradationProbeUpdateOne {
+	mutation := newDegradationProbeMutation(c.config, OpUpdateOne, withDegradationProbe(_m))
+	return &DegradationProbeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DegradationProbeClient) UpdateOneID(id int64) *DegradationProbeUpdateOne {
+	mutation := newDegradationProbeMutation(c.config, OpUpdateOne, withDegradationProbeID(id))
+	return &DegradationProbeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DegradationProbe.
+func (c *DegradationProbeClient) Delete() *DegradationProbeDelete {
+	mutation := newDegradationProbeMutation(c.config, OpDelete)
+	return &DegradationProbeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DegradationProbeClient) DeleteOne(_m *DegradationProbe) *DegradationProbeDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DegradationProbeClient) DeleteOneID(id int64) *DegradationProbeDeleteOne {
+	builder := c.Delete().Where(degradationprobe.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DegradationProbeDeleteOne{builder}
+}
+
+// Query returns a query builder for DegradationProbe.
+func (c *DegradationProbeClient) Query() *DegradationProbeQuery {
+	return &DegradationProbeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDegradationProbe},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DegradationProbe entity by its id.
+func (c *DegradationProbeClient) Get(ctx context.Context, id int64) (*DegradationProbe, error) {
+	return c.Query().Where(degradationprobe.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DegradationProbeClient) GetX(ctx context.Context, id int64) *DegradationProbe {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *DegradationProbeClient) Hooks() []Hook {
+	hooks := c.hooks.DegradationProbe
+	return append(hooks[:len(hooks):len(hooks)], degradationprobe.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *DegradationProbeClient) Interceptors() []Interceptor {
+	inters := c.inters.DegradationProbe
+	return append(inters[:len(inters):len(inters)], degradationprobe.Interceptors[:]...)
+}
+
+func (c *DegradationProbeClient) mutate(ctx context.Context, m *DegradationProbeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DegradationProbeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DegradationProbeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DegradationProbeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DegradationProbeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DegradationProbe mutation op: %q", m.Op())
+	}
+}
+
+// DegradationRunClient is a client for the DegradationRun schema.
+type DegradationRunClient struct {
+	config
+}
+
+// NewDegradationRunClient returns a client for the DegradationRun from the given config.
+func NewDegradationRunClient(c config) *DegradationRunClient {
+	return &DegradationRunClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `degradationrun.Hooks(f(g(h())))`.
+func (c *DegradationRunClient) Use(hooks ...Hook) {
+	c.hooks.DegradationRun = append(c.hooks.DegradationRun, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `degradationrun.Intercept(f(g(h())))`.
+func (c *DegradationRunClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DegradationRun = append(c.inters.DegradationRun, interceptors...)
+}
+
+// Create returns a builder for creating a DegradationRun entity.
+func (c *DegradationRunClient) Create() *DegradationRunCreate {
+	mutation := newDegradationRunMutation(c.config, OpCreate)
+	return &DegradationRunCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DegradationRun entities.
+func (c *DegradationRunClient) CreateBulk(builders ...*DegradationRunCreate) *DegradationRunCreateBulk {
+	return &DegradationRunCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DegradationRunClient) MapCreateBulk(slice any, setFunc func(*DegradationRunCreate, int)) *DegradationRunCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DegradationRunCreateBulk{err: fmt.Errorf("calling to DegradationRunClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DegradationRunCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DegradationRunCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DegradationRun.
+func (c *DegradationRunClient) Update() *DegradationRunUpdate {
+	mutation := newDegradationRunMutation(c.config, OpUpdate)
+	return &DegradationRunUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DegradationRunClient) UpdateOne(_m *DegradationRun) *DegradationRunUpdateOne {
+	mutation := newDegradationRunMutation(c.config, OpUpdateOne, withDegradationRun(_m))
+	return &DegradationRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DegradationRunClient) UpdateOneID(id int64) *DegradationRunUpdateOne {
+	mutation := newDegradationRunMutation(c.config, OpUpdateOne, withDegradationRunID(id))
+	return &DegradationRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DegradationRun.
+func (c *DegradationRunClient) Delete() *DegradationRunDelete {
+	mutation := newDegradationRunMutation(c.config, OpDelete)
+	return &DegradationRunDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DegradationRunClient) DeleteOne(_m *DegradationRun) *DegradationRunDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DegradationRunClient) DeleteOneID(id int64) *DegradationRunDeleteOne {
+	builder := c.Delete().Where(degradationrun.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DegradationRunDeleteOne{builder}
+}
+
+// Query returns a query builder for DegradationRun.
+func (c *DegradationRunClient) Query() *DegradationRunQuery {
+	return &DegradationRunQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDegradationRun},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DegradationRun entity by its id.
+func (c *DegradationRunClient) Get(ctx context.Context, id int64) (*DegradationRun, error) {
+	return c.Query().Where(degradationrun.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DegradationRunClient) GetX(ctx context.Context, id int64) *DegradationRun {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *DegradationRunClient) Hooks() []Hook {
+	return c.hooks.DegradationRun
+}
+
+// Interceptors returns the client interceptors.
+func (c *DegradationRunClient) Interceptors() []Interceptor {
+	return c.inters.DegradationRun
+}
+
+func (c *DegradationRunClient) mutate(ctx context.Context, m *DegradationRunMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DegradationRunCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DegradationRunUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DegradationRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DegradationRunDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DegradationRun mutation op: %q", m.Op())
+	}
+}
+
+// DegradationTargetClient is a client for the DegradationTarget schema.
+type DegradationTargetClient struct {
+	config
+}
+
+// NewDegradationTargetClient returns a client for the DegradationTarget from the given config.
+func NewDegradationTargetClient(c config) *DegradationTargetClient {
+	return &DegradationTargetClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `degradationtarget.Hooks(f(g(h())))`.
+func (c *DegradationTargetClient) Use(hooks ...Hook) {
+	c.hooks.DegradationTarget = append(c.hooks.DegradationTarget, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `degradationtarget.Intercept(f(g(h())))`.
+func (c *DegradationTargetClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DegradationTarget = append(c.inters.DegradationTarget, interceptors...)
+}
+
+// Create returns a builder for creating a DegradationTarget entity.
+func (c *DegradationTargetClient) Create() *DegradationTargetCreate {
+	mutation := newDegradationTargetMutation(c.config, OpCreate)
+	return &DegradationTargetCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DegradationTarget entities.
+func (c *DegradationTargetClient) CreateBulk(builders ...*DegradationTargetCreate) *DegradationTargetCreateBulk {
+	return &DegradationTargetCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DegradationTargetClient) MapCreateBulk(slice any, setFunc func(*DegradationTargetCreate, int)) *DegradationTargetCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DegradationTargetCreateBulk{err: fmt.Errorf("calling to DegradationTargetClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DegradationTargetCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DegradationTargetCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DegradationTarget.
+func (c *DegradationTargetClient) Update() *DegradationTargetUpdate {
+	mutation := newDegradationTargetMutation(c.config, OpUpdate)
+	return &DegradationTargetUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DegradationTargetClient) UpdateOne(_m *DegradationTarget) *DegradationTargetUpdateOne {
+	mutation := newDegradationTargetMutation(c.config, OpUpdateOne, withDegradationTarget(_m))
+	return &DegradationTargetUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DegradationTargetClient) UpdateOneID(id int64) *DegradationTargetUpdateOne {
+	mutation := newDegradationTargetMutation(c.config, OpUpdateOne, withDegradationTargetID(id))
+	return &DegradationTargetUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DegradationTarget.
+func (c *DegradationTargetClient) Delete() *DegradationTargetDelete {
+	mutation := newDegradationTargetMutation(c.config, OpDelete)
+	return &DegradationTargetDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DegradationTargetClient) DeleteOne(_m *DegradationTarget) *DegradationTargetDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DegradationTargetClient) DeleteOneID(id int64) *DegradationTargetDeleteOne {
+	builder := c.Delete().Where(degradationtarget.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DegradationTargetDeleteOne{builder}
+}
+
+// Query returns a query builder for DegradationTarget.
+func (c *DegradationTargetClient) Query() *DegradationTargetQuery {
+	return &DegradationTargetQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDegradationTarget},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DegradationTarget entity by its id.
+func (c *DegradationTargetClient) Get(ctx context.Context, id int64) (*DegradationTarget, error) {
+	return c.Query().Where(degradationtarget.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DegradationTargetClient) GetX(ctx context.Context, id int64) *DegradationTarget {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *DegradationTargetClient) Hooks() []Hook {
+	hooks := c.hooks.DegradationTarget
+	return append(hooks[:len(hooks):len(hooks)], degradationtarget.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *DegradationTargetClient) Interceptors() []Interceptor {
+	inters := c.inters.DegradationTarget
+	return append(inters[:len(inters):len(inters)], degradationtarget.Interceptors[:]...)
+}
+
+func (c *DegradationTargetClient) mutate(ctx context.Context, m *DegradationTargetMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DegradationTargetCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DegradationTargetUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DegradationTargetUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DegradationTargetDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DegradationTarget mutation op: %q", m.Op())
 	}
 }
 
@@ -8427,11 +8856,12 @@ type (
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, BatchImageEvent, BatchImageItem, BatchImageJob,
 		ChannelMonitor, ChannelMonitorDailyRollup, ChannelMonitorHistory,
-		ChannelMonitorRequestTemplate, CompositeModelRoute, Enterprise,
-		EnterpriseAllowedGroup, EnterpriseAuditLog, EnterpriseBalanceLog,
-		EnterpriseDepartment, EnterpriseGroupWhitelist, EnterpriseGroupWhitelistScope,
-		EnterpriseMember, EnterpriseQuota, ErrorPassthroughRule, Group,
-		IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		ChannelMonitorRequestTemplate, CompositeModelRoute, DegradationProbe,
+		DegradationRun, DegradationTarget, Enterprise, EnterpriseAllowedGroup,
+		EnterpriseAuditLog, EnterpriseBalanceLog, EnterpriseDepartment,
+		EnterpriseGroupWhitelist, EnterpriseGroupWhitelistScope, EnterpriseMember,
+		EnterpriseQuota, ErrorPassthroughRule, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
 		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
@@ -8441,11 +8871,12 @@ type (
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, BatchImageEvent, BatchImageItem, BatchImageJob,
 		ChannelMonitor, ChannelMonitorDailyRollup, ChannelMonitorHistory,
-		ChannelMonitorRequestTemplate, CompositeModelRoute, Enterprise,
-		EnterpriseAllowedGroup, EnterpriseAuditLog, EnterpriseBalanceLog,
-		EnterpriseDepartment, EnterpriseGroupWhitelist, EnterpriseGroupWhitelistScope,
-		EnterpriseMember, EnterpriseQuota, ErrorPassthroughRule, Group,
-		IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		ChannelMonitorRequestTemplate, CompositeModelRoute, DegradationProbe,
+		DegradationRun, DegradationTarget, Enterprise, EnterpriseAllowedGroup,
+		EnterpriseAuditLog, EnterpriseBalanceLog, EnterpriseDepartment,
+		EnterpriseGroupWhitelist, EnterpriseGroupWhitelistScope, EnterpriseMember,
+		EnterpriseQuota, ErrorPassthroughRule, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
 		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,

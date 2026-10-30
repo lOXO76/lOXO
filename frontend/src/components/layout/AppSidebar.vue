@@ -771,6 +771,7 @@ const ChevronDownIcon = {
 // which handles the opt-in vs opt-out fallback when settings haven't loaded
 // yet. Admin-only flags (not in public settings) stay inline below.
 const flagChannelMonitor = makeSidebarFlag(FeatureFlags.channelMonitor)
+const flagDegradationDetection = makeSidebarFlag(FeatureFlags.degradationDetection)
 const flagPayment = makeSidebarFlag(FeatureFlags.payment)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagApiDocs = makeSidebarFlag(FeatureFlags.apiDocs)
@@ -829,6 +830,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/async-tasks', label: t('nav.asyncTasks'), icon: ServerIcon },
     { path: '/docs/api', label: t('nav.apiDocs'), icon: BookIcon, featureFlag: flagApiDocs },
     { path: '/available-channels', label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
+    { path: '/degradation', label: t('nav.degradation'), icon: SignalIcon, hideInSimpleMode: true, featureFlag: flagDegradationDetection },
     { path: '/monitor', label: t('nav.channelStatus'), icon: SignalIcon, featureFlag: flagChannelMonitor },
     { path: '/subscriptions', label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true, featureFlag: flagSubscription },
     { path: '/purchase', label: purchaseNavLabel.value, icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPersonalPayment },
@@ -894,6 +896,7 @@ const adminNavItems = computed((): NavItem[] => {
         { path: '/admin/channels/monitor', label: t('nav.channelMonitor'), icon: SignalIcon, featureFlag: flagChannelMonitor },
       ],
     },
+    { path: '/admin/degradation', label: t('nav.degradationAdmin'), icon: SignalIcon },
     // 「仅充值」站点连管理端的「订阅管理」入口也一并收起（路由本身不拦截）。
     { path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true, featureFlag: flagSubscription },
     { path: '/admin/accounts', label: t('nav.accounts'), icon: GlobeIcon },

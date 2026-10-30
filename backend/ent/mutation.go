@@ -27,6 +27,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/compositemodelroute"
+	"github.com/Wei-Shaw/sub2api/ent/degradationprobe"
+	"github.com/Wei-Shaw/sub2api/ent/degradationrun"
+	"github.com/Wei-Shaw/sub2api/ent/degradationtarget"
 	"github.com/Wei-Shaw/sub2api/ent/enterprise"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseauditlog"
@@ -89,6 +92,9 @@ const (
 	TypeChannelMonitorHistory         = "ChannelMonitorHistory"
 	TypeChannelMonitorRequestTemplate = "ChannelMonitorRequestTemplate"
 	TypeCompositeModelRoute           = "CompositeModelRoute"
+	TypeDegradationProbe              = "DegradationProbe"
+	TypeDegradationRun                = "DegradationRun"
+	TypeDegradationTarget             = "DegradationTarget"
 	TypeEnterprise                    = "Enterprise"
 	TypeEnterpriseAllowedGroup        = "EnterpriseAllowedGroup"
 	TypeEnterpriseAuditLog            = "EnterpriseAuditLog"
@@ -21148,6 +21154,3271 @@ func (m *CompositeModelRouteMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown CompositeModelRoute edge %s", name)
+}
+
+// DegradationProbeMutation represents an operation that mutates the DegradationProbe nodes in the graph.
+type DegradationProbeMutation struct {
+	config
+	op                      Op
+	typ                     string
+	id                      *int64
+	created_at              *time.Time
+	updated_at              *time.Time
+	deleted_at              *time.Time
+	name                    *string
+	prompt                  *string
+	expect_regex            *string
+	regex_flags             *string
+	negate                  *bool
+	enabled                 *bool
+	sort_order              *int
+	addsort_order           *int
+	probe_type              *string
+	max_output_tokens       *int
+	addmax_output_tokens    *int
+	timeout_seconds         *int
+	addtimeout_seconds      *int
+	run_interval_seconds    *int
+	addrun_interval_seconds *int
+	clearedFields           map[string]struct{}
+	done                    bool
+	oldValue                func(context.Context) (*DegradationProbe, error)
+	predicates              []predicate.DegradationProbe
+}
+
+var _ ent.Mutation = (*DegradationProbeMutation)(nil)
+
+// degradationprobeOption allows management of the mutation configuration using functional options.
+type degradationprobeOption func(*DegradationProbeMutation)
+
+// newDegradationProbeMutation creates new mutation for the DegradationProbe entity.
+func newDegradationProbeMutation(c config, op Op, opts ...degradationprobeOption) *DegradationProbeMutation {
+	m := &DegradationProbeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDegradationProbe,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDegradationProbeID sets the ID field of the mutation.
+func withDegradationProbeID(id int64) degradationprobeOption {
+	return func(m *DegradationProbeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DegradationProbe
+		)
+		m.oldValue = func(ctx context.Context) (*DegradationProbe, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DegradationProbe.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDegradationProbe sets the old DegradationProbe of the mutation.
+func withDegradationProbe(node *DegradationProbe) degradationprobeOption {
+	return func(m *DegradationProbeMutation) {
+		m.oldValue = func(context.Context) (*DegradationProbe, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DegradationProbeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DegradationProbeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DegradationProbeMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DegradationProbeMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DegradationProbe.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DegradationProbeMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DegradationProbeMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DegradationProbeMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *DegradationProbeMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *DegradationProbeMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *DegradationProbeMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *DegradationProbeMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *DegradationProbeMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *DegradationProbeMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[degradationprobe.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *DegradationProbeMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[degradationprobe.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *DegradationProbeMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, degradationprobe.FieldDeletedAt)
+}
+
+// SetName sets the "name" field.
+func (m *DegradationProbeMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *DegradationProbeMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *DegradationProbeMutation) ResetName() {
+	m.name = nil
+}
+
+// SetPrompt sets the "prompt" field.
+func (m *DegradationProbeMutation) SetPrompt(s string) {
+	m.prompt = &s
+}
+
+// Prompt returns the value of the "prompt" field in the mutation.
+func (m *DegradationProbeMutation) Prompt() (r string, exists bool) {
+	v := m.prompt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPrompt returns the old "prompt" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldPrompt(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPrompt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPrompt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrompt: %w", err)
+	}
+	return oldValue.Prompt, nil
+}
+
+// ResetPrompt resets all changes to the "prompt" field.
+func (m *DegradationProbeMutation) ResetPrompt() {
+	m.prompt = nil
+}
+
+// SetExpectRegex sets the "expect_regex" field.
+func (m *DegradationProbeMutation) SetExpectRegex(s string) {
+	m.expect_regex = &s
+}
+
+// ExpectRegex returns the value of the "expect_regex" field in the mutation.
+func (m *DegradationProbeMutation) ExpectRegex() (r string, exists bool) {
+	v := m.expect_regex
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpectRegex returns the old "expect_regex" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldExpectRegex(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpectRegex is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpectRegex requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpectRegex: %w", err)
+	}
+	return oldValue.ExpectRegex, nil
+}
+
+// ResetExpectRegex resets all changes to the "expect_regex" field.
+func (m *DegradationProbeMutation) ResetExpectRegex() {
+	m.expect_regex = nil
+}
+
+// SetRegexFlags sets the "regex_flags" field.
+func (m *DegradationProbeMutation) SetRegexFlags(s string) {
+	m.regex_flags = &s
+}
+
+// RegexFlags returns the value of the "regex_flags" field in the mutation.
+func (m *DegradationProbeMutation) RegexFlags() (r string, exists bool) {
+	v := m.regex_flags
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRegexFlags returns the old "regex_flags" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldRegexFlags(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRegexFlags is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRegexFlags requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRegexFlags: %w", err)
+	}
+	return oldValue.RegexFlags, nil
+}
+
+// ResetRegexFlags resets all changes to the "regex_flags" field.
+func (m *DegradationProbeMutation) ResetRegexFlags() {
+	m.regex_flags = nil
+}
+
+// SetNegate sets the "negate" field.
+func (m *DegradationProbeMutation) SetNegate(b bool) {
+	m.negate = &b
+}
+
+// Negate returns the value of the "negate" field in the mutation.
+func (m *DegradationProbeMutation) Negate() (r bool, exists bool) {
+	v := m.negate
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNegate returns the old "negate" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldNegate(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNegate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNegate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNegate: %w", err)
+	}
+	return oldValue.Negate, nil
+}
+
+// ResetNegate resets all changes to the "negate" field.
+func (m *DegradationProbeMutation) ResetNegate() {
+	m.negate = nil
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *DegradationProbeMutation) SetEnabled(b bool) {
+	m.enabled = &b
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *DegradationProbeMutation) Enabled() (r bool, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *DegradationProbeMutation) ResetEnabled() {
+	m.enabled = nil
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (m *DegradationProbeMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *DegradationProbeMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *DegradationProbeMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *DegradationProbeMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *DegradationProbeMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
+// SetProbeType sets the "probe_type" field.
+func (m *DegradationProbeMutation) SetProbeType(s string) {
+	m.probe_type = &s
+}
+
+// ProbeType returns the value of the "probe_type" field in the mutation.
+func (m *DegradationProbeMutation) ProbeType() (r string, exists bool) {
+	v := m.probe_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProbeType returns the old "probe_type" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldProbeType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProbeType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProbeType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProbeType: %w", err)
+	}
+	return oldValue.ProbeType, nil
+}
+
+// ResetProbeType resets all changes to the "probe_type" field.
+func (m *DegradationProbeMutation) ResetProbeType() {
+	m.probe_type = nil
+}
+
+// SetMaxOutputTokens sets the "max_output_tokens" field.
+func (m *DegradationProbeMutation) SetMaxOutputTokens(i int) {
+	m.max_output_tokens = &i
+	m.addmax_output_tokens = nil
+}
+
+// MaxOutputTokens returns the value of the "max_output_tokens" field in the mutation.
+func (m *DegradationProbeMutation) MaxOutputTokens() (r int, exists bool) {
+	v := m.max_output_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMaxOutputTokens returns the old "max_output_tokens" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldMaxOutputTokens(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMaxOutputTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMaxOutputTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMaxOutputTokens: %w", err)
+	}
+	return oldValue.MaxOutputTokens, nil
+}
+
+// AddMaxOutputTokens adds i to the "max_output_tokens" field.
+func (m *DegradationProbeMutation) AddMaxOutputTokens(i int) {
+	if m.addmax_output_tokens != nil {
+		*m.addmax_output_tokens += i
+	} else {
+		m.addmax_output_tokens = &i
+	}
+}
+
+// AddedMaxOutputTokens returns the value that was added to the "max_output_tokens" field in this mutation.
+func (m *DegradationProbeMutation) AddedMaxOutputTokens() (r int, exists bool) {
+	v := m.addmax_output_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMaxOutputTokens resets all changes to the "max_output_tokens" field.
+func (m *DegradationProbeMutation) ResetMaxOutputTokens() {
+	m.max_output_tokens = nil
+	m.addmax_output_tokens = nil
+}
+
+// SetTimeoutSeconds sets the "timeout_seconds" field.
+func (m *DegradationProbeMutation) SetTimeoutSeconds(i int) {
+	m.timeout_seconds = &i
+	m.addtimeout_seconds = nil
+}
+
+// TimeoutSeconds returns the value of the "timeout_seconds" field in the mutation.
+func (m *DegradationProbeMutation) TimeoutSeconds() (r int, exists bool) {
+	v := m.timeout_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimeoutSeconds returns the old "timeout_seconds" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldTimeoutSeconds(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimeoutSeconds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimeoutSeconds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimeoutSeconds: %w", err)
+	}
+	return oldValue.TimeoutSeconds, nil
+}
+
+// AddTimeoutSeconds adds i to the "timeout_seconds" field.
+func (m *DegradationProbeMutation) AddTimeoutSeconds(i int) {
+	if m.addtimeout_seconds != nil {
+		*m.addtimeout_seconds += i
+	} else {
+		m.addtimeout_seconds = &i
+	}
+}
+
+// AddedTimeoutSeconds returns the value that was added to the "timeout_seconds" field in this mutation.
+func (m *DegradationProbeMutation) AddedTimeoutSeconds() (r int, exists bool) {
+	v := m.addtimeout_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTimeoutSeconds resets all changes to the "timeout_seconds" field.
+func (m *DegradationProbeMutation) ResetTimeoutSeconds() {
+	m.timeout_seconds = nil
+	m.addtimeout_seconds = nil
+}
+
+// SetRunIntervalSeconds sets the "run_interval_seconds" field.
+func (m *DegradationProbeMutation) SetRunIntervalSeconds(i int) {
+	m.run_interval_seconds = &i
+	m.addrun_interval_seconds = nil
+}
+
+// RunIntervalSeconds returns the value of the "run_interval_seconds" field in the mutation.
+func (m *DegradationProbeMutation) RunIntervalSeconds() (r int, exists bool) {
+	v := m.run_interval_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRunIntervalSeconds returns the old "run_interval_seconds" field's value of the DegradationProbe entity.
+// If the DegradationProbe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationProbeMutation) OldRunIntervalSeconds(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRunIntervalSeconds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRunIntervalSeconds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRunIntervalSeconds: %w", err)
+	}
+	return oldValue.RunIntervalSeconds, nil
+}
+
+// AddRunIntervalSeconds adds i to the "run_interval_seconds" field.
+func (m *DegradationProbeMutation) AddRunIntervalSeconds(i int) {
+	if m.addrun_interval_seconds != nil {
+		*m.addrun_interval_seconds += i
+	} else {
+		m.addrun_interval_seconds = &i
+	}
+}
+
+// AddedRunIntervalSeconds returns the value that was added to the "run_interval_seconds" field in this mutation.
+func (m *DegradationProbeMutation) AddedRunIntervalSeconds() (r int, exists bool) {
+	v := m.addrun_interval_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRunIntervalSeconds resets all changes to the "run_interval_seconds" field.
+func (m *DegradationProbeMutation) ResetRunIntervalSeconds() {
+	m.run_interval_seconds = nil
+	m.addrun_interval_seconds = nil
+}
+
+// Where appends a list predicates to the DegradationProbeMutation builder.
+func (m *DegradationProbeMutation) Where(ps ...predicate.DegradationProbe) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DegradationProbeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DegradationProbeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DegradationProbe, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DegradationProbeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DegradationProbeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DegradationProbe).
+func (m *DegradationProbeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DegradationProbeMutation) Fields() []string {
+	fields := make([]string, 0, 14)
+	if m.created_at != nil {
+		fields = append(fields, degradationprobe.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, degradationprobe.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, degradationprobe.FieldDeletedAt)
+	}
+	if m.name != nil {
+		fields = append(fields, degradationprobe.FieldName)
+	}
+	if m.prompt != nil {
+		fields = append(fields, degradationprobe.FieldPrompt)
+	}
+	if m.expect_regex != nil {
+		fields = append(fields, degradationprobe.FieldExpectRegex)
+	}
+	if m.regex_flags != nil {
+		fields = append(fields, degradationprobe.FieldRegexFlags)
+	}
+	if m.negate != nil {
+		fields = append(fields, degradationprobe.FieldNegate)
+	}
+	if m.enabled != nil {
+		fields = append(fields, degradationprobe.FieldEnabled)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, degradationprobe.FieldSortOrder)
+	}
+	if m.probe_type != nil {
+		fields = append(fields, degradationprobe.FieldProbeType)
+	}
+	if m.max_output_tokens != nil {
+		fields = append(fields, degradationprobe.FieldMaxOutputTokens)
+	}
+	if m.timeout_seconds != nil {
+		fields = append(fields, degradationprobe.FieldTimeoutSeconds)
+	}
+	if m.run_interval_seconds != nil {
+		fields = append(fields, degradationprobe.FieldRunIntervalSeconds)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DegradationProbeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case degradationprobe.FieldCreatedAt:
+		return m.CreatedAt()
+	case degradationprobe.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case degradationprobe.FieldDeletedAt:
+		return m.DeletedAt()
+	case degradationprobe.FieldName:
+		return m.Name()
+	case degradationprobe.FieldPrompt:
+		return m.Prompt()
+	case degradationprobe.FieldExpectRegex:
+		return m.ExpectRegex()
+	case degradationprobe.FieldRegexFlags:
+		return m.RegexFlags()
+	case degradationprobe.FieldNegate:
+		return m.Negate()
+	case degradationprobe.FieldEnabled:
+		return m.Enabled()
+	case degradationprobe.FieldSortOrder:
+		return m.SortOrder()
+	case degradationprobe.FieldProbeType:
+		return m.ProbeType()
+	case degradationprobe.FieldMaxOutputTokens:
+		return m.MaxOutputTokens()
+	case degradationprobe.FieldTimeoutSeconds:
+		return m.TimeoutSeconds()
+	case degradationprobe.FieldRunIntervalSeconds:
+		return m.RunIntervalSeconds()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DegradationProbeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case degradationprobe.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case degradationprobe.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case degradationprobe.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case degradationprobe.FieldName:
+		return m.OldName(ctx)
+	case degradationprobe.FieldPrompt:
+		return m.OldPrompt(ctx)
+	case degradationprobe.FieldExpectRegex:
+		return m.OldExpectRegex(ctx)
+	case degradationprobe.FieldRegexFlags:
+		return m.OldRegexFlags(ctx)
+	case degradationprobe.FieldNegate:
+		return m.OldNegate(ctx)
+	case degradationprobe.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case degradationprobe.FieldSortOrder:
+		return m.OldSortOrder(ctx)
+	case degradationprobe.FieldProbeType:
+		return m.OldProbeType(ctx)
+	case degradationprobe.FieldMaxOutputTokens:
+		return m.OldMaxOutputTokens(ctx)
+	case degradationprobe.FieldTimeoutSeconds:
+		return m.OldTimeoutSeconds(ctx)
+	case degradationprobe.FieldRunIntervalSeconds:
+		return m.OldRunIntervalSeconds(ctx)
+	}
+	return nil, fmt.Errorf("unknown DegradationProbe field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DegradationProbeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case degradationprobe.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case degradationprobe.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case degradationprobe.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case degradationprobe.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case degradationprobe.FieldPrompt:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrompt(v)
+		return nil
+	case degradationprobe.FieldExpectRegex:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpectRegex(v)
+		return nil
+	case degradationprobe.FieldRegexFlags:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRegexFlags(v)
+		return nil
+	case degradationprobe.FieldNegate:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNegate(v)
+		return nil
+	case degradationprobe.FieldEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case degradationprobe.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
+	case degradationprobe.FieldProbeType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProbeType(v)
+		return nil
+	case degradationprobe.FieldMaxOutputTokens:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMaxOutputTokens(v)
+		return nil
+	case degradationprobe.FieldTimeoutSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimeoutSeconds(v)
+		return nil
+	case degradationprobe.FieldRunIntervalSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRunIntervalSeconds(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationProbe field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DegradationProbeMutation) AddedFields() []string {
+	var fields []string
+	if m.addsort_order != nil {
+		fields = append(fields, degradationprobe.FieldSortOrder)
+	}
+	if m.addmax_output_tokens != nil {
+		fields = append(fields, degradationprobe.FieldMaxOutputTokens)
+	}
+	if m.addtimeout_seconds != nil {
+		fields = append(fields, degradationprobe.FieldTimeoutSeconds)
+	}
+	if m.addrun_interval_seconds != nil {
+		fields = append(fields, degradationprobe.FieldRunIntervalSeconds)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DegradationProbeMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case degradationprobe.FieldSortOrder:
+		return m.AddedSortOrder()
+	case degradationprobe.FieldMaxOutputTokens:
+		return m.AddedMaxOutputTokens()
+	case degradationprobe.FieldTimeoutSeconds:
+		return m.AddedTimeoutSeconds()
+	case degradationprobe.FieldRunIntervalSeconds:
+		return m.AddedRunIntervalSeconds()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DegradationProbeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case degradationprobe.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
+	case degradationprobe.FieldMaxOutputTokens:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMaxOutputTokens(v)
+		return nil
+	case degradationprobe.FieldTimeoutSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTimeoutSeconds(v)
+		return nil
+	case degradationprobe.FieldRunIntervalSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRunIntervalSeconds(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationProbe numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DegradationProbeMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(degradationprobe.FieldDeletedAt) {
+		fields = append(fields, degradationprobe.FieldDeletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DegradationProbeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DegradationProbeMutation) ClearField(name string) error {
+	switch name {
+	case degradationprobe.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationProbe nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DegradationProbeMutation) ResetField(name string) error {
+	switch name {
+	case degradationprobe.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case degradationprobe.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case degradationprobe.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case degradationprobe.FieldName:
+		m.ResetName()
+		return nil
+	case degradationprobe.FieldPrompt:
+		m.ResetPrompt()
+		return nil
+	case degradationprobe.FieldExpectRegex:
+		m.ResetExpectRegex()
+		return nil
+	case degradationprobe.FieldRegexFlags:
+		m.ResetRegexFlags()
+		return nil
+	case degradationprobe.FieldNegate:
+		m.ResetNegate()
+		return nil
+	case degradationprobe.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case degradationprobe.FieldSortOrder:
+		m.ResetSortOrder()
+		return nil
+	case degradationprobe.FieldProbeType:
+		m.ResetProbeType()
+		return nil
+	case degradationprobe.FieldMaxOutputTokens:
+		m.ResetMaxOutputTokens()
+		return nil
+	case degradationprobe.FieldTimeoutSeconds:
+		m.ResetTimeoutSeconds()
+		return nil
+	case degradationprobe.FieldRunIntervalSeconds:
+		m.ResetRunIntervalSeconds()
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationProbe field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DegradationProbeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DegradationProbeMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DegradationProbeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DegradationProbeMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DegradationProbeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DegradationProbeMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DegradationProbeMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown DegradationProbe unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DegradationProbeMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown DegradationProbe edge %s", name)
+}
+
+// DegradationRunMutation represents an operation that mutates the DegradationRun nodes in the graph.
+type DegradationRunMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *int64
+	target_id        *int64
+	addtarget_id     *int64
+	group_id         *int64
+	addgroup_id      *int64
+	model            *string
+	probe_id         *int64
+	addprobe_id      *int64
+	probe_name       *string
+	status           *string
+	answer_text      *string
+	error_message    *string
+	latency_ms       *int
+	addlatency_ms    *int
+	account_id       *int64
+	addaccount_id    *int64
+	probe_type       *string
+	artifact_kind    *string
+	artifact_content *string
+	created_at       *time.Time
+	clearedFields    map[string]struct{}
+	done             bool
+	oldValue         func(context.Context) (*DegradationRun, error)
+	predicates       []predicate.DegradationRun
+}
+
+var _ ent.Mutation = (*DegradationRunMutation)(nil)
+
+// degradationrunOption allows management of the mutation configuration using functional options.
+type degradationrunOption func(*DegradationRunMutation)
+
+// newDegradationRunMutation creates new mutation for the DegradationRun entity.
+func newDegradationRunMutation(c config, op Op, opts ...degradationrunOption) *DegradationRunMutation {
+	m := &DegradationRunMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDegradationRun,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDegradationRunID sets the ID field of the mutation.
+func withDegradationRunID(id int64) degradationrunOption {
+	return func(m *DegradationRunMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DegradationRun
+		)
+		m.oldValue = func(ctx context.Context) (*DegradationRun, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DegradationRun.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDegradationRun sets the old DegradationRun of the mutation.
+func withDegradationRun(node *DegradationRun) degradationrunOption {
+	return func(m *DegradationRunMutation) {
+		m.oldValue = func(context.Context) (*DegradationRun, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DegradationRunMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DegradationRunMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DegradationRunMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DegradationRunMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DegradationRun.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetTargetID sets the "target_id" field.
+func (m *DegradationRunMutation) SetTargetID(i int64) {
+	m.target_id = &i
+	m.addtarget_id = nil
+}
+
+// TargetID returns the value of the "target_id" field in the mutation.
+func (m *DegradationRunMutation) TargetID() (r int64, exists bool) {
+	v := m.target_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTargetID returns the old "target_id" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldTargetID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTargetID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTargetID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTargetID: %w", err)
+	}
+	return oldValue.TargetID, nil
+}
+
+// AddTargetID adds i to the "target_id" field.
+func (m *DegradationRunMutation) AddTargetID(i int64) {
+	if m.addtarget_id != nil {
+		*m.addtarget_id += i
+	} else {
+		m.addtarget_id = &i
+	}
+}
+
+// AddedTargetID returns the value that was added to the "target_id" field in this mutation.
+func (m *DegradationRunMutation) AddedTargetID() (r int64, exists bool) {
+	v := m.addtarget_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTargetID resets all changes to the "target_id" field.
+func (m *DegradationRunMutation) ResetTargetID() {
+	m.target_id = nil
+	m.addtarget_id = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *DegradationRunMutation) SetGroupID(i int64) {
+	m.group_id = &i
+	m.addgroup_id = nil
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *DegradationRunMutation) GroupID() (r int64, exists bool) {
+	v := m.group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldGroupID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// AddGroupID adds i to the "group_id" field.
+func (m *DegradationRunMutation) AddGroupID(i int64) {
+	if m.addgroup_id != nil {
+		*m.addgroup_id += i
+	} else {
+		m.addgroup_id = &i
+	}
+}
+
+// AddedGroupID returns the value that was added to the "group_id" field in this mutation.
+func (m *DegradationRunMutation) AddedGroupID() (r int64, exists bool) {
+	v := m.addgroup_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *DegradationRunMutation) ResetGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+}
+
+// SetModel sets the "model" field.
+func (m *DegradationRunMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *DegradationRunMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *DegradationRunMutation) ResetModel() {
+	m.model = nil
+}
+
+// SetProbeID sets the "probe_id" field.
+func (m *DegradationRunMutation) SetProbeID(i int64) {
+	m.probe_id = &i
+	m.addprobe_id = nil
+}
+
+// ProbeID returns the value of the "probe_id" field in the mutation.
+func (m *DegradationRunMutation) ProbeID() (r int64, exists bool) {
+	v := m.probe_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProbeID returns the old "probe_id" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldProbeID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProbeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProbeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProbeID: %w", err)
+	}
+	return oldValue.ProbeID, nil
+}
+
+// AddProbeID adds i to the "probe_id" field.
+func (m *DegradationRunMutation) AddProbeID(i int64) {
+	if m.addprobe_id != nil {
+		*m.addprobe_id += i
+	} else {
+		m.addprobe_id = &i
+	}
+}
+
+// AddedProbeID returns the value that was added to the "probe_id" field in this mutation.
+func (m *DegradationRunMutation) AddedProbeID() (r int64, exists bool) {
+	v := m.addprobe_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetProbeID resets all changes to the "probe_id" field.
+func (m *DegradationRunMutation) ResetProbeID() {
+	m.probe_id = nil
+	m.addprobe_id = nil
+}
+
+// SetProbeName sets the "probe_name" field.
+func (m *DegradationRunMutation) SetProbeName(s string) {
+	m.probe_name = &s
+}
+
+// ProbeName returns the value of the "probe_name" field in the mutation.
+func (m *DegradationRunMutation) ProbeName() (r string, exists bool) {
+	v := m.probe_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProbeName returns the old "probe_name" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldProbeName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProbeName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProbeName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProbeName: %w", err)
+	}
+	return oldValue.ProbeName, nil
+}
+
+// ResetProbeName resets all changes to the "probe_name" field.
+func (m *DegradationRunMutation) ResetProbeName() {
+	m.probe_name = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *DegradationRunMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *DegradationRunMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *DegradationRunMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetAnswerText sets the "answer_text" field.
+func (m *DegradationRunMutation) SetAnswerText(s string) {
+	m.answer_text = &s
+}
+
+// AnswerText returns the value of the "answer_text" field in the mutation.
+func (m *DegradationRunMutation) AnswerText() (r string, exists bool) {
+	v := m.answer_text
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAnswerText returns the old "answer_text" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldAnswerText(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAnswerText is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAnswerText requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAnswerText: %w", err)
+	}
+	return oldValue.AnswerText, nil
+}
+
+// ResetAnswerText resets all changes to the "answer_text" field.
+func (m *DegradationRunMutation) ResetAnswerText() {
+	m.answer_text = nil
+}
+
+// SetErrorMessage sets the "error_message" field.
+func (m *DegradationRunMutation) SetErrorMessage(s string) {
+	m.error_message = &s
+}
+
+// ErrorMessage returns the value of the "error_message" field in the mutation.
+func (m *DegradationRunMutation) ErrorMessage() (r string, exists bool) {
+	v := m.error_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorMessage returns the old "error_message" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldErrorMessage(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorMessage: %w", err)
+	}
+	return oldValue.ErrorMessage, nil
+}
+
+// ResetErrorMessage resets all changes to the "error_message" field.
+func (m *DegradationRunMutation) ResetErrorMessage() {
+	m.error_message = nil
+}
+
+// SetLatencyMs sets the "latency_ms" field.
+func (m *DegradationRunMutation) SetLatencyMs(i int) {
+	m.latency_ms = &i
+	m.addlatency_ms = nil
+}
+
+// LatencyMs returns the value of the "latency_ms" field in the mutation.
+func (m *DegradationRunMutation) LatencyMs() (r int, exists bool) {
+	v := m.latency_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLatencyMs returns the old "latency_ms" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldLatencyMs(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLatencyMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLatencyMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLatencyMs: %w", err)
+	}
+	return oldValue.LatencyMs, nil
+}
+
+// AddLatencyMs adds i to the "latency_ms" field.
+func (m *DegradationRunMutation) AddLatencyMs(i int) {
+	if m.addlatency_ms != nil {
+		*m.addlatency_ms += i
+	} else {
+		m.addlatency_ms = &i
+	}
+}
+
+// AddedLatencyMs returns the value that was added to the "latency_ms" field in this mutation.
+func (m *DegradationRunMutation) AddedLatencyMs() (r int, exists bool) {
+	v := m.addlatency_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLatencyMs resets all changes to the "latency_ms" field.
+func (m *DegradationRunMutation) ResetLatencyMs() {
+	m.latency_ms = nil
+	m.addlatency_ms = nil
+}
+
+// SetAccountID sets the "account_id" field.
+func (m *DegradationRunMutation) SetAccountID(i int64) {
+	m.account_id = &i
+	m.addaccount_id = nil
+}
+
+// AccountID returns the value of the "account_id" field in the mutation.
+func (m *DegradationRunMutation) AccountID() (r int64, exists bool) {
+	v := m.account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccountID returns the old "account_id" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldAccountID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccountID: %w", err)
+	}
+	return oldValue.AccountID, nil
+}
+
+// AddAccountID adds i to the "account_id" field.
+func (m *DegradationRunMutation) AddAccountID(i int64) {
+	if m.addaccount_id != nil {
+		*m.addaccount_id += i
+	} else {
+		m.addaccount_id = &i
+	}
+}
+
+// AddedAccountID returns the value that was added to the "account_id" field in this mutation.
+func (m *DegradationRunMutation) AddedAccountID() (r int64, exists bool) {
+	v := m.addaccount_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAccountID resets all changes to the "account_id" field.
+func (m *DegradationRunMutation) ResetAccountID() {
+	m.account_id = nil
+	m.addaccount_id = nil
+}
+
+// SetProbeType sets the "probe_type" field.
+func (m *DegradationRunMutation) SetProbeType(s string) {
+	m.probe_type = &s
+}
+
+// ProbeType returns the value of the "probe_type" field in the mutation.
+func (m *DegradationRunMutation) ProbeType() (r string, exists bool) {
+	v := m.probe_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProbeType returns the old "probe_type" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldProbeType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProbeType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProbeType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProbeType: %w", err)
+	}
+	return oldValue.ProbeType, nil
+}
+
+// ResetProbeType resets all changes to the "probe_type" field.
+func (m *DegradationRunMutation) ResetProbeType() {
+	m.probe_type = nil
+}
+
+// SetArtifactKind sets the "artifact_kind" field.
+func (m *DegradationRunMutation) SetArtifactKind(s string) {
+	m.artifact_kind = &s
+}
+
+// ArtifactKind returns the value of the "artifact_kind" field in the mutation.
+func (m *DegradationRunMutation) ArtifactKind() (r string, exists bool) {
+	v := m.artifact_kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldArtifactKind returns the old "artifact_kind" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldArtifactKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldArtifactKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldArtifactKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldArtifactKind: %w", err)
+	}
+	return oldValue.ArtifactKind, nil
+}
+
+// ResetArtifactKind resets all changes to the "artifact_kind" field.
+func (m *DegradationRunMutation) ResetArtifactKind() {
+	m.artifact_kind = nil
+}
+
+// SetArtifactContent sets the "artifact_content" field.
+func (m *DegradationRunMutation) SetArtifactContent(s string) {
+	m.artifact_content = &s
+}
+
+// ArtifactContent returns the value of the "artifact_content" field in the mutation.
+func (m *DegradationRunMutation) ArtifactContent() (r string, exists bool) {
+	v := m.artifact_content
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldArtifactContent returns the old "artifact_content" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldArtifactContent(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldArtifactContent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldArtifactContent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldArtifactContent: %w", err)
+	}
+	return oldValue.ArtifactContent, nil
+}
+
+// ResetArtifactContent resets all changes to the "artifact_content" field.
+func (m *DegradationRunMutation) ResetArtifactContent() {
+	m.artifact_content = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DegradationRunMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DegradationRunMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DegradationRun entity.
+// If the DegradationRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationRunMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DegradationRunMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// Where appends a list predicates to the DegradationRunMutation builder.
+func (m *DegradationRunMutation) Where(ps ...predicate.DegradationRun) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DegradationRunMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DegradationRunMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DegradationRun, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DegradationRunMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DegradationRunMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DegradationRun).
+func (m *DegradationRunMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DegradationRunMutation) Fields() []string {
+	fields := make([]string, 0, 14)
+	if m.target_id != nil {
+		fields = append(fields, degradationrun.FieldTargetID)
+	}
+	if m.group_id != nil {
+		fields = append(fields, degradationrun.FieldGroupID)
+	}
+	if m.model != nil {
+		fields = append(fields, degradationrun.FieldModel)
+	}
+	if m.probe_id != nil {
+		fields = append(fields, degradationrun.FieldProbeID)
+	}
+	if m.probe_name != nil {
+		fields = append(fields, degradationrun.FieldProbeName)
+	}
+	if m.status != nil {
+		fields = append(fields, degradationrun.FieldStatus)
+	}
+	if m.answer_text != nil {
+		fields = append(fields, degradationrun.FieldAnswerText)
+	}
+	if m.error_message != nil {
+		fields = append(fields, degradationrun.FieldErrorMessage)
+	}
+	if m.latency_ms != nil {
+		fields = append(fields, degradationrun.FieldLatencyMs)
+	}
+	if m.account_id != nil {
+		fields = append(fields, degradationrun.FieldAccountID)
+	}
+	if m.probe_type != nil {
+		fields = append(fields, degradationrun.FieldProbeType)
+	}
+	if m.artifact_kind != nil {
+		fields = append(fields, degradationrun.FieldArtifactKind)
+	}
+	if m.artifact_content != nil {
+		fields = append(fields, degradationrun.FieldArtifactContent)
+	}
+	if m.created_at != nil {
+		fields = append(fields, degradationrun.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DegradationRunMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case degradationrun.FieldTargetID:
+		return m.TargetID()
+	case degradationrun.FieldGroupID:
+		return m.GroupID()
+	case degradationrun.FieldModel:
+		return m.Model()
+	case degradationrun.FieldProbeID:
+		return m.ProbeID()
+	case degradationrun.FieldProbeName:
+		return m.ProbeName()
+	case degradationrun.FieldStatus:
+		return m.Status()
+	case degradationrun.FieldAnswerText:
+		return m.AnswerText()
+	case degradationrun.FieldErrorMessage:
+		return m.ErrorMessage()
+	case degradationrun.FieldLatencyMs:
+		return m.LatencyMs()
+	case degradationrun.FieldAccountID:
+		return m.AccountID()
+	case degradationrun.FieldProbeType:
+		return m.ProbeType()
+	case degradationrun.FieldArtifactKind:
+		return m.ArtifactKind()
+	case degradationrun.FieldArtifactContent:
+		return m.ArtifactContent()
+	case degradationrun.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DegradationRunMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case degradationrun.FieldTargetID:
+		return m.OldTargetID(ctx)
+	case degradationrun.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case degradationrun.FieldModel:
+		return m.OldModel(ctx)
+	case degradationrun.FieldProbeID:
+		return m.OldProbeID(ctx)
+	case degradationrun.FieldProbeName:
+		return m.OldProbeName(ctx)
+	case degradationrun.FieldStatus:
+		return m.OldStatus(ctx)
+	case degradationrun.FieldAnswerText:
+		return m.OldAnswerText(ctx)
+	case degradationrun.FieldErrorMessage:
+		return m.OldErrorMessage(ctx)
+	case degradationrun.FieldLatencyMs:
+		return m.OldLatencyMs(ctx)
+	case degradationrun.FieldAccountID:
+		return m.OldAccountID(ctx)
+	case degradationrun.FieldProbeType:
+		return m.OldProbeType(ctx)
+	case degradationrun.FieldArtifactKind:
+		return m.OldArtifactKind(ctx)
+	case degradationrun.FieldArtifactContent:
+		return m.OldArtifactContent(ctx)
+	case degradationrun.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown DegradationRun field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DegradationRunMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case degradationrun.FieldTargetID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTargetID(v)
+		return nil
+	case degradationrun.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case degradationrun.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case degradationrun.FieldProbeID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProbeID(v)
+		return nil
+	case degradationrun.FieldProbeName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProbeName(v)
+		return nil
+	case degradationrun.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case degradationrun.FieldAnswerText:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAnswerText(v)
+		return nil
+	case degradationrun.FieldErrorMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorMessage(v)
+		return nil
+	case degradationrun.FieldLatencyMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLatencyMs(v)
+		return nil
+	case degradationrun.FieldAccountID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccountID(v)
+		return nil
+	case degradationrun.FieldProbeType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProbeType(v)
+		return nil
+	case degradationrun.FieldArtifactKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetArtifactKind(v)
+		return nil
+	case degradationrun.FieldArtifactContent:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetArtifactContent(v)
+		return nil
+	case degradationrun.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationRun field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DegradationRunMutation) AddedFields() []string {
+	var fields []string
+	if m.addtarget_id != nil {
+		fields = append(fields, degradationrun.FieldTargetID)
+	}
+	if m.addgroup_id != nil {
+		fields = append(fields, degradationrun.FieldGroupID)
+	}
+	if m.addprobe_id != nil {
+		fields = append(fields, degradationrun.FieldProbeID)
+	}
+	if m.addlatency_ms != nil {
+		fields = append(fields, degradationrun.FieldLatencyMs)
+	}
+	if m.addaccount_id != nil {
+		fields = append(fields, degradationrun.FieldAccountID)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DegradationRunMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case degradationrun.FieldTargetID:
+		return m.AddedTargetID()
+	case degradationrun.FieldGroupID:
+		return m.AddedGroupID()
+	case degradationrun.FieldProbeID:
+		return m.AddedProbeID()
+	case degradationrun.FieldLatencyMs:
+		return m.AddedLatencyMs()
+	case degradationrun.FieldAccountID:
+		return m.AddedAccountID()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DegradationRunMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case degradationrun.FieldTargetID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTargetID(v)
+		return nil
+	case degradationrun.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGroupID(v)
+		return nil
+	case degradationrun.FieldProbeID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProbeID(v)
+		return nil
+	case degradationrun.FieldLatencyMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLatencyMs(v)
+		return nil
+	case degradationrun.FieldAccountID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAccountID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationRun numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DegradationRunMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DegradationRunMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DegradationRunMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown DegradationRun nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DegradationRunMutation) ResetField(name string) error {
+	switch name {
+	case degradationrun.FieldTargetID:
+		m.ResetTargetID()
+		return nil
+	case degradationrun.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case degradationrun.FieldModel:
+		m.ResetModel()
+		return nil
+	case degradationrun.FieldProbeID:
+		m.ResetProbeID()
+		return nil
+	case degradationrun.FieldProbeName:
+		m.ResetProbeName()
+		return nil
+	case degradationrun.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case degradationrun.FieldAnswerText:
+		m.ResetAnswerText()
+		return nil
+	case degradationrun.FieldErrorMessage:
+		m.ResetErrorMessage()
+		return nil
+	case degradationrun.FieldLatencyMs:
+		m.ResetLatencyMs()
+		return nil
+	case degradationrun.FieldAccountID:
+		m.ResetAccountID()
+		return nil
+	case degradationrun.FieldProbeType:
+		m.ResetProbeType()
+		return nil
+	case degradationrun.FieldArtifactKind:
+		m.ResetArtifactKind()
+		return nil
+	case degradationrun.FieldArtifactContent:
+		m.ResetArtifactContent()
+		return nil
+	case degradationrun.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationRun field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DegradationRunMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DegradationRunMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DegradationRunMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DegradationRunMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DegradationRunMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DegradationRunMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DegradationRunMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown DegradationRun unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DegradationRunMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown DegradationRun edge %s", name)
+}
+
+// DegradationTargetMutation represents an operation that mutates the DegradationTarget nodes in the graph.
+type DegradationTargetMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *int64
+	created_at          *time.Time
+	updated_at          *time.Time
+	deleted_at          *time.Time
+	group_id            *int64
+	addgroup_id         *int64
+	model               *string
+	probe_ids           *[]int64
+	appendprobe_ids     []int64
+	interval_seconds    *int
+	addinterval_seconds *int
+	enabled             *bool
+	last_run_at         *time.Time
+	clearedFields       map[string]struct{}
+	done                bool
+	oldValue            func(context.Context) (*DegradationTarget, error)
+	predicates          []predicate.DegradationTarget
+}
+
+var _ ent.Mutation = (*DegradationTargetMutation)(nil)
+
+// degradationtargetOption allows management of the mutation configuration using functional options.
+type degradationtargetOption func(*DegradationTargetMutation)
+
+// newDegradationTargetMutation creates new mutation for the DegradationTarget entity.
+func newDegradationTargetMutation(c config, op Op, opts ...degradationtargetOption) *DegradationTargetMutation {
+	m := &DegradationTargetMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDegradationTarget,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDegradationTargetID sets the ID field of the mutation.
+func withDegradationTargetID(id int64) degradationtargetOption {
+	return func(m *DegradationTargetMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DegradationTarget
+		)
+		m.oldValue = func(ctx context.Context) (*DegradationTarget, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DegradationTarget.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDegradationTarget sets the old DegradationTarget of the mutation.
+func withDegradationTarget(node *DegradationTarget) degradationtargetOption {
+	return func(m *DegradationTargetMutation) {
+		m.oldValue = func(context.Context) (*DegradationTarget, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DegradationTargetMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DegradationTargetMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DegradationTargetMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DegradationTargetMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DegradationTarget.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DegradationTargetMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DegradationTargetMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DegradationTarget entity.
+// If the DegradationTarget object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationTargetMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DegradationTargetMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *DegradationTargetMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *DegradationTargetMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the DegradationTarget entity.
+// If the DegradationTarget object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationTargetMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *DegradationTargetMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *DegradationTargetMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *DegradationTargetMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the DegradationTarget entity.
+// If the DegradationTarget object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationTargetMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *DegradationTargetMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[degradationtarget.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *DegradationTargetMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[degradationtarget.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *DegradationTargetMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, degradationtarget.FieldDeletedAt)
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *DegradationTargetMutation) SetGroupID(i int64) {
+	m.group_id = &i
+	m.addgroup_id = nil
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *DegradationTargetMutation) GroupID() (r int64, exists bool) {
+	v := m.group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the DegradationTarget entity.
+// If the DegradationTarget object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationTargetMutation) OldGroupID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// AddGroupID adds i to the "group_id" field.
+func (m *DegradationTargetMutation) AddGroupID(i int64) {
+	if m.addgroup_id != nil {
+		*m.addgroup_id += i
+	} else {
+		m.addgroup_id = &i
+	}
+}
+
+// AddedGroupID returns the value that was added to the "group_id" field in this mutation.
+func (m *DegradationTargetMutation) AddedGroupID() (r int64, exists bool) {
+	v := m.addgroup_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *DegradationTargetMutation) ResetGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+}
+
+// SetModel sets the "model" field.
+func (m *DegradationTargetMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *DegradationTargetMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the DegradationTarget entity.
+// If the DegradationTarget object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationTargetMutation) OldModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *DegradationTargetMutation) ResetModel() {
+	m.model = nil
+}
+
+// SetProbeIds sets the "probe_ids" field.
+func (m *DegradationTargetMutation) SetProbeIds(i []int64) {
+	m.probe_ids = &i
+	m.appendprobe_ids = nil
+}
+
+// ProbeIds returns the value of the "probe_ids" field in the mutation.
+func (m *DegradationTargetMutation) ProbeIds() (r []int64, exists bool) {
+	v := m.probe_ids
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProbeIds returns the old "probe_ids" field's value of the DegradationTarget entity.
+// If the DegradationTarget object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationTargetMutation) OldProbeIds(ctx context.Context) (v []int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProbeIds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProbeIds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProbeIds: %w", err)
+	}
+	return oldValue.ProbeIds, nil
+}
+
+// AppendProbeIds adds i to the "probe_ids" field.
+func (m *DegradationTargetMutation) AppendProbeIds(i []int64) {
+	m.appendprobe_ids = append(m.appendprobe_ids, i...)
+}
+
+// AppendedProbeIds returns the list of values that were appended to the "probe_ids" field in this mutation.
+func (m *DegradationTargetMutation) AppendedProbeIds() ([]int64, bool) {
+	if len(m.appendprobe_ids) == 0 {
+		return nil, false
+	}
+	return m.appendprobe_ids, true
+}
+
+// ResetProbeIds resets all changes to the "probe_ids" field.
+func (m *DegradationTargetMutation) ResetProbeIds() {
+	m.probe_ids = nil
+	m.appendprobe_ids = nil
+}
+
+// SetIntervalSeconds sets the "interval_seconds" field.
+func (m *DegradationTargetMutation) SetIntervalSeconds(i int) {
+	m.interval_seconds = &i
+	m.addinterval_seconds = nil
+}
+
+// IntervalSeconds returns the value of the "interval_seconds" field in the mutation.
+func (m *DegradationTargetMutation) IntervalSeconds() (r int, exists bool) {
+	v := m.interval_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIntervalSeconds returns the old "interval_seconds" field's value of the DegradationTarget entity.
+// If the DegradationTarget object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationTargetMutation) OldIntervalSeconds(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIntervalSeconds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIntervalSeconds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIntervalSeconds: %w", err)
+	}
+	return oldValue.IntervalSeconds, nil
+}
+
+// AddIntervalSeconds adds i to the "interval_seconds" field.
+func (m *DegradationTargetMutation) AddIntervalSeconds(i int) {
+	if m.addinterval_seconds != nil {
+		*m.addinterval_seconds += i
+	} else {
+		m.addinterval_seconds = &i
+	}
+}
+
+// AddedIntervalSeconds returns the value that was added to the "interval_seconds" field in this mutation.
+func (m *DegradationTargetMutation) AddedIntervalSeconds() (r int, exists bool) {
+	v := m.addinterval_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetIntervalSeconds resets all changes to the "interval_seconds" field.
+func (m *DegradationTargetMutation) ResetIntervalSeconds() {
+	m.interval_seconds = nil
+	m.addinterval_seconds = nil
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *DegradationTargetMutation) SetEnabled(b bool) {
+	m.enabled = &b
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *DegradationTargetMutation) Enabled() (r bool, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the DegradationTarget entity.
+// If the DegradationTarget object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationTargetMutation) OldEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *DegradationTargetMutation) ResetEnabled() {
+	m.enabled = nil
+}
+
+// SetLastRunAt sets the "last_run_at" field.
+func (m *DegradationTargetMutation) SetLastRunAt(t time.Time) {
+	m.last_run_at = &t
+}
+
+// LastRunAt returns the value of the "last_run_at" field in the mutation.
+func (m *DegradationTargetMutation) LastRunAt() (r time.Time, exists bool) {
+	v := m.last_run_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRunAt returns the old "last_run_at" field's value of the DegradationTarget entity.
+// If the DegradationTarget object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DegradationTargetMutation) OldLastRunAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRunAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRunAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRunAt: %w", err)
+	}
+	return oldValue.LastRunAt, nil
+}
+
+// ClearLastRunAt clears the value of the "last_run_at" field.
+func (m *DegradationTargetMutation) ClearLastRunAt() {
+	m.last_run_at = nil
+	m.clearedFields[degradationtarget.FieldLastRunAt] = struct{}{}
+}
+
+// LastRunAtCleared returns if the "last_run_at" field was cleared in this mutation.
+func (m *DegradationTargetMutation) LastRunAtCleared() bool {
+	_, ok := m.clearedFields[degradationtarget.FieldLastRunAt]
+	return ok
+}
+
+// ResetLastRunAt resets all changes to the "last_run_at" field.
+func (m *DegradationTargetMutation) ResetLastRunAt() {
+	m.last_run_at = nil
+	delete(m.clearedFields, degradationtarget.FieldLastRunAt)
+}
+
+// Where appends a list predicates to the DegradationTargetMutation builder.
+func (m *DegradationTargetMutation) Where(ps ...predicate.DegradationTarget) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DegradationTargetMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DegradationTargetMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DegradationTarget, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DegradationTargetMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DegradationTargetMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DegradationTarget).
+func (m *DegradationTargetMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DegradationTargetMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.created_at != nil {
+		fields = append(fields, degradationtarget.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, degradationtarget.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, degradationtarget.FieldDeletedAt)
+	}
+	if m.group_id != nil {
+		fields = append(fields, degradationtarget.FieldGroupID)
+	}
+	if m.model != nil {
+		fields = append(fields, degradationtarget.FieldModel)
+	}
+	if m.probe_ids != nil {
+		fields = append(fields, degradationtarget.FieldProbeIds)
+	}
+	if m.interval_seconds != nil {
+		fields = append(fields, degradationtarget.FieldIntervalSeconds)
+	}
+	if m.enabled != nil {
+		fields = append(fields, degradationtarget.FieldEnabled)
+	}
+	if m.last_run_at != nil {
+		fields = append(fields, degradationtarget.FieldLastRunAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DegradationTargetMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case degradationtarget.FieldCreatedAt:
+		return m.CreatedAt()
+	case degradationtarget.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case degradationtarget.FieldDeletedAt:
+		return m.DeletedAt()
+	case degradationtarget.FieldGroupID:
+		return m.GroupID()
+	case degradationtarget.FieldModel:
+		return m.Model()
+	case degradationtarget.FieldProbeIds:
+		return m.ProbeIds()
+	case degradationtarget.FieldIntervalSeconds:
+		return m.IntervalSeconds()
+	case degradationtarget.FieldEnabled:
+		return m.Enabled()
+	case degradationtarget.FieldLastRunAt:
+		return m.LastRunAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DegradationTargetMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case degradationtarget.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case degradationtarget.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case degradationtarget.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case degradationtarget.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case degradationtarget.FieldModel:
+		return m.OldModel(ctx)
+	case degradationtarget.FieldProbeIds:
+		return m.OldProbeIds(ctx)
+	case degradationtarget.FieldIntervalSeconds:
+		return m.OldIntervalSeconds(ctx)
+	case degradationtarget.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case degradationtarget.FieldLastRunAt:
+		return m.OldLastRunAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown DegradationTarget field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DegradationTargetMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case degradationtarget.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case degradationtarget.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case degradationtarget.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case degradationtarget.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case degradationtarget.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case degradationtarget.FieldProbeIds:
+		v, ok := value.([]int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProbeIds(v)
+		return nil
+	case degradationtarget.FieldIntervalSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIntervalSeconds(v)
+		return nil
+	case degradationtarget.FieldEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case degradationtarget.FieldLastRunAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRunAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationTarget field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DegradationTargetMutation) AddedFields() []string {
+	var fields []string
+	if m.addgroup_id != nil {
+		fields = append(fields, degradationtarget.FieldGroupID)
+	}
+	if m.addinterval_seconds != nil {
+		fields = append(fields, degradationtarget.FieldIntervalSeconds)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DegradationTargetMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case degradationtarget.FieldGroupID:
+		return m.AddedGroupID()
+	case degradationtarget.FieldIntervalSeconds:
+		return m.AddedIntervalSeconds()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DegradationTargetMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case degradationtarget.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGroupID(v)
+		return nil
+	case degradationtarget.FieldIntervalSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddIntervalSeconds(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationTarget numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DegradationTargetMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(degradationtarget.FieldDeletedAt) {
+		fields = append(fields, degradationtarget.FieldDeletedAt)
+	}
+	if m.FieldCleared(degradationtarget.FieldLastRunAt) {
+		fields = append(fields, degradationtarget.FieldLastRunAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DegradationTargetMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DegradationTargetMutation) ClearField(name string) error {
+	switch name {
+	case degradationtarget.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	case degradationtarget.FieldLastRunAt:
+		m.ClearLastRunAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationTarget nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DegradationTargetMutation) ResetField(name string) error {
+	switch name {
+	case degradationtarget.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case degradationtarget.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case degradationtarget.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case degradationtarget.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case degradationtarget.FieldModel:
+		m.ResetModel()
+		return nil
+	case degradationtarget.FieldProbeIds:
+		m.ResetProbeIds()
+		return nil
+	case degradationtarget.FieldIntervalSeconds:
+		m.ResetIntervalSeconds()
+		return nil
+	case degradationtarget.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case degradationtarget.FieldLastRunAt:
+		m.ResetLastRunAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DegradationTarget field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DegradationTargetMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DegradationTargetMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DegradationTargetMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DegradationTargetMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DegradationTargetMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DegradationTargetMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DegradationTargetMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown DegradationTarget unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DegradationTargetMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown DegradationTarget edge %s", name)
 }
 
 // EnterpriseMutation represents an operation that mutates the Enterprise nodes in the graph.

@@ -142,6 +142,7 @@ func RegisterAdminRoutes(
 
 		// 每日签到统计与明细
 		registerCheckInRoutes(admin, h)
+		registerDegradationRoutes(admin, h)
 
 		// 操作审计日志
 		registerAuditLogRoutes(admin, h, stepUpAuth)
@@ -867,6 +868,24 @@ func registerCheckInRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		checkIns.GET("/stats", h.Admin.CheckIn.GetStats)
 		checkIns.GET("/records", h.Admin.CheckIn.ListRecords)
 	}
+}
+
+func registerDegradationRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	degradation := admin.Group("/degradation")
+	degradation.GET("/probes", h.Admin.Degradation.ListProbes)
+	degradation.POST("/probes", h.Admin.Degradation.CreateProbe)
+	degradation.POST("/probes/test", h.Admin.Degradation.TestRegex)
+	degradation.PUT("/probes/:id", h.Admin.Degradation.UpdateProbe)
+	degradation.DELETE("/probes/:id", h.Admin.Degradation.DeleteProbe)
+	degradation.GET("/targets", h.Admin.Degradation.ListTargets)
+	degradation.POST("/targets", h.Admin.Degradation.CreateTarget)
+	degradation.PUT("/targets/:id", h.Admin.Degradation.UpdateTarget)
+	degradation.DELETE("/targets/:id", h.Admin.Degradation.DeleteTarget)
+	degradation.POST("/targets/:id/run", h.Admin.Degradation.RunTarget)
+	degradation.GET("/targets/:id/runs", h.Admin.Degradation.TargetRuns)
+	degradation.GET("/overview", h.Admin.Degradation.Overview)
+	degradation.POST("/preview-account", h.Admin.Degradation.PreviewAccount)
+	degradation.POST("/runs/:id/view-token", h.Admin.Degradation.CreateRunViewToken)
 }
 
 // registerAffiliateRoutes 注册邀请返利的管理端路由（专属用户配置）

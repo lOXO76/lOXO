@@ -20,6 +20,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/compositemodelroute"
+	"github.com/Wei-Shaw/sub2api/ent/degradationprobe"
+	"github.com/Wei-Shaw/sub2api/ent/degradationrun"
+	"github.com/Wei-Shaw/sub2api/ent/degradationtarget"
 	"github.com/Wei-Shaw/sub2api/ent/enterprise"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseauditlog"
@@ -955,6 +958,224 @@ func init() {
 	compositemodelrouteDescEnabled := compositemodelrouteFields[7].Descriptor()
 	// compositemodelroute.DefaultEnabled holds the default value on creation for the enabled field.
 	compositemodelroute.DefaultEnabled = compositemodelrouteDescEnabled.Default.(bool)
+	degradationprobeMixin := schema.DegradationProbe{}.Mixin()
+	degradationprobeMixinHooks1 := degradationprobeMixin[1].Hooks()
+	degradationprobe.Hooks[0] = degradationprobeMixinHooks1[0]
+	degradationprobeMixinInters1 := degradationprobeMixin[1].Interceptors()
+	degradationprobe.Interceptors[0] = degradationprobeMixinInters1[0]
+	degradationprobeMixinFields0 := degradationprobeMixin[0].Fields()
+	_ = degradationprobeMixinFields0
+	degradationprobeFields := schema.DegradationProbe{}.Fields()
+	_ = degradationprobeFields
+	// degradationprobeDescCreatedAt is the schema descriptor for created_at field.
+	degradationprobeDescCreatedAt := degradationprobeMixinFields0[0].Descriptor()
+	// degradationprobe.DefaultCreatedAt holds the default value on creation for the created_at field.
+	degradationprobe.DefaultCreatedAt = degradationprobeDescCreatedAt.Default.(func() time.Time)
+	// degradationprobeDescUpdatedAt is the schema descriptor for updated_at field.
+	degradationprobeDescUpdatedAt := degradationprobeMixinFields0[1].Descriptor()
+	// degradationprobe.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	degradationprobe.DefaultUpdatedAt = degradationprobeDescUpdatedAt.Default.(func() time.Time)
+	// degradationprobe.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	degradationprobe.UpdateDefaultUpdatedAt = degradationprobeDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// degradationprobeDescName is the schema descriptor for name field.
+	degradationprobeDescName := degradationprobeFields[0].Descriptor()
+	// degradationprobe.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	degradationprobe.NameValidator = func() func(string) error {
+		validators := degradationprobeDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// degradationprobeDescPrompt is the schema descriptor for prompt field.
+	degradationprobeDescPrompt := degradationprobeFields[1].Descriptor()
+	// degradationprobe.PromptValidator is a validator for the "prompt" field. It is called by the builders before save.
+	degradationprobe.PromptValidator = degradationprobeDescPrompt.Validators[0].(func(string) error)
+	// degradationprobeDescRegexFlags is the schema descriptor for regex_flags field.
+	degradationprobeDescRegexFlags := degradationprobeFields[3].Descriptor()
+	// degradationprobe.DefaultRegexFlags holds the default value on creation for the regex_flags field.
+	degradationprobe.DefaultRegexFlags = degradationprobeDescRegexFlags.Default.(string)
+	// degradationprobe.RegexFlagsValidator is a validator for the "regex_flags" field. It is called by the builders before save.
+	degradationprobe.RegexFlagsValidator = degradationprobeDescRegexFlags.Validators[0].(func(string) error)
+	// degradationprobeDescNegate is the schema descriptor for negate field.
+	degradationprobeDescNegate := degradationprobeFields[4].Descriptor()
+	// degradationprobe.DefaultNegate holds the default value on creation for the negate field.
+	degradationprobe.DefaultNegate = degradationprobeDescNegate.Default.(bool)
+	// degradationprobeDescEnabled is the schema descriptor for enabled field.
+	degradationprobeDescEnabled := degradationprobeFields[5].Descriptor()
+	// degradationprobe.DefaultEnabled holds the default value on creation for the enabled field.
+	degradationprobe.DefaultEnabled = degradationprobeDescEnabled.Default.(bool)
+	// degradationprobeDescSortOrder is the schema descriptor for sort_order field.
+	degradationprobeDescSortOrder := degradationprobeFields[6].Descriptor()
+	// degradationprobe.DefaultSortOrder holds the default value on creation for the sort_order field.
+	degradationprobe.DefaultSortOrder = degradationprobeDescSortOrder.Default.(int)
+	// degradationprobeDescProbeType is the schema descriptor for probe_type field.
+	degradationprobeDescProbeType := degradationprobeFields[7].Descriptor()
+	// degradationprobe.DefaultProbeType holds the default value on creation for the probe_type field.
+	degradationprobe.DefaultProbeType = degradationprobeDescProbeType.Default.(string)
+	// degradationprobe.ProbeTypeValidator is a validator for the "probe_type" field. It is called by the builders before save.
+	degradationprobe.ProbeTypeValidator = degradationprobeDescProbeType.Validators[0].(func(string) error)
+	// degradationprobeDescMaxOutputTokens is the schema descriptor for max_output_tokens field.
+	degradationprobeDescMaxOutputTokens := degradationprobeFields[8].Descriptor()
+	// degradationprobe.DefaultMaxOutputTokens holds the default value on creation for the max_output_tokens field.
+	degradationprobe.DefaultMaxOutputTokens = degradationprobeDescMaxOutputTokens.Default.(int)
+	// degradationprobeDescTimeoutSeconds is the schema descriptor for timeout_seconds field.
+	degradationprobeDescTimeoutSeconds := degradationprobeFields[9].Descriptor()
+	// degradationprobe.DefaultTimeoutSeconds holds the default value on creation for the timeout_seconds field.
+	degradationprobe.DefaultTimeoutSeconds = degradationprobeDescTimeoutSeconds.Default.(int)
+	// degradationprobeDescRunIntervalSeconds is the schema descriptor for run_interval_seconds field.
+	degradationprobeDescRunIntervalSeconds := degradationprobeFields[10].Descriptor()
+	// degradationprobe.DefaultRunIntervalSeconds holds the default value on creation for the run_interval_seconds field.
+	degradationprobe.DefaultRunIntervalSeconds = degradationprobeDescRunIntervalSeconds.Default.(int)
+	degradationrunFields := schema.DegradationRun{}.Fields()
+	_ = degradationrunFields
+	// degradationrunDescModel is the schema descriptor for model field.
+	degradationrunDescModel := degradationrunFields[2].Descriptor()
+	// degradationrun.ModelValidator is a validator for the "model" field. It is called by the builders before save.
+	degradationrun.ModelValidator = func() func(string) error {
+		validators := degradationrunDescModel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(model string) error {
+			for _, fn := range fns {
+				if err := fn(model); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// degradationrunDescProbeName is the schema descriptor for probe_name field.
+	degradationrunDescProbeName := degradationrunFields[4].Descriptor()
+	// degradationrun.ProbeNameValidator is a validator for the "probe_name" field. It is called by the builders before save.
+	degradationrun.ProbeNameValidator = func() func(string) error {
+		validators := degradationrunDescProbeName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(probe_name string) error {
+			for _, fn := range fns {
+				if err := fn(probe_name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// degradationrunDescStatus is the schema descriptor for status field.
+	degradationrunDescStatus := degradationrunFields[5].Descriptor()
+	// degradationrun.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	degradationrun.StatusValidator = func() func(string) error {
+		validators := degradationrunDescStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(status string) error {
+			for _, fn := range fns {
+				if err := fn(status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// degradationrunDescAnswerText is the schema descriptor for answer_text field.
+	degradationrunDescAnswerText := degradationrunFields[6].Descriptor()
+	// degradationrun.DefaultAnswerText holds the default value on creation for the answer_text field.
+	degradationrun.DefaultAnswerText = degradationrunDescAnswerText.Default.(string)
+	// degradationrunDescErrorMessage is the schema descriptor for error_message field.
+	degradationrunDescErrorMessage := degradationrunFields[7].Descriptor()
+	// degradationrun.DefaultErrorMessage holds the default value on creation for the error_message field.
+	degradationrun.DefaultErrorMessage = degradationrunDescErrorMessage.Default.(string)
+	// degradationrunDescLatencyMs is the schema descriptor for latency_ms field.
+	degradationrunDescLatencyMs := degradationrunFields[8].Descriptor()
+	// degradationrun.DefaultLatencyMs holds the default value on creation for the latency_ms field.
+	degradationrun.DefaultLatencyMs = degradationrunDescLatencyMs.Default.(int)
+	// degradationrunDescAccountID is the schema descriptor for account_id field.
+	degradationrunDescAccountID := degradationrunFields[9].Descriptor()
+	// degradationrun.DefaultAccountID holds the default value on creation for the account_id field.
+	degradationrun.DefaultAccountID = degradationrunDescAccountID.Default.(int64)
+	// degradationrunDescProbeType is the schema descriptor for probe_type field.
+	degradationrunDescProbeType := degradationrunFields[10].Descriptor()
+	// degradationrun.DefaultProbeType holds the default value on creation for the probe_type field.
+	degradationrun.DefaultProbeType = degradationrunDescProbeType.Default.(string)
+	// degradationrun.ProbeTypeValidator is a validator for the "probe_type" field. It is called by the builders before save.
+	degradationrun.ProbeTypeValidator = degradationrunDescProbeType.Validators[0].(func(string) error)
+	// degradationrunDescArtifactKind is the schema descriptor for artifact_kind field.
+	degradationrunDescArtifactKind := degradationrunFields[11].Descriptor()
+	// degradationrun.DefaultArtifactKind holds the default value on creation for the artifact_kind field.
+	degradationrun.DefaultArtifactKind = degradationrunDescArtifactKind.Default.(string)
+	// degradationrun.ArtifactKindValidator is a validator for the "artifact_kind" field. It is called by the builders before save.
+	degradationrun.ArtifactKindValidator = degradationrunDescArtifactKind.Validators[0].(func(string) error)
+	// degradationrunDescArtifactContent is the schema descriptor for artifact_content field.
+	degradationrunDescArtifactContent := degradationrunFields[12].Descriptor()
+	// degradationrun.DefaultArtifactContent holds the default value on creation for the artifact_content field.
+	degradationrun.DefaultArtifactContent = degradationrunDescArtifactContent.Default.(string)
+	// degradationrunDescCreatedAt is the schema descriptor for created_at field.
+	degradationrunDescCreatedAt := degradationrunFields[13].Descriptor()
+	// degradationrun.DefaultCreatedAt holds the default value on creation for the created_at field.
+	degradationrun.DefaultCreatedAt = degradationrunDescCreatedAt.Default.(func() time.Time)
+	degradationtargetMixin := schema.DegradationTarget{}.Mixin()
+	degradationtargetMixinHooks1 := degradationtargetMixin[1].Hooks()
+	degradationtarget.Hooks[0] = degradationtargetMixinHooks1[0]
+	degradationtargetMixinInters1 := degradationtargetMixin[1].Interceptors()
+	degradationtarget.Interceptors[0] = degradationtargetMixinInters1[0]
+	degradationtargetMixinFields0 := degradationtargetMixin[0].Fields()
+	_ = degradationtargetMixinFields0
+	degradationtargetFields := schema.DegradationTarget{}.Fields()
+	_ = degradationtargetFields
+	// degradationtargetDescCreatedAt is the schema descriptor for created_at field.
+	degradationtargetDescCreatedAt := degradationtargetMixinFields0[0].Descriptor()
+	// degradationtarget.DefaultCreatedAt holds the default value on creation for the created_at field.
+	degradationtarget.DefaultCreatedAt = degradationtargetDescCreatedAt.Default.(func() time.Time)
+	// degradationtargetDescUpdatedAt is the schema descriptor for updated_at field.
+	degradationtargetDescUpdatedAt := degradationtargetMixinFields0[1].Descriptor()
+	// degradationtarget.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	degradationtarget.DefaultUpdatedAt = degradationtargetDescUpdatedAt.Default.(func() time.Time)
+	// degradationtarget.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	degradationtarget.UpdateDefaultUpdatedAt = degradationtargetDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// degradationtargetDescModel is the schema descriptor for model field.
+	degradationtargetDescModel := degradationtargetFields[1].Descriptor()
+	// degradationtarget.ModelValidator is a validator for the "model" field. It is called by the builders before save.
+	degradationtarget.ModelValidator = func() func(string) error {
+		validators := degradationtargetDescModel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(model string) error {
+			for _, fn := range fns {
+				if err := fn(model); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// degradationtargetDescProbeIds is the schema descriptor for probe_ids field.
+	degradationtargetDescProbeIds := degradationtargetFields[2].Descriptor()
+	// degradationtarget.DefaultProbeIds holds the default value on creation for the probe_ids field.
+	degradationtarget.DefaultProbeIds = degradationtargetDescProbeIds.Default.([]int64)
+	// degradationtargetDescIntervalSeconds is the schema descriptor for interval_seconds field.
+	degradationtargetDescIntervalSeconds := degradationtargetFields[3].Descriptor()
+	// degradationtarget.DefaultIntervalSeconds holds the default value on creation for the interval_seconds field.
+	degradationtarget.DefaultIntervalSeconds = degradationtargetDescIntervalSeconds.Default.(int)
+	// degradationtargetDescEnabled is the schema descriptor for enabled field.
+	degradationtargetDescEnabled := degradationtargetFields[4].Descriptor()
+	// degradationtarget.DefaultEnabled holds the default value on creation for the enabled field.
+	degradationtarget.DefaultEnabled = degradationtargetDescEnabled.Default.(bool)
 	enterpriseMixin := schema.Enterprise{}.Mixin()
 	enterpriseMixinHooks1 := enterpriseMixin[1].Hooks()
 	enterprise.Hooks[0] = enterpriseMixinHooks1[0]

@@ -332,6 +332,10 @@ type SystemSettings struct {
 	// Available Channels feature switch (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
+	DegradationDetectionEnabled       bool    `json:"degradation_detection_enabled"`
+	DegradationThreshold              float64 `json:"degradation_threshold"`
+	DegradationDefaultIntervalSeconds int     `json:"degradation_default_interval_seconds"`
+
 	// Subscription feature switch: gates the whole user-facing subscription surface
 	// (sidebar entries, purchase-page subscription tab, header badge, /subscriptions route).
 	SubscriptionEnabled bool `json:"subscription_enabled"`
@@ -446,7 +450,8 @@ type PublicSettings struct {
 	ChannelMonitorShowQuota              bool   `json:"channel_monitor_show_quota"`
 	ChannelMonitorHideUserRanking        bool   `json:"channel_monitor_hide_user_ranking"`
 
-	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	AvailableChannelsEnabled    bool `json:"available_channels_enabled"`
+	DegradationDetectionEnabled bool `json:"degradation_detection_enabled"`
 
 	SubscriptionEnabled bool `json:"subscription_enabled"`
 

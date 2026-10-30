@@ -867,6 +867,131 @@ var (
 			},
 		},
 	}
+	// DegradationProbesColumns holds the columns for the "degradation_probes" table.
+	DegradationProbesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "name", Type: field.TypeString, Size: 100, SchemaType: map[string]string{"postgres": "varchar(100)"}},
+		{Name: "prompt", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "expect_regex", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "regex_flags", Type: field.TypeString, Size: 8, Default: ""},
+		{Name: "negate", Type: field.TypeBool, Default: false},
+		{Name: "enabled", Type: field.TypeBool, Default: true},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "probe_type", Type: field.TypeString, Size: 16, Default: "regex", SchemaType: map[string]string{"postgres": "varchar(16)"}},
+		{Name: "max_output_tokens", Type: field.TypeInt, Default: 0},
+		{Name: "timeout_seconds", Type: field.TypeInt, Default: 0},
+		{Name: "run_interval_seconds", Type: field.TypeInt, Default: 0},
+	}
+	// DegradationProbesTable holds the schema information for the "degradation_probes" table.
+	DegradationProbesTable = &schema.Table{
+		Name:       "degradation_probes",
+		Columns:    DegradationProbesColumns,
+		PrimaryKey: []*schema.Column{DegradationProbesColumns[0]},
+	}
+	// DegradationRunsColumns holds the columns for the "degradation_runs" table.
+	DegradationRunsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "target_id", Type: field.TypeInt64},
+		{Name: "group_id", Type: field.TypeInt64},
+		{Name: "model", Type: field.TypeString, Size: 200, SchemaType: map[string]string{"postgres": "varchar(200)"}},
+		{Name: "probe_id", Type: field.TypeInt64},
+		{Name: "probe_name", Type: field.TypeString, Size: 100, SchemaType: map[string]string{"postgres": "varchar(100)"}},
+		{Name: "status", Type: field.TypeString, Size: 16},
+		{Name: "answer_text", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "error_message", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "latency_ms", Type: field.TypeInt, Default: 0},
+		{Name: "account_id", Type: field.TypeInt64, Default: 0},
+		{Name: "probe_type", Type: field.TypeString, Size: 16, Default: "regex", SchemaType: map[string]string{"postgres": "varchar(16)"}},
+		{Name: "artifact_kind", Type: field.TypeString, Size: 16, Default: "", SchemaType: map[string]string{"postgres": "varchar(16)"}},
+		{Name: "artifact_content", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// DegradationRunsTable holds the schema information for the "degradation_runs" table.
+	DegradationRunsTable = &schema.Table{
+		Name:       "degradation_runs",
+		Columns:    DegradationRunsColumns,
+		PrimaryKey: []*schema.Column{DegradationRunsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "idx_degradation_runs_group_created",
+				Unique:  false,
+				Columns: []*schema.Column{DegradationRunsColumns[2], DegradationRunsColumns[14]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						DegradationRunsColumns[14].Name: true,
+					},
+				},
+			},
+			{
+				Name:    "idx_degradation_runs_target_created",
+				Unique:  false,
+				Columns: []*schema.Column{DegradationRunsColumns[1], DegradationRunsColumns[14]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						DegradationRunsColumns[14].Name: true,
+					},
+				},
+			},
+			{
+				Name:    "idx_degradation_runs_created",
+				Unique:  false,
+				Columns: []*schema.Column{DegradationRunsColumns[14]},
+			},
+			{
+				Name:    "idx_degradation_runs_visual_latest",
+				Unique:  false,
+				Columns: []*schema.Column{DegradationRunsColumns[2], DegradationRunsColumns[3], DegradationRunsColumns[4], DegradationRunsColumns[14]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						DegradationRunsColumns[14].Name: true,
+					},
+					Where: "probe_type = 'visual' AND status = 'rendered'",
+				},
+			},
+			{
+				Name:    "idx_degradation_runs_target_probe_created",
+				Unique:  false,
+				Columns: []*schema.Column{DegradationRunsColumns[1], DegradationRunsColumns[4], DegradationRunsColumns[14]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						DegradationRunsColumns[14].Name: true,
+					},
+				},
+			},
+		},
+	}
+	// DegradationTargetsColumns holds the columns for the "degradation_targets" table.
+	DegradationTargetsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "group_id", Type: field.TypeInt64},
+		{Name: "model", Type: field.TypeString, Size: 200, SchemaType: map[string]string{"postgres": "varchar(200)"}},
+		{Name: "probe_ids", Type: field.TypeJSON, SchemaType: map[string]string{"postgres": "jsonb"}},
+		{Name: "interval_seconds", Type: field.TypeInt, Default: 1800},
+		{Name: "enabled", Type: field.TypeBool, Default: true},
+		{Name: "last_run_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// DegradationTargetsTable holds the schema information for the "degradation_targets" table.
+	DegradationTargetsTable = &schema.Table{
+		Name:       "degradation_targets",
+		Columns:    DegradationTargetsColumns,
+		PrimaryKey: []*schema.Column{DegradationTargetsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "idx_degradation_targets_group_model",
+				Unique:  true,
+				Columns: []*schema.Column{DegradationTargetsColumns[4], DegradationTargetsColumns[5]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "deleted_at IS NULL",
+				},
+			},
+		},
+	}
 	// EnterprisesColumns holds the columns for the "enterprises" table.
 	EnterprisesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -2505,6 +2630,9 @@ var (
 		ChannelMonitorHistoriesTable,
 		ChannelMonitorRequestTemplatesTable,
 		CompositeModelRoutesTable,
+		DegradationProbesTable,
+		DegradationRunsTable,
+		DegradationTargetsTable,
 		EnterprisesTable,
 		EnterpriseAllowedGroupsTable,
 		EnterpriseAuditLogsTable,
@@ -2601,6 +2729,15 @@ func init() {
 	CompositeModelRoutesTable.ForeignKeys[0].RefTable = GroupsTable
 	CompositeModelRoutesTable.Annotation = &entsql.Annotation{
 		Table: "composite_model_routes",
+	}
+	DegradationProbesTable.Annotation = &entsql.Annotation{
+		Table: "degradation_probes",
+	}
+	DegradationRunsTable.Annotation = &entsql.Annotation{
+		Table: "degradation_runs",
+	}
+	DegradationTargetsTable.Annotation = &entsql.Annotation{
+		Table: "degradation_targets",
 	}
 	EnterprisesTable.Annotation = &entsql.Annotation{
 		Table: "enterprises",

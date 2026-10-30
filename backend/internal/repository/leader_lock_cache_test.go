@@ -77,3 +77,33 @@ func TestLeaderLockCache_TTLExpires(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ok, "lock should be re-acquirable after the TTL expires")
 }
+
+func TestLeaderLockCache_RenewalRequiresCurrentOwner(t *testing.T) {
+	cache, mr := newLeaderLockTestCache(t)
+	ctx := context.Background()
+	const key = "degradation:runner:leader"
+	ok, err := cache.TryAcquireLeaderLock(ctx, key, "A", 2*time.Minute)
+	require.NoError(t, err)
+	require.True(t, ok)
+	mr.FastForward(time.Minute)
+	ok, err = cache.RenewLeaderLock(ctx, key, "A", 2*time.Minute)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, 2*time.Minute, mr.TTL(leaderLockKeyPrefix+key))
+	ok, err = cache.RenewLeaderLock(ctx, key, "B", time.Hour)
+	require.NoError(t, err)
+	require.False(t, ok)
+	require.Equal(t, 2*time.Minute, mr.TTL(leaderLockKeyPrefix+key))
+	mr.FastForward(3 * time.Minute)
+	ok, err = cache.TryAcquireLeaderLock(ctx, key, "B", time.Minute)
+	require.NoError(t, err)
+	require.True(t, ok)
+	ok, err = cache.RenewLeaderLock(ctx, key, "A", time.Hour)
+	require.NoError(t, err)
+	require.False(t, ok)
+	require.Equal(t, time.Minute, mr.TTL(leaderLockKeyPrefix+key))
+}
+
+func TestLeaderLockCache_NoRedis(t *testing.T) {
+	require.Nil(t, NewLeaderLockCache(nil))
+}

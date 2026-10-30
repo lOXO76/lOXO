@@ -27,6 +27,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/compositemodelroute"
+	"github.com/Wei-Shaw/sub2api/ent/degradationprobe"
+	"github.com/Wei-Shaw/sub2api/ent/degradationrun"
+	"github.com/Wei-Shaw/sub2api/ent/degradationtarget"
 	"github.com/Wei-Shaw/sub2api/ent/enterprise"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseauditlog"
@@ -136,6 +139,9 @@ func checkColumn(t, c string) error {
 			channelmonitorhistory.Table:         channelmonitorhistory.ValidColumn,
 			channelmonitorrequesttemplate.Table: channelmonitorrequesttemplate.ValidColumn,
 			compositemodelroute.Table:           compositemodelroute.ValidColumn,
+			degradationprobe.Table:              degradationprobe.ValidColumn,
+			degradationrun.Table:                degradationrun.ValidColumn,
+			degradationtarget.Table:             degradationtarget.ValidColumn,
 			enterprise.Table:                    enterprise.ValidColumn,
 			enterpriseallowedgroup.Table:        enterpriseallowedgroup.ValidColumn,
 			enterpriseauditlog.Table:            enterpriseauditlog.ValidColumn,

@@ -17,6 +17,11 @@ func RegisterUserRoutes(
 	settingService *service.SettingService,
 	panelRateLimiter *middleware.PanelRateLimiter,
 ) {
+	// Signed artifact documents have their own CSP and do not use JWT auth.
+	visualRender := v1.Group("/degradation/visual-render")
+	visualRender.Use(panelRateLimiter.PublicIP())
+	visualRender.GET("/:token", h.DegradationVisualRender.Render)
+
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
 	authenticated.Use(middleware.BackendModeUserGuard(settingService))
@@ -146,6 +151,14 @@ func RegisterUserRoutes(
 		}
 
 		// 渠道监控（用户只读）
+		degradation := authenticated.Group("/degradation")
+		{
+			degradation.GET("/overview", h.Degradation.Overview)
+			degradation.GET("/runs", h.Degradation.Runs)
+			degradation.GET("/visual-runs", h.Degradation.VisualRuns)
+			degradation.POST("/visual-runs/:id/view-token", h.Degradation.CreateVisualViewToken)
+		}
+
 		monitors := authenticated.Group("/channel-monitors")
 		{
 			monitors.GET("", h.ChannelMonitor.List)

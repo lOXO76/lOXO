@@ -503,6 +503,9 @@ func (r *groupRepository) Delete(ctx context.Context, id int64) error {
 	if err := deleteEnterpriseGroupReferences(ctx, client, id); err != nil {
 		return err
 	}
+	if _, err := client.ExecContext(ctx, `UPDATE degradation_targets SET deleted_at = NOW(), updated_at = NOW() WHERE group_id = $1 AND deleted_at IS NULL`, id); err != nil {
+		return fmt.Errorf("soft-delete group degradation targets: %w", err)
+	}
 	if tx != nil {
 		if err := tx.Commit(); err != nil {
 			return translatePersistenceError(err, nil, nil)
@@ -1019,6 +1022,9 @@ func (r *groupRepository) deleteCascade(ctx context.Context, id int64, requireEm
 	}
 
 	// 5. Soft-delete group itself.
+	if _, err := exec.ExecContext(ctx, `UPDATE degradation_targets SET deleted_at = NOW(), updated_at = NOW() WHERE group_id = $1 AND deleted_at IS NULL`, id); err != nil {
+		return nil, fmt.Errorf("soft-delete group degradation targets: %w", err)
+	}
 	if _, err := txClient.Group.Delete().Where(group.IDEQ(id)).Exec(ctx); err != nil {
 		return nil, err
 	}

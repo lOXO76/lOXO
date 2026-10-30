@@ -216,6 +216,10 @@ type SystemSettings struct {
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
+	DegradationDetectionEnabled       bool    `json:"degradation_detection_enabled"`
+	DegradationThreshold              float64 `json:"degradation_threshold"`
+	DegradationDefaultIntervalSeconds int     `json:"degradation_default_interval_seconds"`
+
 	// Subscription feature switch: gates the whole user-facing subscription surface
 	// (sidebar entries, purchase-page subscription tab, header progress badge,
 	// usage billing-type filter, /subscriptions route). Pairs with PaymentBalanceDisabled
@@ -407,7 +411,8 @@ type PublicSettings struct {
 	GrokDefaultBaseURLMode         string `json:"grok_default_base_url_mode"`
 
 	// Available Channels feature (user-facing aggregate view)
-	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	AvailableChannelsEnabled    bool `json:"available_channels_enabled"`
+	DegradationDetectionEnabled bool `json:"degradation_detection_enabled"`
 
 	// Subscription feature switch (see SystemSettings.SubscriptionEnabled)
 	SubscriptionEnabled bool `json:"subscription_enabled"`

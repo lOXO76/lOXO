@@ -196,6 +196,10 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyChannelMonitorShowQuota:              "false",
 		SettingKeyChannelMonitorHideUserRanking:        "false",
 
+		SettingKeyDegradationDetectionEnabled:       "true",
+		SettingKeyDegradationThreshold:              "0.8",
+		SettingKeyDegradationDefaultIntervalSeconds: "1800",
+
 		// Grok compatibility defaults: cross-client mapping stays enabled unless
 		// operators explicitly disable it.
 		SettingKeyGrokDefaultTextModel:           "grok-4.6",
@@ -821,6 +825,11 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	result.ChannelMonitorShowQuota = settings[SettingKeyChannelMonitorShowQuota] == "true"
 	result.ChannelMonitorHideUserRanking = isTrueSettingValue(settings[SettingKeyChannelMonitorHideUserRanking])
 
+	degradation := parseDegradationRuntime(settings)
+	result.DegradationDetectionEnabled = degradation.Enabled
+	result.DegradationThreshold = degradation.Threshold
+	result.DegradationDefaultIntervalSeconds = degradation.DefaultIntervalSeconds
+
 	// Grok default mapping policy
 	result.GrokDefaultTextModel = strings.TrimSpace(settings[SettingKeyGrokDefaultTextModel])
 	if result.GrokDefaultTextModel == "" {
@@ -1028,6 +1037,18 @@ func clampAffiliateRebateRate(value float64) float64 {
 		return AffiliateRebateRateMax
 	}
 	return value
+}
+
+func parseDegradationRuntime(settings map[string]string) DegradationRuntime {
+	runtime := defaultDegradationRuntime()
+	runtime.Enabled = !isFalseSettingValue(settings[SettingKeyDegradationDetectionEnabled])
+	if threshold, err := strconv.ParseFloat(strings.TrimSpace(settings[SettingKeyDegradationThreshold]), 64); err == nil && threshold >= 0 && threshold <= 1 {
+		runtime.Threshold = threshold
+	}
+	if interval, err := strconv.Atoi(strings.TrimSpace(settings[SettingKeyDegradationDefaultIntervalSeconds])); err == nil && interval >= 300 && interval <= 86400 {
+		runtime.DefaultIntervalSeconds = interval
+	}
+	return runtime
 }
 
 func isFalseSettingValue(value string) bool {
