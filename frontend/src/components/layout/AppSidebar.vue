@@ -258,13 +258,14 @@ import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
 import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
-import { Building2, CalendarCheck2 } from '@lucide/vue'
+import { Building2, CalendarCheck2, MonitorDown } from '@lucide/vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { canAccessEnterprise, enterpriseSectionPath } from '@/features/enterprise/navigation'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
 
 const BuildingIcon = { render: () => h(Building2, { strokeWidth: 1.5 }) }
 const CheckInIcon = { render: () => h(CalendarCheck2, { strokeWidth: 1.5 }) }
+const ImportClientIcon = { render: () => h(MonitorDown, { strokeWidth: 1.5 }) }
 
 interface NavItem {
   path: string
@@ -824,7 +825,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
       }))
     },
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
-    { path: '/import-clients', label: t('nav.importClients'), icon: KeyIcon },
+    { path: '/import-clients', label: t('nav.importClients'), icon: ImportClientIcon },
     { path: '/batch-image', label: t('nav.batchImage'), icon: BatchImageIcon, hideInSimpleMode: true, featureFlag: flagBatchImageAccess },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/async-tasks', label: t('nav.asyncTasks'), icon: ServerIcon },
@@ -954,7 +955,7 @@ const adminNavItems = computed((): NavItem[] => {
   if (authStore.isSimpleMode) {
     const filtered = visible.filter(item => !item.hideInSimpleMode)
     filtered.push({ path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon })
-    filtered.push({ path: '/import-clients', label: t('nav.importClients'), icon: KeyIcon })
+    filtered.push({ path: '/import-clients', label: t('nav.importClients'), icon: ImportClientIcon })
     filtered.push({ path: '/async-tasks', label: t('nav.asyncTasks'), icon: ServerIcon })
     if (flagApiDocs()) {
       filtered.push({ path: '/docs/api', label: t('nav.apiDocs'), icon: BookIcon })
