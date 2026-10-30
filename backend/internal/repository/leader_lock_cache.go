@@ -22,6 +22,13 @@ end
 return 0
 `)
 
+var leaderLockRenewScript = redis.NewScript(`
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("PEXPIRE", KEYS[1], ARGV[2])
+end
+return 0
+`)
+
 type leaderLockCache struct {
 	rdb *redis.Client
 }
@@ -30,7 +37,16 @@ type leaderLockCache struct {
 // service.LeaderLockCache used by periodic background jobs to elect a single
 // runner across instances.
 func NewLeaderLockCache(rdb *redis.Client) service.LeaderLockCache {
+	if rdb == nil {
+		return nil
+	}
 	return &leaderLockCache{rdb: rdb}
+}
+
+// RenewLeaderLock is an optional capability for jobs longer than one lease.
+func (c *leaderLockCache) RenewLeaderLock(ctx context.Context, key, owner string, ttl time.Duration) (bool, error) {
+	result, err := leaderLockRenewScript.Run(ctx, c.rdb, []string{leaderLockKeyPrefix + key}, owner, ttl.Milliseconds()).Int64()
+	return result == 1, err
 }
 
 func (c *leaderLockCache) TryAcquireLeaderLock(ctx context.Context, key, owner string, ttl time.Duration) (bool, error) {

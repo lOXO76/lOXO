@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/geminicli"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
@@ -42,11 +43,64 @@ import (
 // Some upstream APIs return non-standard "data:" without space (should be "data: ").
 var sseDataPrefix = regexp.MustCompile(`^data:\s*`)
 
+var errPromptProbeTypeSafeUnsupported = errors.New("prompt probes do not support TypeSafe structured questions")
+
 const (
 	testClaudeAPIURL            = "https://api.anthropic.com/v1/messages?beta=true"
 	chatgptCodexAPIURL          = "https://chatgpt.com/backend-api/codex/responses"
 	defaultAntigravityTestModel = "claude-sonnet-4-6"
+	promptProbeResponseMaxBytes = 4 << 20
 )
+
+type accountPromptProbeContextKey struct{}
+type accountPromptProbeOptionsContextKey struct{}
+
+// PromptProbeOptions configures one unbilled prompt probe.
+type PromptProbeOptions struct {
+	Stream          bool
+	MaxOutputTokens int
+	Timeout         time.Duration
+}
+
+func accountPromptProbeOptions(ctx context.Context) PromptProbeOptions {
+	opts, _ := ctx.Value(accountPromptProbeOptionsContextKey{}).(PromptProbeOptions)
+	return opts
+}
+
+func isAccountPromptProbe(ctx context.Context) bool {
+	probe, _ := ctx.Value(accountPromptProbeContextKey{}).(bool)
+	return probe
+}
+
+func isAccountPromptProbeNonStreaming(ctx context.Context) bool {
+	return isAccountPromptProbe(ctx) && !accountPromptProbeOptions(ctx).Stream
+}
+
+func accountTestOutputLimit(ctx context.Context, fallback int) int {
+	if isAccountPromptProbe(ctx) && accountPromptProbeOptions(ctx).MaxOutputTokens > 0 {
+		return accountPromptProbeOptions(ctx).MaxOutputTokens
+	}
+	return fallback
+}
+
+func accountTestResponseSucceeded(ctx context.Context, status int) bool {
+	if isAccountPromptProbe(ctx) {
+		return status >= http.StatusOK && status < http.StatusMultipleChoices
+	}
+	return status == http.StatusOK
+}
+
+func prepareAccountPromptProbeRequest(req *http.Request) {
+	if isAccountPromptProbe(req.Context()) {
+		// A non-replayable body also disables the Grok transport's 403 fallback.
+		req.GetBody = nil
+		if accountPromptProbeOptions(req.Context()).Stream {
+			req.Header.Set("Accept", "text/event-stream")
+		} else {
+			req.Header.Set("Accept", "application/json")
+		}
+	}
+}
 
 // TestEvent represents a SSE event for account testing
 type TestEvent struct {
@@ -312,11 +366,19 @@ func generateSessionString() (string, error) {
 	return FormatMetadataUserID(hex64, "", sessionUUID, uaVersion), nil
 }
 
-// createTestPayload creates a Claude Code style test request payload
+// createTestPayload preserves the default account-test prompt for existing callers.
 func createTestPayload(modelID string) (map[string]any, error) {
+	return createTestPayloadWithPrompt(modelID, "hi")
+}
+
+// createTestPayloadWithPrompt creates a Claude Code style test request payload.
+func createTestPayloadWithPrompt(modelID string, prompt string) (map[string]any, error) {
 	sessionID, err := generateSessionString()
 	if err != nil {
 		return nil, err
+	}
+	if strings.TrimSpace(prompt) == "" {
+		prompt = "hi"
 	}
 
 	return map[string]any{
@@ -327,7 +389,7 @@ func createTestPayload(modelID string) (map[string]any, error) {
 				"content": []map[string]any{
 					{
 						"type": "text",
-						"text": "hi",
+						"text": prompt,
 						"cache_control": map[string]string{
 							"type": "ephemeral",
 						},
@@ -369,6 +431,15 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 		return s.sendErrorAndEnd(c, "Account not found")
 	}
 	bindAccountTestPlatform(c, account)
+	if isAccountPromptProbe(ctx) && account.IsTypeSafe() {
+		logAccountTestError(c, errPromptProbeTypeSafeUnsupported.Error())
+		return errPromptProbeTypeSafeUnsupported
+	}
+	if isAccountPromptProbe(ctx) && (account.Platform == PlatformVideo || account.IsSyntheticUITest() ||
+		isOpenAIImageModel(account.GetMappedModel(modelID)) || isImageGenerationModel(account.GetMappedModel(modelID)) ||
+		isGrokImageGenerationModel(account.GetMappedModel(modelID)) || isGrokVideoGenerationModel(account.GetMappedModel(modelID))) {
+		return s.sendErrorAndEnd(c, "Prompt probes require a real text model")
+	}
 	if account.Platform == PlatformVideo {
 		return s.testVideoAccountConnection(c, account, modelID, prompt, testOpts)
 	}
@@ -398,7 +469,7 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 		case APIProtocolChatCompletions:
 			return s.testCNProviderChatCompletionsConnection(c, account, modelID, prompt)
 		case APIProtocolAnthropic:
-			return s.testCNProviderAnthropicConnection(c, account, modelID)
+			return s.testCNProviderAnthropicConnection(c, account, modelID, prompt)
 		}
 	}
 
@@ -427,7 +498,7 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 		return s.testTypeSafeAccountConnection(c, account, prompt)
 	}
 
-	return s.testClaudeAccountConnection(c, account, modelID)
+	return s.testClaudeAccountConnection(c, account, modelID, prompt)
 }
 
 // testModelRoutedAccountConnection probes the native endpoint for the selected
@@ -457,15 +528,15 @@ func (s *AccountTestService) testModelRoutedAccountConnection(c *gin.Context, ac
 	}
 	switch protocol {
 	case APIProtocolAnthropic:
-		return s.testCNProviderAnthropicConnection(c, account, testModelID)
+		return s.testCNProviderAnthropicConnection(c, account, testModelID, prompt)
 	case APIProtocolResponses:
-		return s.testModelRoutedResponsesConnection(c, account, testModelID)
+		return s.testModelRoutedResponsesConnection(c, account, testModelID, prompt)
 	default:
 		return s.testCNProviderChatCompletionsConnection(c, account, testModelID, prompt)
 	}
 }
 
-func (s *AccountTestService) testModelRoutedResponsesConnection(c *gin.Context, account *Account, testModelID string) error {
+func (s *AccountTestService) testModelRoutedResponsesConnection(c *gin.Context, account *Account, testModelID string, prompt string) error {
 	authToken := strings.TrimSpace(account.GetOpenAIProtocolAPIKey())
 	if authToken == "" {
 		return s.sendErrorAndEnd(c, "No API key available")
@@ -476,7 +547,7 @@ func (s *AccountTestService) testModelRoutedResponsesConnection(c *gin.Context, 
 	c.Writer.Header().Set("X-Accel-Buffering", "no")
 	c.Writer.Flush()
 	s.sendEvent(c, TestEvent{Type: "test_start", Model: testModelID})
-	return s.testCNProviderAdaptiveResponsesConnection(c, account, testModelID, authToken)
+	return s.testCNProviderAdaptiveResponsesConnection(c, account, testModelID, authToken, prompt)
 }
 
 func (s *AccountTestService) testCNProviderChatCompletionsConnection(c *gin.Context, account *Account, modelID string, prompt string) error {
@@ -504,7 +575,7 @@ func (s *AccountTestService) testCNProviderChatCompletionsConnection(c *gin.Cont
 }
 
 // testClaudeAccountConnection tests an Anthropic Claude account's connection
-func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account *Account, modelID string) error {
+func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account *Account, modelID string, prompt string) error {
 	ctx := c.Request.Context()
 
 	// Determine the model to use
@@ -520,10 +591,10 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 
 	// Bedrock accounts use a separate test path
 	if account.IsBedrock() {
-		return s.testBedrockAccountConnection(c, ctx, account, testModelID)
+		return s.testBedrockAccountConnection(c, ctx, account, testModelID, prompt)
 	}
 	if account.Type == AccountTypeServiceAccount {
-		return s.testClaudeVertexServiceAccountConnection(c, ctx, account, testModelID)
+		return s.testClaudeVertexServiceAccountConnection(c, ctx, account, testModelID, prompt)
 	}
 
 	// Determine authentication method and API URL
@@ -563,10 +634,18 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 	c.Writer.Flush()
 
 	// Create Claude Code style payload (same for all account types)
-	payload, err := createTestPayload(testModelID)
+	var payload map[string]any
+	var err error
+	if strings.TrimSpace(prompt) == "" {
+		payload, err = createTestPayload(testModelID)
+	} else {
+		payload, err = createTestPayloadWithPrompt(testModelID, prompt)
+	}
 	if err != nil {
 		return s.sendErrorAndEnd(c, "Failed to create test payload")
 	}
+	payload["stream"] = !isAccountPromptProbeNonStreaming(ctx)
+	payload["max_tokens"] = accountTestOutputLimit(ctx, 1024)
 	payloadBytes, _ := json.Marshal(payload)
 
 	// Send test_start event
@@ -599,6 +678,7 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 
 	// 账号级请求头覆写：测试请求与真实转发保持一致的最终头
 	account.ApplyHeaderOverrides(req.Header)
+	prepareAccountPromptProbeRequest(req)
 
 	// Get proxy URL
 	proxyURL := ""
@@ -612,7 +692,7 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		errMsg := fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body))
 
@@ -625,10 +705,13 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 	}
 
 	// Process SSE stream
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return s.processPromptProbeJSON(c, resp.Body, APIProtocolAnthropic)
+	}
 	return s.processClaudeStream(c, resp.Body)
 }
 
-func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Context, ctx context.Context, account *Account, testModelID string) error {
+func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Context, ctx context.Context, account *Account, testModelID string, prompt string) error {
 	if mappedModel, matched := account.ResolveMappedModel(testModelID); matched {
 		testModelID = mappedModel
 	} else {
@@ -641,10 +724,12 @@ func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Con
 	c.Writer.Header().Set("X-Accel-Buffering", "no")
 	c.Writer.Flush()
 
-	payload, err := createTestPayload(testModelID)
+	payload, err := createTestPayloadWithPrompt(testModelID, prompt)
 	if err != nil {
 		return s.sendErrorAndEnd(c, "Failed to create test payload")
 	}
+	payload["stream"] = !isAccountPromptProbeNonStreaming(ctx)
+	payload["max_tokens"] = accountTestOutputLimit(ctx, 1024)
 	payloadBytes, _ := json.Marshal(payload)
 	vertexBody, err := buildVertexAnthropicRequestBody(payloadBytes)
 	if err != nil {
@@ -659,7 +744,7 @@ func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Con
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to get service account access token: %s", err.Error()))
 	}
 
-	fullURL, err := buildVertexAnthropicURL(account.VertexProjectID(), account.VertexLocation(testModelID), testModelID, true)
+	fullURL, err := buildVertexAnthropicURL(account.VertexProjectID(), account.VertexLocation(testModelID), testModelID, !isAccountPromptProbeNonStreaming(ctx))
 	if err != nil {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to build Vertex URL: %s", err.Error()))
 	}
@@ -672,6 +757,7 @@ func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Con
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
+	prepareAccountPromptProbeRequest(req)
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -684,7 +770,7 @@ func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Con
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		errMsg := fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body))
 		if resp.StatusCode == http.StatusForbidden {
@@ -693,17 +779,23 @@ func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Con
 		return s.sendErrorAndEnd(c, errMsg)
 	}
 
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return s.processPromptProbeJSON(c, resp.Body, APIProtocolAnthropic)
+	}
 	return s.processClaudeStream(c, resp.Body)
 }
 
 // testBedrockAccountConnection tests a Bedrock (SigV4 or API Key) account using non-streaming invoke
-func (s *AccountTestService) testBedrockAccountConnection(c *gin.Context, ctx context.Context, account *Account, testModelID string) error {
+func (s *AccountTestService) testBedrockAccountConnection(c *gin.Context, ctx context.Context, account *Account, testModelID string, prompt string) error {
 	region := bedrockRuntimeRegion(account)
 	resolvedModelID, ok := ResolveBedrockModelID(account, testModelID)
 	if !ok {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Unsupported Bedrock model: %s", testModelID))
 	}
 	testModelID = resolvedModelID
+	if strings.TrimSpace(prompt) == "" {
+		prompt = "hi"
+	}
 
 	// Set SSE headers (test UI expects SSE)
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
@@ -721,18 +813,18 @@ func (s *AccountTestService) testBedrockAccountConnection(c *gin.Context, ctx co
 				"content": []map[string]any{
 					{
 						"type": "text",
-						"text": "hi",
+						"text": prompt,
 					},
 				},
 			},
 		},
-		"max_tokens":  256,
+		"max_tokens":  accountTestOutputLimit(ctx, 256),
 		"temperature": 1,
 	}
 	bedrockBody, _ := json.Marshal(bedrockPayload)
 
-	// Use non-streaming endpoint (response is standard Claude JSON)
-	apiURL := BuildBedrockURL(region, testModelID, false)
+	stream := isAccountPromptProbe(ctx) && accountPromptProbeOptions(ctx).Stream
+	apiURL := BuildBedrockURL(region, testModelID, stream)
 
 	s.sendEvent(c, TestEvent{Type: "test_start", Model: testModelID})
 
@@ -741,6 +833,9 @@ func (s *AccountTestService) testBedrockAccountConnection(c *gin.Context, ctx co
 		return s.sendErrorAndEnd(c, "Failed to create request")
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if stream {
+		req.Header.Set("X-Amzn-Bedrock-Accept", "application/json")
+	}
 
 	// Sign or set auth based on account type
 	if account.IsBedrockAPIKey() {
@@ -758,6 +853,7 @@ func (s *AccountTestService) testBedrockAccountConnection(c *gin.Context, ctx co
 			return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to sign request: %s", err.Error()))
 		}
 	}
+	prepareAccountPromptProbeRequest(req)
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -770,10 +866,16 @@ func (s *AccountTestService) testBedrockAccountConnection(c *gin.Context, ctx co
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	body, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
+		body, _ := io.ReadAll(resp.Body)
 		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
+	}
+	if stream {
+		return s.processBedrockPromptProbeStream(c, resp.Body)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	if isAccountPromptProbe(ctx) {
+		return s.processPromptProbeJSON(c, bytes.NewReader(body), APIProtocolAnthropic)
 	}
 
 	// Bedrock non-streaming response is standard Claude JSON, extract the text
@@ -893,7 +995,9 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 	if isOAuth {
 		upstreamTestModelID = normalizeOpenAIModelForUpstream(credentialAccount, testModelID)
 	}
-	payload := createOpenAITestPayload(upstreamTestModelID, isOAuth)
+	payload := createOpenAITestPayloadWithPrompt(upstreamTestModelID, isOAuth, prompt)
+	// Codex OAuth only supports SSE upstream, including non-streaming callers.
+	payload["stream"] = isOAuth || !isAccountPromptProbeNonStreaming(ctx)
 	payloadBytes, _ := json.Marshal(payload)
 
 	// Send test_start event once. A task-invalid Agent Identity response may
@@ -947,6 +1051,10 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 
 	// 账号级请求头覆写：测试请求与真实转发保持一致的最终头
 	credentialAccount.ApplyHeaderOverrides(req.Header)
+	prepareAccountPromptProbeRequest(req)
+	if isOAuth {
+		req.Header.Set("Accept", "text/event-stream")
+	}
 
 	// Get proxy URL
 	proxyURL := ""
@@ -967,10 +1075,10 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 		}
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		body = redactAgentIdentitySensitiveBodyForAccount(ctx, s.accountRepo, credentialAccount, body)
-		if !agentIdentityTaskRecoveryWasTried(ctx) && credentialAccount.IsOpenAIAgentIdentity() && isAgentIdentityTaskInvalidHTTPResponse(resp.StatusCode, body) {
+		if !isAccountPromptProbe(ctx) && !agentIdentityTaskRecoveryWasTried(ctx) && credentialAccount.IsOpenAIAgentIdentity() && isAgentIdentityTaskInvalidHTTPResponse(resp.StatusCode, body) {
 			expectedTaskID := credentialAccount.GetCredential("task_id")
 			if err := ensureAgentIdentityTaskForAccount(ctx, s.accountRepo, s.agentIdentityWS, &s.agentIdentityTaskMu, credentialAccount, expectedTaskID); err != nil {
 				return s.sendErrorAndEnd(c, fmt.Sprintf("Agent Identity task recovery failed: %s", err.Error()))
@@ -990,6 +1098,9 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 	}
 
 	// Process SSE stream
+	if isAccountPromptProbeNonStreaming(ctx) && (!isOAuth || strings.Contains(resp.Header.Get("Content-Type"), "application/json")) {
+		return s.processPromptProbeJSON(c, resp.Body, APIProtocolResponses)
+	}
 	return s.processOpenAIStream(c, resp.Body)
 }
 
@@ -1044,7 +1155,7 @@ func (s *AccountTestService) testGrokAccountConnection(c *gin.Context, account *
 		if mapped := strings.TrimSpace(account.GetMappedModel(testModelID)); mapped != "" {
 			testModelID = mapped
 		}
-		return s.testGrokResponsesConnection(c, ctx, account, authToken, testModelID)
+		return s.testGrokResponsesConnection(c, ctx, account, authToken, testModelID, prompt)
 	}
 
 	// mode == default: infer from model family (legacy UI / API clients).
@@ -1062,7 +1173,7 @@ func (s *AccountTestService) testGrokAccountConnection(c *gin.Context, account *
 	case isGrokVideoGenerationModel(testModelID):
 		return s.testGrokVideoGeneration(c, ctx, account, authToken, testModelID, resolveGrokVideoPrompt(prompt), opts)
 	default:
-		return s.testGrokResponsesConnection(c, ctx, account, authToken, testModelID)
+		return s.testGrokResponsesConnection(c, ctx, account, authToken, testModelID, prompt)
 	}
 }
 
@@ -1248,7 +1359,7 @@ func (s *AccountTestService) observeGrokTestResponse(ctx context.Context, accoun
 	}
 }
 
-func (s *AccountTestService) testGrokResponsesConnection(c *gin.Context, ctx context.Context, account *Account, authToken, testModelID string) error {
+func (s *AccountTestService) testGrokResponsesConnection(c *gin.Context, ctx context.Context, account *Account, authToken, testModelID, prompt string) error {
 	apiURL, err := buildGrokResponsesURL(account, s.cfg, s.settingService)
 	if err != nil {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Invalid Grok base URL: %s", err.Error()))
@@ -1256,7 +1367,12 @@ func (s *AccountTestService) testGrokResponsesConnection(c *gin.Context, ctx con
 
 	s.prepareGrokTestSSE(c)
 
-	payloadBytes, err := buildGrokQuotaProbeBody(testModelID)
+	if strings.TrimSpace(prompt) == "" {
+		prompt = grokQuotaProbeInput
+	}
+	payloadBytes, err := json.Marshal(map[string]any{
+		"model": testModelID, "input": prompt, "stream": !isAccountPromptProbeNonStreaming(ctx),
+	})
 	if err != nil {
 		return s.sendErrorAndEnd(c, "Failed to create Grok test payload")
 	}
@@ -1270,6 +1386,7 @@ func (s *AccountTestService) testGrokResponsesConnection(c *gin.Context, ctx con
 		return s.sendErrorAndEnd(c, "Failed to create Grok request")
 	}
 	s.applyGrokTestRequestHeaders(req, account, authToken, "application/json, text/event-stream")
+	prepareAccountPromptProbeRequest(req)
 
 	resp, err := s.httpUpstream.Do(req, s.grokTestProxyURL(account), account.ID, account.Concurrency)
 	if err != nil {
@@ -1279,11 +1396,14 @@ func (s *AccountTestService) testGrokResponsesConnection(c *gin.Context, ctx con
 
 	s.observeGrokTestResponse(withGrokTeamRateLimitModel(ctx, testModelID), account, resp)
 
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Grok Responses API returned %d: %s", resp.StatusCode, string(body)))
 	}
 
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return s.processPromptProbeJSON(c, resp.Body, APIProtocolResponses)
+	}
 	return s.processOpenAIStream(c, resp.Body)
 }
 
@@ -2136,6 +2256,10 @@ func (s *AccountTestService) testOpenAIChatCompletionsConnection(
 	c.Writer.Flush()
 
 	payload := createOpenAIChatCompletionsTestPayload(testModelID, prompt)
+	payload["stream"] = !isAccountPromptProbeNonStreaming(ctx)
+	if isAccountPromptProbe(ctx) && account.Platform != PlatformOpenAI && accountPromptProbeOptions(ctx).MaxOutputTokens > 0 {
+		payload["max_tokens"] = accountPromptProbeOptions(ctx).MaxOutputTokens
+	}
 	payloadBytes, _ := json.Marshal(payload)
 
 	s.sendEvent(c, TestEvent{Type: "test_start", Model: testModelID})
@@ -2148,6 +2272,9 @@ func (s *AccountTestService) testOpenAIChatCompletionsConnection(
 	req = req.WithContext(WithHTTPUpstreamProfile(req.Context(), HTTPUpstreamProfileOpenAI))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "text/event-stream")
+	if isAccountPromptProbeNonStreaming(ctx) {
+		req.Header.Set("Accept", "application/json")
+	}
 	req.Header.Set("Authorization", "Bearer "+authToken)
 
 	// 官方 OpenCode / Command Code 上游收敛为规范客户端 UA，与真实转发路径一致。
@@ -2156,6 +2283,7 @@ func (s *AccountTestService) testOpenAIChatCompletionsConnection(
 	// 账号级请求头覆写：测试请求与真实转发保持一致的最终头
 	account.ApplyHeaderOverrides(req.Header)
 	applyOpenCodeSessionHeader(c, account, apiURL, req.Header, payloadBytes)
+	prepareAccountPromptProbeRequest(req)
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -2168,7 +2296,7 @@ func (s *AccountTestService) testOpenAIChatCompletionsConnection(
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode == http.StatusTooManyRequests {
 			s.reconcileOpenAI429State(ctx, account, resp.Header, body)
@@ -2180,6 +2308,9 @@ func (s *AccountTestService) testOpenAIChatCompletionsConnection(
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Chat Completions API (/v1/chat/completions) returned %d: %s", resp.StatusCode, string(body)))
 	}
 
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return s.processPromptProbeJSON(c, resp.Body, APIProtocolChatCompletions)
+	}
 	return s.processOpenAIChatCompletionsStream(c, resp.Body)
 }
 
@@ -2436,6 +2567,7 @@ func (s *AccountTestService) testGeminiAccountConnection(c *gin.Context, account
 
 	// Send test_start event
 	s.sendEvent(c, TestEvent{Type: "test_start", Model: testModelID})
+	prepareAccountPromptProbeRequest(req)
 
 	// Get proxy and execute request
 	proxyURL := ""
@@ -2449,12 +2581,15 @@ func (s *AccountTestService) testGeminiAccountConnection(c *gin.Context, account
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
 	}
 
 	// Process SSE stream
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return s.processPromptProbeJSON(c, resp.Body, "gemini")
+	}
 	return s.processGeminiStream(c, resp.Body)
 }
 
@@ -2465,7 +2600,7 @@ func (s *AccountTestService) routeAntigravityTest(c *gin.Context, account *Accou
 		if strings.HasPrefix(modelID, "gemini-") {
 			return s.testGeminiAccountConnection(c, account, modelID, prompt)
 		}
-		return s.testClaudeAccountConnection(c, account, modelID)
+		return s.testClaudeAccountConnection(c, account, modelID, prompt)
 	}
 	return s.testAntigravityAccountConnection(c, account, modelID, prompt)
 }
@@ -2479,6 +2614,9 @@ func (s *AccountTestService) testAntigravityAccountConnection(c *gin.Context, ac
 
 	if s.antigravityGatewayService == nil {
 		return s.sendErrorAndEnd(c, "Antigravity gateway service not configured")
+	}
+	if isAccountPromptProbe(ctx) {
+		return s.testAntigravityPromptProbe(c, account, testModelID, prompt)
 	}
 
 	// Set SSE headers
@@ -2513,6 +2651,87 @@ func (s *AccountTestService) testAntigravityAccountConnection(c *gin.Context, ac
 	return nil
 }
 
+func (s *AccountTestService) testAntigravityPromptProbe(c *gin.Context, account *Account, modelID, prompt string) error {
+	ctx := c.Request.Context()
+	gateway := s.antigravityGatewayService
+	if gateway.tokenProvider == nil {
+		return s.sendErrorAndEnd(c, "Antigravity token provider not configured")
+	}
+	accessToken, err := gateway.tokenProvider.GetAccessToken(ctx, account)
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to get Antigravity access token: %s", err))
+	}
+	projectID, err := resolveAntigravityProjectID(account)
+	if err != nil {
+		return s.sendErrorAndEnd(c, err.Error())
+	}
+	mappedModel := gateway.getMappedModel(account, modelID)
+	if mappedModel == "" {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("model %s not in whitelist", modelID))
+	}
+	if isImageGenerationModel(mappedModel) {
+		return s.sendErrorAndEnd(c, "Prompt probes require a text model")
+	}
+	var payload []byte
+	if shouldUseAntigravityGeminiTestRequest(modelID, mappedModel) {
+		var inner map[string]any
+		if err = json.Unmarshal(createGeminiTestPayload(mappedModel, prompt), &inner); err == nil {
+			inner["systemInstruction"] = map[string]any{"parts": []map[string]any{{"text": antigravity.GetDefaultIdentityPatch()}}}
+			inner["generationConfig"] = map[string]any{"maxOutputTokens": accountTestOutputLimit(ctx, 1024)}
+			payload, err = json.Marshal(inner)
+		}
+		if err == nil {
+			payload, err = gateway.wrapV1InternalRequest(projectID, mappedModel, payload)
+		}
+	} else {
+		content, marshalErr := json.Marshal(prompt)
+		if marshalErr != nil {
+			return s.sendErrorAndEnd(c, "Failed to encode prompt")
+		}
+		payload, err = antigravity.TransformClaudeToGeminiWithOptions(&antigravity.ClaudeRequest{
+			Model:     mappedModel,
+			Messages:  []antigravity.ClaudeMessage{{Role: "user", Content: content}},
+			MaxTokens: accountTestOutputLimit(ctx, 1024),
+			Stream:    accountPromptProbeOptions(ctx).Stream,
+		}, projectID, mappedModel, gateway.getClaudeTransformOptions(ctx))
+	}
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to create Antigravity prompt request: %s", err))
+	}
+	action, _ := accountTestGeminiAction(ctx)
+	req, err := antigravity.NewAPIRequestWithURL(ctx, resolveAntigravityForwardBaseURL(account), action, accessToken, payload)
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to create Antigravity request: %s", err))
+	}
+	prepareAccountPromptProbeRequest(req)
+	upstream := gateway.httpUpstream
+	if upstream == nil {
+		upstream = s.httpUpstream
+	}
+	if upstream == nil {
+		return s.sendErrorAndEnd(c, "HTTP upstream not configured")
+	}
+	proxyURL := ""
+	if account.ProxyID != nil && account.Proxy != nil {
+		proxyURL = account.Proxy.URL()
+	}
+	s.sendEvent(c, TestEvent{Type: "test_start", Model: modelID})
+	// Probe once: the normal connectivity helper intentionally retries/fails over.
+	resp, err := upstream.Do(req, proxyURL, account.ID, account.Concurrency)
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Antigravity request failed: %s", err))
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, promptProbeResponseMaxBytes))
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Antigravity API returned %d: %s", resp.StatusCode, body))
+	}
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return s.processPromptProbeJSON(c, resp.Body, "gemini")
+	}
+	return s.processGeminiStream(c, resp.Body)
+}
+
 func antigravityConnectionTestModel(modelID string) string {
 	if modelID == "" {
 		return defaultAntigravityTestModel
@@ -2536,8 +2755,8 @@ func (s *AccountTestService) buildGeminiAPIKeyRequest(ctx context.Context, accou
 		return nil, err
 	}
 
-	// Use streamGenerateContent for real-time feedback
-	fullURL, err := buildGeminiAIStudioModelActionURL(normalizedBaseURL, modelID, "streamGenerateContent", true)
+	action, stream := accountTestGeminiAction(ctx)
+	fullURL, err := buildGeminiAIStudioModelActionURL(normalizedBaseURL, modelID, action, stream)
 	if err != nil {
 		return nil, err
 	}
@@ -2576,7 +2795,8 @@ func (s *AccountTestService) buildGeminiOAuthRequest(ctx context.Context, accoun
 		if err != nil {
 			return nil, err
 		}
-		fullURL, err := buildGeminiAIStudioModelActionURL(normalizedBaseURL, modelID, "streamGenerateContent", true)
+		action, stream := accountTestGeminiAction(ctx)
+		fullURL, err := buildGeminiAIStudioModelActionURL(normalizedBaseURL, modelID, action, stream)
 		if err != nil {
 			return nil, err
 		}
@@ -2595,7 +2815,8 @@ func (s *AccountTestService) buildGeminiOAuthRequest(ctx context.Context, accoun
 }
 
 func (s *AccountTestService) buildGeminiServiceAccountRequest(ctx context.Context, account *Account, modelID string, payload []byte) (*http.Request, error) {
-	fullURL, err := buildVertexGeminiAccountURL(account, modelID, "streamGenerateContent", true)
+	action, stream := accountTestGeminiAction(ctx)
+	fullURL, err := buildVertexGeminiAccountURL(account, modelID, action, stream)
 	if err != nil {
 		return nil, err
 	}
@@ -2628,7 +2849,11 @@ func (s *AccountTestService) buildCodeAssistRequest(ctx context.Context, accessT
 	if err != nil {
 		return nil, err
 	}
-	fullURL := fmt.Sprintf("%s/v1internal:streamGenerateContent?alt=sse", normalizedBaseURL)
+	action, stream := accountTestGeminiAction(ctx)
+	fullURL := fmt.Sprintf("%s/v1internal:%s", normalizedBaseURL, action)
+	if stream {
+		fullURL += "?alt=sse"
+	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", fullURL, bytes.NewReader(wrappedBytes))
 	if err != nil {
@@ -2640,6 +2865,55 @@ func (s *AccountTestService) buildCodeAssistRequest(ctx context.Context, accessT
 	req.Header.Set("User-Agent", geminicli.GeminiCLIUserAgent)
 
 	return req, nil
+}
+
+func accountTestGeminiAction(ctx context.Context) (string, bool) {
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return "generateContent", false
+	}
+	return "streamGenerateContent", true
+}
+
+// processBedrockPromptProbeStream adapts AWS frames to the existing text-only
+// Claude SSE parser while leaving normal Bedrock connectivity tests unchanged.
+func (s *AccountTestService) processBedrockPromptProbeStream(c *gin.Context, body io.Reader) error {
+	reader, writer := io.Pipe()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		decoder := newBedrockEventStreamDecoder(body)
+		for {
+			payload, err := decoder.Decode()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					_ = writer.Close()
+				} else {
+					_ = writer.CloseWithError(err)
+				}
+				return
+			}
+			data := extractBedrockChunkData(payload)
+			if data == nil {
+				continue
+			}
+			if _, err := fmt.Fprintf(writer, "data: %s\n\n", data); err != nil {
+				_ = writer.CloseWithError(err)
+				return
+			}
+			if gjson.GetBytes(data, "type").String() == "message_stop" {
+				_ = writer.Close()
+				return
+			}
+		}
+	}()
+	err := s.processClaudeStream(c, reader)
+	_ = reader.Close()
+	// Close the upstream body on early parser failure before joining the decoder.
+	if closer, ok := body.(io.Closer); ok {
+		_ = closer.Close()
+	}
+	<-done
+	return err
 }
 
 // createGeminiTestPayload creates a minimal test payload for Gemini API.
@@ -2738,6 +3012,9 @@ func (s *AccountTestService) processGeminiStream(c *gin.Context, body io.Reader)
 					if parts, ok := content["parts"].([]any); ok {
 						for _, part := range parts {
 							if partMap, ok := part.(map[string]any); ok {
+								if thought, _ := partMap["thought"].(bool); thought {
+									continue
+								}
 								if text, ok := partMap["text"].(string); ok && text != "" {
 									s.sendEvent(c, TestEvent{Type: "content", Text: text})
 								}
@@ -2778,6 +3055,13 @@ func (s *AccountTestService) processGeminiStream(c *gin.Context, body io.Reader)
 
 // createOpenAITestPayload creates a test payload for OpenAI Responses API
 func createOpenAITestPayload(modelID string, isOAuth bool) map[string]any {
+	return createOpenAITestPayloadWithPrompt(modelID, isOAuth, "hi")
+}
+
+func createOpenAITestPayloadWithPrompt(modelID string, isOAuth bool, prompt string) map[string]any {
+	if strings.TrimSpace(prompt) == "" {
+		prompt = "hi"
+	}
 	payload := map[string]any{
 		"model": modelID,
 		"input": []map[string]any{
@@ -2786,7 +3070,7 @@ func createOpenAITestPayload(modelID string, isOAuth bool) map[string]any {
 				"content": []map[string]any{
 					{
 						"type": "input_text",
-						"text": "hi",
+						"text": prompt,
 					},
 				},
 			},
@@ -2957,6 +3241,7 @@ func (s *AccountTestService) processOpenAIChatCompletionsStream(c *gin.Context, 
 func (s *AccountTestService) processOpenAIStream(c *gin.Context, body io.Reader) error {
 	reader := bufio.NewReader(body)
 	seenCompleted := false
+	seenText := false
 
 	for {
 		line, err := reader.ReadString('\n')
@@ -2996,9 +3281,15 @@ func (s *AccountTestService) processOpenAIStream(c *gin.Context, body io.Reader)
 		case "response.output_text.delta":
 			// OpenAI Responses API uses "delta" field for text content
 			if delta, ok := data["delta"].(string); ok && delta != "" {
+				seenText = true
 				s.sendEvent(c, TestEvent{Type: "content", Text: delta})
 			}
 		case "response.completed", "response.done":
+			if isAccountPromptProbe(c.Request.Context()) && !seenText {
+				if response := gjson.Get(jsonStr, "response"); response.IsObject() {
+					return s.processPromptProbeJSON(c, strings.NewReader(response.Raw), APIProtocolResponses)
+				}
+			}
 			s.sendEvent(c, TestEvent{Type: "test_complete", Success: true})
 			return nil
 		case "response.failed":
@@ -3294,9 +3585,122 @@ func (s *AccountTestService) sendErrorAndEnd(c *gin.Context, errorMsg string) er
 	return fmt.Errorf("%s", errorMsg)
 }
 
+// processPromptProbeJSON normalizes native non-streaming text into the same
+// internal events captured by background tests, without exposing reasoning.
+func (s *AccountTestService) processPromptProbeJSON(c *gin.Context, reader io.Reader, protocol string) error {
+	body, err := io.ReadAll(io.LimitReader(reader, promptProbeResponseMaxBytes+1))
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to read prompt response: %s", err))
+	}
+	if len(body) > promptProbeResponseMaxBytes {
+		return s.sendErrorAndEnd(c, "Prompt response exceeds size limit")
+	}
+	if !json.Valid(body) || !gjson.ParseBytes(body).IsObject() {
+		return s.sendErrorAndEnd(c, "Invalid JSON prompt response")
+	}
+	data := gjson.ParseBytes(body)
+	if nested := data.Get("response"); nested.IsObject() {
+		data = nested
+	}
+	if upstreamErr := data.Get("error"); upstreamErr.Exists() && upstreamErr.Type != gjson.Null {
+		message := upstreamErr.Get("message").String()
+		if message == "" {
+			message = upstreamErr.String()
+		}
+		return s.sendErrorAndEnd(c, "Prompt response error: "+message)
+	}
+	var text strings.Builder
+	switch protocol {
+	case APIProtocolAnthropic:
+		for _, block := range data.Get("content").Array() {
+			if block.Get("type").String() == "text" {
+				_, _ = text.WriteString(block.Get("text").String())
+			}
+		}
+	case APIProtocolChatCompletions:
+		content := data.Get("choices.0.message.content")
+		if content.Type == gjson.String {
+			_, _ = text.WriteString(content.String())
+		} else {
+			for _, block := range content.Array() {
+				if block.Get("type").String() == "text" {
+					_, _ = text.WriteString(block.Get("text").String())
+				}
+			}
+		}
+	case APIProtocolResponses:
+		for _, output := range data.Get("output").Array() {
+			if output.Get("type").String() != "message" {
+				continue
+			}
+			for _, block := range output.Get("content").Array() {
+				if block.Get("type").String() == "output_text" {
+					_, _ = text.WriteString(block.Get("text").String())
+				}
+			}
+		}
+		if text.Len() == 0 {
+			_, _ = text.WriteString(data.Get("output_text").String())
+		}
+	case "gemini":
+		for _, part := range data.Get("candidates.0.content.parts").Array() {
+			if !part.Get("thought").Bool() {
+				_, _ = text.WriteString(part.Get("text").String())
+			}
+		}
+	default:
+		return s.sendErrorAndEnd(c, "Unsupported prompt response protocol")
+	}
+	if strings.TrimSpace(text.String()) == "" {
+		return s.sendErrorAndEnd(c, "Prompt response is empty")
+	}
+	s.sendEvent(c, TestEvent{Type: "content", Text: text.String()})
+	s.sendEvent(c, TestEvent{Type: "test_complete", Success: true})
+	return nil
+}
+
 // RunTestBackground executes an account test in-memory (no real HTTP client),
 // capturing SSE output via httptest.NewRecorder, then parses the result.
 func (s *AccountTestService) RunTestBackground(ctx context.Context, accountID int64, modelID string) (*ScheduledTestResult, error) {
+	probeResult, err := s.runPromptBackground(ctx, accountID, modelID, "")
+	if err != nil {
+		return nil, err
+	}
+	status := "success"
+	if probeResult.ErrorMessage != "" {
+		status = "failed"
+	}
+	return &ScheduledTestResult{
+		Status:       status,
+		ResponseText: probeResult.ResponseText,
+		ErrorMessage: probeResult.ErrorMessage,
+		LatencyMs:    probeResult.LatencyMs,
+		StartedAt:    probeResult.StartedAt,
+		FinishedAt:   probeResult.FinishedAt,
+	}, nil
+}
+
+// RunPromptBackground executes an account test with an explicit prompt,
+// capturing SSE output in memory without creating usage or billing records.
+func (s *AccountTestService) RunPromptBackground(ctx context.Context, accountID int64, modelID, prompt string) (*PromptProbeResult, error) {
+	return s.RunPromptBackgroundWithOptions(ctx, accountID, modelID, prompt, PromptProbeOptions{Timeout: 90 * time.Second})
+}
+
+// RunPromptBackgroundWithOptions controls the wire mode and deadline for one
+// probe. Earlier caller deadlines remain authoritative through WithTimeout.
+func (s *AccountTestService) RunPromptBackgroundWithOptions(ctx context.Context, accountID int64, modelID, prompt string, opts PromptProbeOptions) (*PromptProbeResult, error) {
+	if opts.Timeout <= 0 {
+		opts.Timeout = 90 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
+	defer cancel()
+	ctx = context.WithValue(ctx, accountPromptProbeContextKey{}, true)
+	ctx = context.WithValue(ctx, accountPromptProbeOptionsContextKey{}, opts)
+	ctx = WithHTTPUpstreamRedirectsDisabled(ctx)
+	return s.runPromptBackground(ctx, accountID, modelID, prompt)
+}
+
+func (s *AccountTestService) runPromptBackground(ctx context.Context, accountID int64, modelID, prompt string) (*PromptProbeResult, error) {
 	startedAt := time.Now()
 
 	w := httptest.NewRecorder()
@@ -3304,25 +3708,30 @@ func (s *AccountTestService) RunTestBackground(ctx context.Context, accountID in
 	ginCtx.Request = (&http.Request{}).WithContext(ctx)
 	ginCtx.Set(accountTestBackgroundKey, true)
 
-	testErr := s.TestAccountConnection(ginCtx, accountID, modelID, "", AccountTestModeDefault)
+	testErr := s.TestAccountConnection(ginCtx, accountID, modelID, prompt, AccountTestModeDefault)
+	if errors.Is(testErr, errPromptProbeTypeSafeUnsupported) {
+		return nil, testErr
+	}
 
 	finishedAt := time.Now()
 	body := w.Body.String()
 	responseText, errMsg := parseTestSSEOutput(body)
 
-	status := "success"
-	if testErr != nil || errMsg != "" {
-		status = "failed"
-		if errMsg == "" && testErr != nil {
-			errMsg = testErr.Error()
-		}
+	if errMsg == "" && testErr != nil {
+		errMsg = testErr.Error()
+	}
+	if isAccountPromptProbe(ctx) && ctx.Err() != nil {
+		errMsg = ctx.Err().Error()
+	}
+	if isAccountPromptProbe(ctx) && errMsg == "" && strings.TrimSpace(responseText) == "" {
+		errMsg = "Prompt response is empty"
 	}
 
-	return &ScheduledTestResult{
-		Status:       status,
+	return &PromptProbeResult{
 		ResponseText: responseText,
 		ErrorMessage: errMsg,
 		LatencyMs:    finishedAt.Sub(startedAt).Milliseconds(),
+		AccountID:    accountID,
 		StartedAt:    startedAt,
 		FinishedAt:   finishedAt,
 	}, nil

@@ -330,6 +330,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/degradation',
+    name: 'Degradation',
+    component: () => import('@/views/user/DegradationView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Degradation Detection',
+      titleKey: 'degradation.title',
+      descriptionKey: 'degradation.description'
+    }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/user/ProfileView.vue'),
@@ -560,6 +572,18 @@ const routes: RouteRecordRaw[] = [
       title: 'Channel Monitor',
       titleKey: 'admin.channelMonitor.title',
       descriptionKey: 'admin.channelMonitor.description'
+    }
+  },
+  {
+    path: '/admin/degradation',
+    name: 'AdminDegradation',
+    component: () => import('@/views/admin/DegradationView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Degradation Detection',
+      titleKey: 'admin.degradation.title',
+      descriptionKey: 'admin.degradation.description'
     }
   },
   {

@@ -51,6 +51,15 @@ type ChannelMonitorRequestTemplate func(*sql.Selector)
 // CompositeModelRoute is the predicate function for compositemodelroute builders.
 type CompositeModelRoute func(*sql.Selector)
 
+// DegradationProbe is the predicate function for degradationprobe builders.
+type DegradationProbe func(*sql.Selector)
+
+// DegradationRun is the predicate function for degradationrun builders.
+type DegradationRun func(*sql.Selector)
+
+// DegradationTarget is the predicate function for degradationtarget builders.
+type DegradationTarget func(*sql.Selector)
+
 // Enterprise is the predicate function for enterprise builders.
 type Enterprise func(*sql.Selector)
 

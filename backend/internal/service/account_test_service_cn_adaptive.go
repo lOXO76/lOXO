@@ -23,6 +23,10 @@ const accountTestSuppressCompletionContextKey = "account_test_suppress_completio
 // native Responses endpoints. Endpoints the provider profile does not offer are
 // skipped.
 func (s *AccountTestService) testCNProviderAdaptiveConnection(c *gin.Context, account *Account, modelID string, prompt string) error {
+	// Connectivity tests verify all protocols; a prompt probe is one real request.
+	if isAccountPromptProbe(c.Request.Context()) {
+		return s.testCNProviderChatCompletionsConnection(c, account, modelID, prompt)
+	}
 	requestedModelID := strings.TrimSpace(modelID)
 	if requestedModelID == "" {
 		requestedModelID = account.providerDefaultTestModel()
@@ -46,13 +50,13 @@ func (s *AccountTestService) testCNProviderAdaptiveConnection(c *gin.Context, ac
 	}
 
 	if account.providerSupportsProtocol(APIProtocolAnthropic) {
-		if err := s.testCNProviderAdaptiveAnthropicConnection(c, account, testModelID, authToken); err != nil {
+		if err := s.testCNProviderAdaptiveAnthropicConnection(c, account, testModelID, authToken, prompt); err != nil {
 			return err
 		}
 	}
 
 	if account.SupportsNativeCNResponses() {
-		if err := s.testCNProviderAdaptiveResponsesConnection(c, account, testModelID, authToken); err != nil {
+		if err := s.testCNProviderAdaptiveResponsesConnection(c, account, testModelID, authToken, prompt); err != nil {
 			return err
 		}
 	}
@@ -62,7 +66,7 @@ func (s *AccountTestService) testCNProviderAdaptiveConnection(c *gin.Context, ac
 	return nil
 }
 
-func (s *AccountTestService) testCNProviderAdaptiveAnthropicConnection(c *gin.Context, account *Account, testModelID string, authToken string) error {
+func (s *AccountTestService) testCNProviderAdaptiveAnthropicConnection(c *gin.Context, account *Account, testModelID string, authToken string, prompt string) error {
 	ctx := c.Request.Context()
 	baseURL, err := s.validateUpstreamBaseURL(account.GetCNProtocolBaseURL(APIProtocolAnthropic))
 	if err != nil {
@@ -70,10 +74,12 @@ func (s *AccountTestService) testCNProviderAdaptiveAnthropicConnection(c *gin.Co
 	}
 	apiURL := strings.TrimRight(baseURL, "/") + "/v1/messages"
 
-	payload, err := createTestPayload(testModelID)
+	payload, err := createTestPayloadWithPrompt(testModelID, prompt)
 	if err != nil {
 		return s.sendErrorAndEnd(c, "Failed to create adaptive Anthropic test payload")
 	}
+	payload["stream"] = !isAccountPromptProbeNonStreaming(ctx)
+	payload["max_tokens"] = accountTestOutputLimit(ctx, 1024)
 	payloadBytes, _ := json.Marshal(payload)
 
 	s.sendEvent(c, TestEvent{Type: "status", Text: "正在通过原生 /v1/messages 测试自适应 Anthropic 端点"})
@@ -94,13 +100,14 @@ func (s *AccountTestService) testCNProviderAdaptiveAnthropicConnection(c *gin.Co
 	applyOpenCodeUpstreamUserAgent(account, apiURL, req.Header)
 	account.ApplyHeaderOverrides(req.Header)
 	applyOpenCodeSessionHeader(c, account, apiURL, req.Header, payloadBytes)
+	prepareAccountPromptProbeRequest(req)
 
 	resp, err := s.doCNProviderAdaptiveRequest(req, account)
 	if err != nil {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Adaptive Anthropic endpoint request failed: %s", err.Error()))
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		errMsg := fmt.Sprintf("Adaptive Anthropic endpoint returned %d: %s", resp.StatusCode, string(body))
 		if resp.StatusCode == http.StatusUnauthorized && s.accountRepo != nil {
@@ -109,6 +116,9 @@ func (s *AccountTestService) testCNProviderAdaptiveAnthropicConnection(c *gin.Co
 		return s.sendErrorAndEnd(c, errMsg)
 	}
 
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return s.processPromptProbeJSON(c, resp.Body, APIProtocolAnthropic)
+	}
 	if err := s.processCNProviderAdaptiveAnthropicStream(c, resp.Body); err != nil {
 		return err
 	}
@@ -161,7 +171,7 @@ func (s *AccountTestService) processCNProviderAdaptiveAnthropicStream(c *gin.Con
 	}
 }
 
-func (s *AccountTestService) testCNProviderAdaptiveResponsesConnection(c *gin.Context, account *Account, testModelID string, authToken string) error {
+func (s *AccountTestService) testCNProviderAdaptiveResponsesConnection(c *gin.Context, account *Account, testModelID string, authToken string, prompt string) error {
 	ctx := c.Request.Context()
 	baseURL, err := s.validateUpstreamBaseURL(account.GetCNProtocolBaseURL(APIProtocolResponses))
 	if err != nil {
@@ -169,7 +179,8 @@ func (s *AccountTestService) testCNProviderAdaptiveResponsesConnection(c *gin.Co
 	}
 	apiURL := buildOpenAIResponsesURLForPlatform(account.Platform, baseURL)
 
-	payload := createOpenAITestPayload(testModelID, false)
+	payload := createOpenAITestPayloadWithPrompt(testModelID, false, prompt)
+	payload["stream"] = !isAccountPromptProbeNonStreaming(ctx)
 	// DeepSeek / Kimi native Responses endpoints are stateless and do not need
 	// the OpenAI probe's synthetic instructions.
 	delete(payload, "instructions")
@@ -189,13 +200,14 @@ func (s *AccountTestService) testCNProviderAdaptiveResponsesConnection(c *gin.Co
 	applyOpenCodeUpstreamUserAgent(account, apiURL, req.Header)
 	account.ApplyHeaderOverrides(req.Header)
 	applyOpenCodeSessionHeader(c, account, apiURL, req.Header, payloadBytes)
+	prepareAccountPromptProbeRequest(req)
 
 	resp, err := s.doCNProviderAdaptiveRequest(req, account)
 	if err != nil {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Adaptive Responses endpoint request failed: %s", err.Error()))
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		errMsg := fmt.Sprintf("Adaptive Responses endpoint returned %d: %s", resp.StatusCode, string(body))
 		if resp.StatusCode == http.StatusUnauthorized && s.accountRepo != nil {
@@ -204,6 +216,9 @@ func (s *AccountTestService) testCNProviderAdaptiveResponsesConnection(c *gin.Co
 		return s.sendErrorAndEnd(c, errMsg)
 	}
 
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return s.processPromptProbeJSON(c, resp.Body, APIProtocolResponses)
+	}
 	if err := s.processOpenAIStream(c, resp.Body); err != nil {
 		return err
 	}
@@ -226,8 +241,12 @@ func (s *AccountTestService) doCNProviderAdaptiveRequest(req *http.Request, acco
 // instead of the provider's own Anthropic-compatible endpoint. The probe uses
 // GetAnthropicProtocolBaseURL (same resolution as real /v1/messages forwarding,
 // including per-platform defaults) and the shared API-key auth header.
-func (s *AccountTestService) testCNProviderAnthropicConnection(c *gin.Context, account *Account, modelID string) error {
+func (s *AccountTestService) testCNProviderAnthropicConnection(c *gin.Context, account *Account, modelID string, prompts ...string) error {
 	ctx := c.Request.Context()
+	prompt := ""
+	if len(prompts) > 0 {
+		prompt = prompts[0]
+	}
 
 	testModelID := strings.TrimSpace(modelID)
 	if testModelID == "" {
@@ -255,10 +274,12 @@ func (s *AccountTestService) testCNProviderAnthropicConnection(c *gin.Context, a
 	c.Writer.Header().Set("X-Accel-Buffering", "no")
 	c.Writer.Flush()
 
-	payload, err := createTestPayload(testModelID)
+	payload, err := createTestPayloadWithPrompt(testModelID, prompt)
 	if err != nil {
 		return s.sendErrorAndEnd(c, "Failed to create Anthropic test payload")
 	}
+	payload["stream"] = !isAccountPromptProbeNonStreaming(ctx)
+	payload["max_tokens"] = accountTestOutputLimit(ctx, 1024)
 	payloadBytes, _ := json.Marshal(payload)
 
 	s.sendEvent(c, TestEvent{Type: "test_start", Model: testModelID})
@@ -279,13 +300,14 @@ func (s *AccountTestService) testCNProviderAnthropicConnection(c *gin.Context, a
 	applyOpenCodeUpstreamUserAgent(account, apiURL, req.Header)
 	account.ApplyHeaderOverrides(req.Header)
 	applyOpenCodeSessionHeader(c, account, apiURL, req.Header, payloadBytes)
+	prepareAccountPromptProbeRequest(req)
 
 	resp, err := s.doCNProviderAdaptiveRequest(req, account)
 	if err != nil {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Anthropic endpoint request failed: %s", err.Error()))
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
+	if !accountTestResponseSucceeded(ctx, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		errMsg := fmt.Sprintf("Anthropic endpoint returned %d: %s", resp.StatusCode, string(body))
 		if resp.StatusCode == http.StatusForbidden && isCloudflare1010Block(body) {
@@ -297,6 +319,9 @@ func (s *AccountTestService) testCNProviderAnthropicConnection(c *gin.Context, a
 		return s.sendErrorAndEnd(c, errMsg)
 	}
 
+	if isAccountPromptProbeNonStreaming(ctx) {
+		return s.processPromptProbeJSON(c, resp.Body, APIProtocolAnthropic)
+	}
 	return s.processClaudeStream(c, resp.Body)
 }
 

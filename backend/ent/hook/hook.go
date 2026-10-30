@@ -189,6 +189,42 @@ func (f CompositeModelRouteFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CompositeModelRouteMutation", m)
 }
 
+// The DegradationProbeFunc type is an adapter to allow the use of ordinary
+// function as DegradationProbe mutator.
+type DegradationProbeFunc func(context.Context, *ent.DegradationProbeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DegradationProbeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DegradationProbeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DegradationProbeMutation", m)
+}
+
+// The DegradationRunFunc type is an adapter to allow the use of ordinary
+// function as DegradationRun mutator.
+type DegradationRunFunc func(context.Context, *ent.DegradationRunMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DegradationRunFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DegradationRunMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DegradationRunMutation", m)
+}
+
+// The DegradationTargetFunc type is an adapter to allow the use of ordinary
+// function as DegradationTarget mutator.
+type DegradationTargetFunc func(context.Context, *ent.DegradationTargetMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DegradationTargetFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DegradationTargetMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DegradationTargetMutation", m)
+}
+
 // The EnterpriseFunc type is an adapter to allow the use of ordinary
 // function as Enterprise mutator.
 type EnterpriseFunc func(context.Context, *ent.EnterpriseMutation) (ent.Value, error)

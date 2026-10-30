@@ -44,6 +44,12 @@ type Tx struct {
 	ChannelMonitorRequestTemplate *ChannelMonitorRequestTemplateClient
 	// CompositeModelRoute is the client for interacting with the CompositeModelRoute builders.
 	CompositeModelRoute *CompositeModelRouteClient
+	// DegradationProbe is the client for interacting with the DegradationProbe builders.
+	DegradationProbe *DegradationProbeClient
+	// DegradationRun is the client for interacting with the DegradationRun builders.
+	DegradationRun *DegradationRunClient
+	// DegradationTarget is the client for interacting with the DegradationTarget builders.
+	DegradationTarget *DegradationTargetClient
 	// Enterprise is the client for interacting with the Enterprise builders.
 	Enterprise *EnterpriseClient
 	// EnterpriseAllowedGroup is the client for interacting with the EnterpriseAllowedGroup builders.
@@ -258,6 +264,9 @@ func (tx *Tx) init() {
 	tx.ChannelMonitorHistory = NewChannelMonitorHistoryClient(tx.config)
 	tx.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(tx.config)
 	tx.CompositeModelRoute = NewCompositeModelRouteClient(tx.config)
+	tx.DegradationProbe = NewDegradationProbeClient(tx.config)
+	tx.DegradationRun = NewDegradationRunClient(tx.config)
+	tx.DegradationTarget = NewDegradationTargetClient(tx.config)
 	tx.Enterprise = NewEnterpriseClient(tx.config)
 	tx.EnterpriseAllowedGroup = NewEnterpriseAllowedGroupClient(tx.config)
 	tx.EnterpriseAuditLog = NewEnterpriseAuditLogClient(tx.config)

@@ -1046,6 +1046,9 @@ var ProviderSet = wire.NewSet(
 	ProvideBalanceNotifyService,
 	ProvideChannelMonitorService,
 	ProvideChannelMonitorRunner,
+	ProvideDegradationService,
+	ProvideDegradationRunner,
+	NewDegradationVisualTokenService,
 	NewChannelMonitorQuotaFetcher,
 	ProvideChannelMonitorV2Service,
 	ProvideChannelMonitorV2Aggregator,
@@ -1121,6 +1124,16 @@ func ProvideChannelMonitorService(
 	svc := NewChannelMonitorService(repo, encryptor)
 	svc.SetRuntimeReader(settingService)
 	return svc
+}
+
+func ProvideDegradationService(repo DegradationRepository, groups GroupRepository, gateway *GatewayService, accountTests *AccountTestService, settings *SettingService) *DegradationService {
+	return NewDegradationService(repo, groups, gateway, accountTests, settings)
+}
+
+func ProvideDegradationRunner(svc *DegradationService, locks LeaderLockCache) *DegradationRunner {
+	runner := NewDegradationRunner(svc, locks)
+	runner.Start()
+	return runner
 }
 
 // ProvideChannelMonitorRunner 创建并启动渠道监控调度器。

@@ -236,6 +236,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyChannelMonitorShowQuota,
 		SettingKeyChannelMonitorHideUserRanking,
 		SettingKeyAvailableChannelsEnabled,
+		SettingKeyDegradationDetectionEnabled,
 		SettingKeySubscriptionEnabled,
 		SettingKeyModelPlazaEnabled,
 		SettingKeyModelPlazaRequireAuth,
@@ -367,7 +368,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ChannelMonitorShowQuota:              settings[SettingKeyChannelMonitorShowQuota] == "true",
 		ChannelMonitorHideUserRanking:        isTrueSettingValue(settings[SettingKeyChannelMonitorHideUserRanking]),
 
-		AvailableChannelsEnabled: settings[SettingKeyAvailableChannelsEnabled] == "true",
+		AvailableChannelsEnabled:    settings[SettingKeyAvailableChannelsEnabled] == "true",
+		DegradationDetectionEnabled: !isFalseSettingValue(settings[SettingKeyDegradationDetectionEnabled]),
 
 		SubscriptionEnabled: !isFalseSettingValue(settings[SettingKeySubscriptionEnabled]),
 
@@ -497,6 +499,36 @@ func (s *SettingService) GetChannelMonitorRuntime(ctx context.Context) ChannelMo
 // switch consumed by the user-facing handler.
 type AvailableChannelsRuntime struct {
 	Enabled bool
+}
+
+// DegradationRuntime contains the settings used by degradation detection.
+type DegradationRuntime struct {
+	Enabled                bool
+	Threshold              float64
+	DefaultIntervalSeconds int
+}
+
+func defaultDegradationRuntime() DegradationRuntime {
+	return DegradationRuntime{Enabled: true, Threshold: 0.8, DefaultIntervalSeconds: 1800}
+}
+
+// GetDegradationRuntime reads degradation detection settings. Missing values,
+// invalid values, and repository errors fall back to the documented defaults.
+func (s *SettingService) GetDegradationRuntime(ctx context.Context) DegradationRuntime {
+	defaults := defaultDegradationRuntime()
+	if s == nil || s.settingRepo == nil {
+		return defaults
+	}
+	vals, err := s.settingRepo.GetMultiple(ctx, []string{
+		SettingKeyDegradationDetectionEnabled,
+		SettingKeyDegradationThreshold,
+		SettingKeyDegradationDefaultIntervalSeconds,
+	})
+	if err != nil {
+		return defaults
+	}
+
+	return parseDegradationRuntime(vals)
 }
 
 // GetAvailableChannelsRuntime reads the available-channels feature switch directly
@@ -641,6 +673,7 @@ type PublicSettingsInjectionPayload struct {
 	ChannelMonitorHideUserRanking bool `json:"channel_monitor_hide_user_ranking"`
 	ChannelMonitorShowQuota       bool `json:"channel_monitor_show_quota"`
 	AvailableChannelsEnabled      bool `json:"available_channels_enabled"`
+	DegradationDetectionEnabled   bool `json:"degradation_detection_enabled"`
 	SubscriptionEnabled           bool `json:"subscription_enabled"`
 	ModelPlazaEnabled             bool `json:"model_plaza_enabled"`
 	ModelPlazaRequireAuth         bool `json:"model_plaza_require_auth"`
@@ -727,6 +760,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ChannelMonitorShowQuota:              settings.ChannelMonitorShowQuota,
 		ChannelMonitorHideUserRanking:        settings.ChannelMonitorHideUserRanking,
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
+		DegradationDetectionEnabled:          settings.DegradationDetectionEnabled,
 		SubscriptionEnabled:                  settings.SubscriptionEnabled,
 		ModelPlazaEnabled:                    settings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth:                settings.ModelPlazaRequireAuth,

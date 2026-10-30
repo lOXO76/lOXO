@@ -549,6 +549,11 @@ const (
 	// admin "site billing mode" selector. Defaults to true (opt-out feature).
 	SettingKeySubscriptionEnabled = "subscription_enabled"
 
+	// Degradation detection settings: the user-facing switch is opt-out by default.
+	SettingKeyDegradationDetectionEnabled       = "degradation_detection_enabled"
+	SettingKeyDegradationThreshold              = "degradation_threshold"
+	SettingKeyDegradationDefaultIntervalSeconds = "degradation_default_interval_seconds"
+
 	// SettingKeyModelPlazaEnabled is a DB-backed soft switch for the Model Plaza page
 	// (public group/model pricing showcase). When false: the plaza endpoint returns 404
 	// and the header entry is hidden. Defaults to false (opt-in feature).

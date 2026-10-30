@@ -3,11 +3,19 @@
 package service
 
 import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/binary"
+	"encoding/json"
+	"hash/crc32"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/tlsfingerprint"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
@@ -289,4 +297,351 @@ func TestAccountTestService_AnthropicProtocol401MarksAccountError(t *testing.T) 
 	require.Contains(t, err.Error(), "Anthropic endpoint returned 401")
 	repo := svc.accountRepo.(*openAIAccountTestRepo)
 	require.Equal(t, account.ID, repo.setErrorID)
+}
+
+func TestAccountTestService_AdaptivePassesPromptToEveryProtocol(t *testing.T) {
+	account := adaptiveCNAccountTestAccount(401, PlatformDeepseek)
+	svc, upstream := adaptiveCNAccountTestService(account,
+		adaptiveCNChatTestResponse(), adaptiveCNAnthropicTestResponse(), adaptiveCNResponsesTestResponse())
+	c, _ := newTestContext()
+	const prompt = "Solve 13 + 29."
+	require.NoError(t, svc.TestAccountConnection(c, account.ID, "deepseek-chat", prompt, AccountTestModeDefault))
+	require.Len(t, upstream.bodies, 3)
+	for i, path := range []string{"messages.0.content", "messages.0.content.0.text", "input.0.content.0.text"} {
+		require.Equal(t, prompt, gjson.GetBytes(upstream.bodies[i], path).String())
+		require.True(t, gjson.GetBytes(upstream.bodies[i], "stream").Bool())
+	}
+}
+
+func TestAccountTestService_RunPromptBackgroundAdaptiveIsOneNonStreamingRequest(t *testing.T) {
+	account := adaptiveCNAccountTestAccount(402, PlatformDeepseek)
+	svc, upstream := adaptiveCNAccountTestService(account,
+		newJSONResponse(http.StatusCreated, `{"choices":[{"message":{"content":"42"}}]}`))
+	result, err := svc.RunPromptBackground(context.Background(), account.ID, "deepseek-chat", "Solve 13 + 29.")
+	require.NoError(t, err)
+	require.Empty(t, result.ErrorMessage)
+	require.Equal(t, "42", result.ResponseText)
+	require.Equal(t, account.ID, result.AccountID)
+	require.Len(t, upstream.requests, 1)
+	require.Equal(t, "http://chat.example/v1/chat/completions", upstream.requests[0].URL.String())
+	require.False(t, gjson.GetBytes(upstream.lastBody, "stream").Bool())
+	require.Nil(t, upstream.requests[0].GetBody)
+	require.True(t, HTTPUpstreamRedirectsDisabled(upstream.requests[0].Context()))
+	require.Equal(t, "Solve 13 + 29.", gjson.GetBytes(upstream.lastBody, "messages.0.content").String())
+	deadline, ok := upstream.requests[0].Context().Deadline()
+	require.True(t, ok)
+	require.WithinDuration(t, time.Now().Add(90*time.Second), deadline, 2*time.Second)
+}
+
+func TestAccountTestService_RunPromptBackgroundNativeProtocols(t *testing.T) {
+	for _, tc := range []struct {
+		name, platform, protocol, model, response, promptPath, urlSuffix string
+	}{
+		{"anthropic", PlatformZhipu, APIProtocolAnthropic, "glm-4.7", `{"content":[{"type":"thinking","thinking":"private"},{"type":"text","text":"42"}]}`, "messages.0.content.0.text", "/v1/messages"},
+		{"responses", PlatformDeepseek, APIProtocolResponses, "deepseek-chat", `{"output":[{"type":"reasoning","summary":[{"text":"private"}]},{"type":"message","content":[{"type":"output_text","text":"42"}]}]}`, "input.0.content.0.text", "/responses"},
+		{"claude", PlatformAnthropic, "", "claude-sonnet-4-6", `{"content":[{"type":"text","text":"42"}]}`, "messages.0.content.0.text", "/v1/messages?beta=true"},
+		{"openai", PlatformOpenAI, "", "gpt-5.6", `{"output_text":"42"}`, "input.0.content.0.text", "/v1/responses"},
+		{"gemini", PlatformGemini, "", "gemini-2.5-flash", `{"candidates":[{"content":{"parts":[{"thought":true,"text":"private"},{"text":"42"}]}}]}`, "contents.0.parts.0.text", ":generateContent"},
+		{"bedrock", PlatformAnthropic, "bedrock", "claude-sonnet-4-6", `{"content":[{"type":"text","text":"42"}]}`, "messages.0.content.0.text", "/invoke"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			account := adaptiveCNAccountTestAccount(403, tc.platform)
+			account.Credentials["api_protocol"] = tc.protocol
+			account.Credentials["base_url"] = "http://native.example"
+			if tc.protocol == "bedrock" {
+				account.Type = AccountTypeBedrock
+				account.Credentials["auth_mode"] = "apikey"
+			}
+			svc, upstream := adaptiveCNAccountTestService(account, newJSONResponse(http.StatusOK, tc.response))
+			result, err := svc.RunPromptBackground(context.Background(), account.ID, tc.model, "Return 42.")
+			require.NoError(t, err)
+			require.Empty(t, result.ErrorMessage)
+			require.Equal(t, "42", result.ResponseText)
+			require.Len(t, upstream.requests, 1)
+			require.True(t, strings.HasSuffix(upstream.lastReq.URL.String(), tc.urlSuffix), upstream.lastReq.URL.String())
+			require.False(t, gjson.GetBytes(upstream.lastBody, "stream").Bool())
+			require.Equal(t, "Return 42.", gjson.GetBytes(upstream.lastBody, tc.promptPath).String())
+		})
+	}
+}
+
+func TestAccountTestService_RunPromptBackgroundReportsInvalidOrEmptyAnswers(t *testing.T) {
+	for _, body := range []string{`{"choices":[]}`, `{"choices":[{"message":{"content":" "}}]}`, `{"error":{"message":"upstream failed"}}`, `<html>invalid</html>`} {
+		account := adaptiveCNAccountTestAccount(404, PlatformDeepseek)
+		svc, upstream := adaptiveCNAccountTestService(account, newJSONResponse(http.StatusOK, body))
+		result, err := svc.RunPromptBackground(context.Background(), account.ID, "deepseek-chat", "Return 42.")
+		require.NoError(t, err)
+		require.Empty(t, result.ResponseText)
+		require.NotEmpty(t, result.ErrorMessage)
+		require.Len(t, upstream.requests, 1)
+	}
+}
+
+func TestAccountTestService_RunTestBackgroundRetainsStreamingAllProtocolChecks(t *testing.T) {
+	account := adaptiveCNAccountTestAccount(405, PlatformDeepseek)
+	svc, upstream := adaptiveCNAccountTestService(account,
+		adaptiveCNChatTestResponse(), adaptiveCNAnthropicTestResponse(), adaptiveCNResponsesTestResponse())
+	result, err := svc.RunTestBackground(context.Background(), account.ID, "deepseek-chat")
+	require.NoError(t, err)
+	require.Equal(t, "success", result.Status)
+	require.Len(t, upstream.requests, 3)
+	for _, body := range upstream.bodies {
+		require.True(t, gjson.GetBytes(body, "stream").Bool())
+	}
+}
+
+func TestAccountTestService_RunPromptBackgroundAntigravityProbesOnce(t *testing.T) {
+	for _, model := range []string{"claude-sonnet-4-6", "gemini-2.5-flash"} {
+		t.Run(model, func(t *testing.T) {
+			account := &Account{ID: 406, Platform: PlatformAntigravity, Type: AccountTypeUpstream,
+				Credentials: map[string]any{"api_key": "test-key", "project_id": "test-project", "model_mapping": map[string]any{model: model}}}
+			svc, upstream := adaptiveCNAccountTestService(account,
+				newJSONResponse(http.StatusOK, `{"response":{"candidates":[{"content":{"parts":[{"text":"42"}]}}]}}`))
+			svc.antigravityGatewayService = &AntigravityGatewayService{tokenProvider: &AntigravityTokenProvider{}, httpUpstream: upstream}
+			result, err := svc.RunPromptBackground(context.Background(), account.ID, model, "Return 42.")
+			require.NoError(t, err)
+			require.Empty(t, result.ErrorMessage)
+			require.Equal(t, "42", result.ResponseText)
+			require.Len(t, upstream.requests, 1)
+			require.True(t, strings.HasSuffix(upstream.lastReq.URL.String(), ":generateContent"))
+			require.Equal(t, "Return 42.", gjson.GetBytes(upstream.lastBody, "request.contents.0.parts.0.text").String())
+			require.Greater(t, gjson.GetBytes(upstream.lastBody, "request.generationConfig.maxOutputTokens").Int(), int64(1))
+		})
+	}
+}
+
+func TestAccountTestService_RunPromptBackgroundGrokPassesPrompt(t *testing.T) {
+	account := &Account{ID: 407, Platform: PlatformGrok, Type: AccountTypeOAuth, Credentials: map[string]any{
+		"access_token": "test-token", "refresh_token": "refresh-token", "expires_at": "2100-01-01T00:00:00Z"}}
+	svc, upstream := adaptiveCNAccountTestService(account, newJSONResponse(http.StatusOK, `{"output_text":"42"}`))
+	svc.grokTokenProvider = NewGrokTokenProvider(svc.accountRepo, nil)
+	result, err := svc.RunPromptBackground(context.Background(), account.ID, "grok-4.3", "Return 42.")
+	require.NoError(t, err)
+	require.Empty(t, result.ErrorMessage)
+	require.Equal(t, "42", result.ResponseText)
+	require.Len(t, upstream.requests, 1)
+	require.Equal(t, "Return 42.", gjson.GetBytes(upstream.lastBody, "input").String())
+	require.False(t, gjson.GetBytes(upstream.lastBody, "stream").Bool())
+	require.Nil(t, upstream.lastReq.GetBody)
+}
+
+func TestAccountTestService_RunPromptBackgroundCodexOAuthKeepsSingleSSERequest(t *testing.T) {
+	account := &Account{ID: 408, Platform: PlatformOpenAI, Type: AccountTypeOAuth,
+		Credentials: map[string]any{"access_token": "test-token"}}
+	svc, upstream := adaptiveCNAccountTestService(account, newJSONResponse(http.StatusOK,
+		"data: {\"type\":\"response.output_text.delta\",\"delta\":\"42\"}\n\n"+
+			"data: {\"type\":\"response.completed\"}\n\n"))
+	result, err := svc.RunPromptBackground(context.Background(), account.ID, "gpt-5.6", "Return 42.")
+	require.NoError(t, err)
+	require.Empty(t, result.ErrorMessage)
+	require.Equal(t, "42", result.ResponseText)
+	require.Len(t, upstream.requests, 1)
+	require.True(t, gjson.GetBytes(upstream.lastBody, "stream").Bool())
+	require.Equal(t, "Return 42.", gjson.GetBytes(upstream.lastBody, "input.0.content.0.text").String())
+	require.Nil(t, upstream.lastReq.GetBody)
+}
+
+func TestAccountTestService_RunPromptBackgroundNeverRetriesFailures(t *testing.T) {
+	for _, tc := range []struct{ platform, accountType, body string }{
+		{PlatformOpenAI, AccountTypeOAuth, `{"error":{"message":"busy"}}`},
+		{PlatformGrok, AccountTypeOAuth, `{"error":{"message":"Access denied"}}`},
+		{PlatformAntigravity, AccountTypeUpstream, `{"error":{"message":"busy","retryDelay":"1s"}}`},
+	} {
+		t.Run(tc.platform, func(t *testing.T) {
+			account := &Account{ID: 409, Platform: tc.platform, Type: tc.accountType, Credentials: map[string]any{
+				"api_key": "test-key", "project_id": "test-project", "access_token": "test-token", "refresh_token": "refresh-token",
+				"expires_at": "2100-01-01T00:00:00Z"}}
+			svc, upstream := adaptiveCNAccountTestService(account, newJSONResponse(http.StatusForbidden, tc.body))
+			svc.grokTokenProvider = NewGrokTokenProvider(svc.accountRepo, nil)
+			svc.antigravityGatewayService = &AntigravityGatewayService{tokenProvider: &AntigravityTokenProvider{}, httpUpstream: upstream}
+			model := "gpt-5.6"
+			if tc.platform == PlatformGrok {
+				model = "grok-4.3"
+			}
+			if tc.platform == PlatformAntigravity {
+				model = "claude-sonnet-4-6"
+			}
+			result, err := svc.RunPromptBackground(context.Background(), account.ID, model, "Return 42.")
+			require.NoError(t, err)
+			require.NotEmpty(t, result.ErrorMessage)
+			require.Len(t, upstream.requests, 1)
+			require.Nil(t, upstream.lastReq.GetBody)
+		})
+	}
+}
+
+func TestAccountTestService_RunPromptBackgroundRejectsTypeSafeWithoutRequest(t *testing.T) {
+	account := &Account{ID: 410, Platform: PlatformTypeSafe, Type: AccountTypeAPIKey,
+		Credentials: map[string]any{"api_key": "test-key"}}
+	svc, upstream := adaptiveCNAccountTestService(account)
+	result, err := svc.RunPromptBackground(context.Background(), account.ID, "jev-latest", "Return 42.")
+	require.ErrorIs(t, err, errPromptProbeTypeSafeUnsupported)
+	require.Nil(t, result)
+	require.Empty(t, upstream.requests)
+}
+
+func TestAccountTestService_PromptProbeVisualStreams(t *testing.T) {
+	for _, tc := range []struct {
+		name, platform, protocol, model, body, suffix string
+	}{
+		{"adaptive", PlatformDeepseek, APIProtocolAdaptive, "deepseek-chat", "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"private\",\"content\":\"<html>visual</html>\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n", "/v1/chat/completions"},
+		{"anthropic", PlatformZhipu, APIProtocolAnthropic, "glm-4.7", "data: {\"type\":\"content_block_delta\",\"delta\":{\"thinking\":\"private\"}}\n\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"text\":\"<html>visual</html>\"}}\n\ndata: {\"type\":\"message_stop\"}\n\n", "/v1/messages"},
+		{"responses", PlatformOpenAI, "", "gpt-5.6", "data: {\"type\":\"response.reasoning_summary_text.delta\",\"delta\":\"private\"}\n\ndata: {\"type\":\"response.output_text.delta\",\"delta\":\"<html>visual</html>\"}\n\ndata: {\"type\":\"response.completed\"}\n\n", "/v1/responses"},
+		{"gemini", PlatformGemini, "", "gemini-2.5-flash", "data: {\"candidates\":[{\"content\":{\"parts\":[{\"thought\":true,\"text\":\"private\"},{\"text\":\"<html>visual</html>\"}]},\"finishReason\":\"STOP\"}]}\n\n", ":streamGenerateContent?alt=sse"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			account := adaptiveCNAccountTestAccount(501, tc.platform)
+			account.Credentials["api_protocol"] = tc.protocol
+			account.Credentials["base_url"] = "http://visual.example"
+			svc, upstream := adaptiveCNAccountTestService(account, newJSONResponse(http.StatusOK, tc.body))
+			result, err := svc.RunPromptBackgroundWithOptions(context.Background(), account.ID, tc.model, "Build HTML.", PromptProbeOptions{Stream: true, MaxOutputTokens: 8192, Timeout: 300 * time.Second})
+			require.NoError(t, err)
+			require.Empty(t, result.ErrorMessage)
+			require.Equal(t, "<html>visual</html>", result.ResponseText)
+			require.Len(t, upstream.requests, 1)
+			require.True(t, strings.HasSuffix(upstream.lastReq.URL.String(), tc.suffix), upstream.lastReq.URL.String())
+			require.Equal(t, "text/event-stream", upstream.lastReq.Header.Get("Accept"))
+			require.Nil(t, upstream.lastReq.GetBody)
+			if tc.platform != PlatformGemini {
+				require.True(t, gjson.GetBytes(upstream.lastBody, "stream").Bool())
+			}
+			if tc.protocol == APIProtocolAnthropic || tc.protocol == APIProtocolAdaptive {
+				require.Equal(t, int64(8192), gjson.GetBytes(upstream.lastBody, "max_tokens").Int())
+			} else {
+				require.False(t, gjson.GetBytes(upstream.lastBody, "max_tokens").Exists())
+				require.False(t, gjson.GetBytes(upstream.lastBody, "max_output_tokens").Exists())
+			}
+			deadline, ok := upstream.lastReq.Context().Deadline()
+			require.True(t, ok)
+			require.WithinDuration(t, time.Now().Add(300*time.Second), deadline, 2*time.Second)
+		})
+	}
+}
+
+func TestAccountTestService_PromptProbeCCOutputLimitPolicy(t *testing.T) {
+	for _, tc := range []struct {
+		name, platform string
+		stream         bool
+		limit          int
+		wantLimit      bool
+	}{
+		{"openai_visual_no_limit", PlatformOpenAI, true, 8192, false},
+		{"non_openai_visual_limit", PlatformDeepseek, true, 8192, true},
+		{"non_openai_regex_default_no_limit", PlatformDeepseek, false, 0, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			account := adaptiveCNAccountTestAccount(502, tc.platform)
+			account.Credentials["api_protocol"] = APIProtocolChatCompletions
+			account.Credentials["base_url"] = "http://chat.example/v1"
+			body := `{"choices":[{"message":{"content":"42"}}]}`
+			if tc.stream {
+				body = "data: {\"choices\":[{\"delta\":{\"content\":\"42\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+			}
+			svc, upstream := adaptiveCNAccountTestService(account, newJSONResponse(http.StatusOK, body))
+			// Force an OpenAI API-key account onto the existing CC capability path.
+			if tc.platform == PlatformOpenAI {
+				account.Extra = map[string]any{"openai_responses_supported": false}
+			}
+			result, err := svc.RunPromptBackgroundWithOptions(context.Background(), account.ID, "text-model", "Return 42.", PromptProbeOptions{Stream: tc.stream, MaxOutputTokens: tc.limit})
+			require.NoError(t, err)
+			require.Empty(t, result.ErrorMessage)
+			require.Equal(t, "42", result.ResponseText)
+			require.Len(t, upstream.requests, 1)
+			require.Equal(t, tc.stream, gjson.GetBytes(upstream.lastBody, "stream").Bool())
+			require.Equal(t, tc.wantLimit, gjson.GetBytes(upstream.lastBody, "max_tokens").Exists())
+			if tc.wantLimit {
+				require.Equal(t, int64(tc.limit), gjson.GetBytes(upstream.lastBody, "max_tokens").Int())
+			}
+		})
+	}
+}
+
+func TestAccountTestService_PromptProbeAntigravityVisualStreams(t *testing.T) {
+	for _, model := range []string{"claude-sonnet-4-6", "gemini-2.5-flash"} {
+		t.Run(model, func(t *testing.T) {
+			account := &Account{ID: 503, Platform: PlatformAntigravity, Type: AccountTypeUpstream,
+				Credentials: map[string]any{"api_key": "key", "project_id": "project", "model_mapping": map[string]any{model: model}}}
+			svc, upstream := adaptiveCNAccountTestService(account, newJSONResponse(http.StatusOK,
+				"data: {\"response\":{\"candidates\":[{\"content\":{\"parts\":[{\"thought\":true,\"text\":\"private\"},{\"text\":\"visual\"}]},\"finishReason\":\"STOP\"}]}}\n\n"))
+			svc.antigravityGatewayService = &AntigravityGatewayService{tokenProvider: &AntigravityTokenProvider{}, httpUpstream: upstream}
+			result, err := svc.RunPromptBackgroundWithOptions(context.Background(), account.ID, model, "Build HTML.", PromptProbeOptions{Stream: true, MaxOutputTokens: 8192})
+			require.NoError(t, err)
+			require.Empty(t, result.ErrorMessage)
+			require.Equal(t, "visual", result.ResponseText)
+			require.Len(t, upstream.requests, 1)
+			require.True(t, strings.HasSuffix(upstream.lastReq.URL.String(), ":streamGenerateContent?alt=sse"))
+			require.Equal(t, int64(8192), gjson.GetBytes(upstream.lastBody, "request.generationConfig.maxOutputTokens").Int())
+		})
+	}
+}
+
+func promptProbeBedrockFrame(t *testing.T, event string) []byte {
+	t.Helper()
+	name := ":event-type"
+	var headers bytes.Buffer
+	_ = headers.WriteByte(byte(len(name)))
+	_, _ = headers.WriteString(name)
+	_ = headers.WriteByte(7)
+	require.NoError(t, binary.Write(&headers, binary.BigEndian, uint16(len("chunk"))))
+	_, _ = headers.WriteString("chunk")
+	payload, err := json.Marshal(map[string]string{"bytes": base64.StdEncoding.EncodeToString([]byte(event))})
+	require.NoError(t, err)
+	frame := make([]byte, 12)
+	binary.BigEndian.PutUint32(frame[0:4], uint32(16+headers.Len()+len(payload)))
+	binary.BigEndian.PutUint32(frame[4:8], uint32(headers.Len()))
+	binary.BigEndian.PutUint32(frame[8:12], crc32.ChecksumIEEE(frame[:8]))
+	frame = append(frame, headers.Bytes()...)
+	frame = append(frame, payload...)
+	return binary.BigEndian.AppendUint32(frame, crc32.ChecksumIEEE(frame))
+}
+
+func TestAccountTestService_PromptProbeBedrockVisualStreams(t *testing.T) {
+	account := &Account{ID: 504, Platform: PlatformAnthropic, Type: AccountTypeBedrock,
+		Credentials: map[string]any{"auth_mode": "apikey", "api_key": "key"}}
+	body := append(promptProbeBedrockFrame(t, `{"type":"content_block_delta","delta":{"text":"visual"}}`), promptProbeBedrockFrame(t, `{"type":"message_stop"}`)...)
+	svc, upstream := adaptiveCNAccountTestService(account, &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: io.NopCloser(bytes.NewReader(body))})
+	result, err := svc.RunPromptBackgroundWithOptions(context.Background(), account.ID, "claude-sonnet-4-6", "Build HTML.", PromptProbeOptions{Stream: true, MaxOutputTokens: 8192})
+	require.NoError(t, err)
+	require.Empty(t, result.ErrorMessage)
+	require.Equal(t, "visual", result.ResponseText)
+	require.Len(t, upstream.requests, 1)
+	require.True(t, strings.HasSuffix(upstream.lastReq.URL.String(), "/invoke-with-response-stream"))
+	require.Equal(t, int64(8192), gjson.GetBytes(upstream.lastBody, "max_tokens").Int())
+}
+
+type promptProbeBlockingUpstream struct {
+	HTTPUpstream
+	request   *http.Request
+	blockBody bool
+}
+
+func (u *promptProbeBlockingUpstream) DoWithTLS(req *http.Request, _ string, _ int64, _ int, _ *tlsfingerprint.Profile) (*http.Response, error) {
+	u.request = req
+	if !u.blockBody {
+		<-req.Context().Done()
+		return nil, req.Context().Err()
+	}
+	return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: &promptProbeBlockingBody{ctx: req.Context()}}, nil
+}
+
+type promptProbeBlockingBody struct{ ctx context.Context }
+
+func (r *promptProbeBlockingBody) Read([]byte) (int, error) { <-r.ctx.Done(); return 0, r.ctx.Err() }
+func (r *promptProbeBlockingBody) Close() error             { return nil }
+
+func TestAccountTestService_PromptProbeTimeoutBoundsEntireRequest(t *testing.T) {
+	for _, blockBody := range []bool{false, true} {
+		account := adaptiveCNAccountTestAccount(505, PlatformDeepseek)
+		svc, _ := adaptiveCNAccountTestService(account)
+		upstream := &promptProbeBlockingUpstream{blockBody: blockBody}
+		svc.httpUpstream = upstream
+		parent, cancel := context.WithTimeout(context.Background(), time.Hour)
+		started := time.Now()
+		result, err := svc.RunPromptBackgroundWithOptions(parent, account.ID, "deepseek-chat", "Build HTML.", PromptProbeOptions{Stream: true, Timeout: 30 * time.Millisecond})
+		cancel()
+		require.NoError(t, err)
+		require.Contains(t, result.ErrorMessage, context.DeadlineExceeded.Error())
+		require.Less(t, time.Since(started), time.Second)
+		require.ErrorIs(t, upstream.request.Context().Err(), context.DeadlineExceeded)
+	}
 }

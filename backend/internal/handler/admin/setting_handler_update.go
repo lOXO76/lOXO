@@ -345,6 +345,10 @@ type UpdateSettingsRequest struct {
 	ChannelMonitorShowQuota              *bool   `json:"channel_monitor_show_quota"`
 	ChannelMonitorHideUserRanking        *bool   `json:"channel_monitor_hide_user_ranking"`
 
+	DegradationDetectionEnabled       *bool    `json:"degradation_detection_enabled"`
+	DegradationThreshold              *float64 `json:"degradation_threshold"`
+	DegradationDefaultIntervalSeconds *int     `json:"degradation_default_interval_seconds" binding:"omitempty,min=300,max=86400"`
+
 	// Grok model mapping policy
 	GrokDefaultTextModel           *string `json:"grok_default_text_model"`
 	GrokCrossClientModelMapEnabled *bool   `json:"grok_cross_client_model_map_enabled"`
@@ -1975,6 +1979,9 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.ChannelMonitorHideUserRanking
 		}(),
+		DegradationDetectionEnabled:       boolValueOrDefault(req.DegradationDetectionEnabled, previousSettings.DegradationDetectionEnabled),
+		DegradationThreshold:              float64ValueOrDefault(req.DegradationThreshold, previousSettings.DegradationThreshold),
+		DegradationDefaultIntervalSeconds: intValueOrDefault(req.DegradationDefaultIntervalSeconds, previousSettings.DegradationDefaultIntervalSeconds),
 		GrokDefaultTextModel: func() string {
 			if req.GrokDefaultTextModel != nil {
 				return *req.GrokDefaultTextModel
@@ -2471,8 +2478,11 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		GrokCrossClientModelMapEnabled: updatedSettings.GrokCrossClientModelMapEnabled,
 		GrokDefaultBaseURLMode:         updatedSettings.GrokDefaultBaseURLMode,
 
-		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
-		SubscriptionEnabled:      updatedSettings.SubscriptionEnabled,
+		AvailableChannelsEnabled:          updatedSettings.AvailableChannelsEnabled,
+		DegradationDetectionEnabled:       updatedSettings.DegradationDetectionEnabled,
+		DegradationThreshold:              updatedSettings.DegradationThreshold,
+		DegradationDefaultIntervalSeconds: updatedSettings.DegradationDefaultIntervalSeconds,
+		SubscriptionEnabled:               updatedSettings.SubscriptionEnabled,
 
 		ModelPlazaEnabled:       updatedSettings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth:   updatedSettings.ModelPlazaRequireAuth,

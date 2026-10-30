@@ -23,6 +23,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/compositemodelroute"
+	"github.com/Wei-Shaw/sub2api/ent/degradationprobe"
+	"github.com/Wei-Shaw/sub2api/ent/degradationrun"
+	"github.com/Wei-Shaw/sub2api/ent/degradationtarget"
 	"github.com/Wei-Shaw/sub2api/ent/enterprise"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/enterpriseauditlog"
@@ -519,6 +522,87 @@ func (f TraverseCompositeModelRoute) Traverse(ctx context.Context, q ent.Query) 
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.CompositeModelRouteQuery", q)
+}
+
+// The DegradationProbeFunc type is an adapter to allow the use of ordinary function as a Querier.
+type DegradationProbeFunc func(context.Context, *ent.DegradationProbeQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f DegradationProbeFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.DegradationProbeQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.DegradationProbeQuery", q)
+}
+
+// The TraverseDegradationProbe type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseDegradationProbe func(context.Context, *ent.DegradationProbeQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseDegradationProbe) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseDegradationProbe) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.DegradationProbeQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.DegradationProbeQuery", q)
+}
+
+// The DegradationRunFunc type is an adapter to allow the use of ordinary function as a Querier.
+type DegradationRunFunc func(context.Context, *ent.DegradationRunQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f DegradationRunFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.DegradationRunQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.DegradationRunQuery", q)
+}
+
+// The TraverseDegradationRun type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseDegradationRun func(context.Context, *ent.DegradationRunQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseDegradationRun) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseDegradationRun) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.DegradationRunQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.DegradationRunQuery", q)
+}
+
+// The DegradationTargetFunc type is an adapter to allow the use of ordinary function as a Querier.
+type DegradationTargetFunc func(context.Context, *ent.DegradationTargetQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f DegradationTargetFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.DegradationTargetQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.DegradationTargetQuery", q)
+}
+
+// The TraverseDegradationTarget type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseDegradationTarget func(context.Context, *ent.DegradationTargetQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseDegradationTarget) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseDegradationTarget) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.DegradationTargetQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.DegradationTargetQuery", q)
 }
 
 // The EnterpriseFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1472,6 +1556,12 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ChannelMonitorRequestTemplateQuery, predicate.ChannelMonitorRequestTemplate, channelmonitorrequesttemplate.OrderOption]{typ: ent.TypeChannelMonitorRequestTemplate, tq: q}, nil
 	case *ent.CompositeModelRouteQuery:
 		return &query[*ent.CompositeModelRouteQuery, predicate.CompositeModelRoute, compositemodelroute.OrderOption]{typ: ent.TypeCompositeModelRoute, tq: q}, nil
+	case *ent.DegradationProbeQuery:
+		return &query[*ent.DegradationProbeQuery, predicate.DegradationProbe, degradationprobe.OrderOption]{typ: ent.TypeDegradationProbe, tq: q}, nil
+	case *ent.DegradationRunQuery:
+		return &query[*ent.DegradationRunQuery, predicate.DegradationRun, degradationrun.OrderOption]{typ: ent.TypeDegradationRun, tq: q}, nil
+	case *ent.DegradationTargetQuery:
+		return &query[*ent.DegradationTargetQuery, predicate.DegradationTarget, degradationtarget.OrderOption]{typ: ent.TypeDegradationTarget, tq: q}, nil
 	case *ent.EnterpriseQuery:
 		return &query[*ent.EnterpriseQuery, predicate.Enterprise, enterprise.OrderOption]{typ: ent.TypeEnterprise, tq: q}, nil
 	case *ent.EnterpriseAllowedGroupQuery:

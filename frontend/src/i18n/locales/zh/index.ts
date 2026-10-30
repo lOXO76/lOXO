@@ -10,6 +10,7 @@ import asyncTasks from './asyncTasks'
 import apiDocs from './apiDocs'
 import checkIn from './checkIn'
 import clientImport from './clientImport'
+import degradation from './degradation'
 
 export default {
   ...landing,
@@ -18,11 +19,12 @@ export default {
   ...dashboard,
   ...channelMonitorV2,
   ...batchImage,
-  admin,
   ...misc,
   ...asyncTasks,
   ...apiDocs,
   ...checkIn,
+  ...degradation,
   ...clientImport,
-  nav: { ...common.nav, ...checkIn.nav, ...clientImport.nav },
+  admin: { ...admin, ...degradation.admin },
+  nav: { ...common.nav, ...checkIn.nav, ...clientImport.nav, ...degradation.nav },
 }

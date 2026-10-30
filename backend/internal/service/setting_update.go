@@ -432,6 +432,20 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyChannelMonitorShowQuota] = strconv.FormatBool(settings.ChannelMonitorShowQuota)
 	updates[SettingKeyChannelMonitorHideUserRanking] = strconv.FormatBool(settings.ChannelMonitorHideUserRanking)
 
+	if !(settings.DegradationThreshold >= 0 && settings.DegradationThreshold <= 1) {
+		return nil, infraerrors.BadRequest("INVALID_DEGRADATION_THRESHOLD", "degradation_threshold must be between 0 and 1")
+	}
+	// Zero is an omitted interval for older direct callers using SystemSettings.
+	if settings.DegradationDefaultIntervalSeconds == 0 {
+		settings.DegradationDefaultIntervalSeconds = defaultDegradationRuntime().DefaultIntervalSeconds
+	}
+	if settings.DegradationDefaultIntervalSeconds < 300 || settings.DegradationDefaultIntervalSeconds > 86400 {
+		return nil, infraerrors.BadRequest("INVALID_DEGRADATION_DEFAULT_INTERVAL", "degradation_default_interval_seconds must be between 300 and 86400")
+	}
+	updates[SettingKeyDegradationDetectionEnabled] = strconv.FormatBool(settings.DegradationDetectionEnabled)
+	updates[SettingKeyDegradationThreshold] = strconv.FormatFloat(settings.DegradationThreshold, 'f', -1, 64)
+	updates[SettingKeyDegradationDefaultIntervalSeconds] = strconv.Itoa(settings.DegradationDefaultIntervalSeconds)
+
 	// Grok model mapping policy
 	if v := strings.TrimSpace(settings.GrokDefaultTextModel); v != "" {
 		updates[SettingKeyGrokDefaultTextModel] = v

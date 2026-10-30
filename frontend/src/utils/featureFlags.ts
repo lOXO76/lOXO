@@ -99,6 +99,11 @@ export const FeatureFlags = {
     mode: 'opt-out',
     label: 'Channel Monitor',
   }),
+  degradationDetection: defineFlag({
+    key: 'degradation_detection_enabled',
+    mode: 'opt-out',
+    label: 'Degradation Detection',
+  }),
   availableChannels: defineFlag({
     key: 'available_channels_enabled',
     mode: 'opt-in',
