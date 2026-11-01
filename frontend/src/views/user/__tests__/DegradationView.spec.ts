@@ -88,7 +88,57 @@ describe('DegradationView', () => {
     expect(wrapper.get('[data-testid="degradation-group"]').text()).toContain('Claude Official')
     expect(wrapper.text()).toContain('claude-sonnet-4-6')
     expect(wrapper.text()).toContain('62.5%')
+    // 旧版后端没有 bucket_* / hourly 字段时，按 generated_at 回推并画出空小时条
+    expect(wrapper.findAll('[data-testid="hourly-bar"]')).toHaveLength(24)
     expect(getOverview).toHaveBeenCalledWith({ window_hours: 24 })
+    wrapper.unmount()
+  })
+
+  it('renders an hourly strip per model aligned to the backend buckets', async () => {
+    getOverview.mockResolvedValue({
+      ...emptyOverview,
+      bucket_start: '2026-10-29T11:00:00Z',
+      bucket_count: 24,
+      bucket_seconds: 3600,
+      groups: [
+        {
+          group_id: 12,
+          group_name: 'Claude Official',
+          platform: 'anthropic',
+          verdict: 'healthy',
+          last_checked_at: '2026-10-30T09:58:00Z',
+          models: [
+            {
+              model: 'claude-sonnet-4-6',
+              verdict: 'healthy',
+              pass_rate: 0.9,
+              total: 10,
+              passed: 9,
+              failed: 1,
+              error: 0,
+              avg_latency_ms: 4210,
+              last_checked_at: '2026-10-30T09:58:00Z',
+              last_run_status: 'passed',
+              hourly: [
+                { start: '2026-10-29T11:00:00Z', passed: 1, failed: 1, error: 0, pass_rate: 0.5, avg_latency_ms: 4000 },
+                { start: '2026-10-30T10:00:00Z', passed: 8, failed: 0, error: 0, pass_rate: 1, avg_latency_ms: 4200 },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="degradation-legend"]').exists()).toBe(true)
+    const bars = wrapper.findAll('[data-testid="hourly-bar"]')
+    expect(bars).toHaveLength(24)
+    expect(bars[0].attributes('data-level')).toBe('degraded')
+    expect(bars[23].attributes('data-level')).toBe('healthy')
+    expect(bars.slice(1, 23).every((bar) => bar.attributes('data-level') === 'empty')).toBe(true)
+    expect(wrapper.find('[role="progressbar"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('90.0%')
     wrapper.unmount()
   })
 
@@ -136,6 +186,7 @@ describe('DegradationView', () => {
     expect(group.text()).toContain('degradation.visual.badge')
     expect(group.text()).not.toContain('degradation.verdict.unknown')
     expect(group.find('[role="progressbar"]').exists()).toBe(false)
+    expect(group.find('[data-testid="degradation-hourly"]').exists()).toBe(false)
     expect(group.text()).not.toContain('degradation.samples')
     expect(group.get('[data-testid="visual-showcase"]').text()).toContain('Pelican bicycle')
     expect(group.find('iframe').exists()).toBe(false)

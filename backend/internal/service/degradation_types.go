@@ -25,6 +25,8 @@ const (
 	DegradationVerdictUnknown  = "unknown"
 
 	degradationDefaultWindowHours = 24
+	// DegradationBucketSeconds 是总览中按小时分桶的粒度。
+	DegradationBucketSeconds      = 3600
 	degradationMinIntervalSeconds = 300
 	degradationMaxIntervalSeconds = 86400
 	degradationMaxAnswerRunes     = 4000
@@ -178,6 +180,19 @@ type DegradationModelOverview struct {
 	LastCheckedAt *time.Time            `json:"last_checked_at"`
 	LastRunStatus string                `json:"last_run_status"`
 	Showcases     []DegradationShowcase `json:"showcases"`
+	// Hourly 只包含有正则题数据的小时（稀疏、按时间升序），
+	// 前端用 overview 的 bucket_start / bucket_count 补齐空小时。
+	Hourly []DegradationHourBucket `json:"hourly"`
+}
+
+// DegradationHourBucket 是某一整点小时内正则题的检测结果汇总。
+type DegradationHourBucket struct {
+	Start        time.Time `json:"start"`
+	Passed       int64     `json:"passed"`
+	Failed       int64     `json:"failed"`
+	Error        int64     `json:"error"`
+	PassRate     float64   `json:"pass_rate"`
+	AvgLatencyMs int64     `json:"avg_latency_ms"`
 }
 
 type DegradationShowcase struct {
@@ -210,11 +225,16 @@ type DegradationGroupOverview struct {
 }
 
 type DegradationOverview struct {
-	Enabled     bool                       `json:"enabled"`
-	WindowHours int                        `json:"window_hours"`
-	Threshold   float64                    `json:"threshold"`
-	GeneratedAt time.Time                  `json:"generated_at"`
-	Groups      []DegradationGroupOverview `json:"groups"`
+	Enabled     bool      `json:"enabled"`
+	WindowHours int       `json:"window_hours"`
+	Threshold   float64   `json:"threshold"`
+	GeneratedAt time.Time `json:"generated_at"`
+	// BucketStart 是第一个小时桶的起点（整点），共 BucketCount 个、每个 BucketSeconds 秒，
+	// 最后一个桶是当前（未走完的）小时。统计窗口与之对齐。
+	BucketStart   time.Time                  `json:"bucket_start"`
+	BucketCount   int                        `json:"bucket_count"`
+	BucketSeconds int                        `json:"bucket_seconds"`
+	Groups        []DegradationGroupOverview `json:"groups"`
 }
 
 type DegradationPreviewAccount struct {

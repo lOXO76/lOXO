@@ -15,6 +15,16 @@ export interface DegradationShowcase {
 }
 export interface DegradationVisualViewToken { token: string; expires_at: string }
 
+/** 某一整点小时内正则题的检测汇总（error 不计入通过率分母）。 */
+export interface DegradationHourBucket {
+  start: string
+  passed: number
+  failed: number
+  error: number
+  pass_rate: number
+  avg_latency_ms: number
+}
+
 export interface DegradationModelOverview {
   model: string
   verdict: DegradationVerdict
@@ -27,6 +37,8 @@ export interface DegradationModelOverview {
   last_checked_at: string | null
   last_run_status: DegradationRunStatus | ''
   showcases: DegradationShowcase[]
+  /** 稀疏：只含有数据的小时，按时间升序；空小时由 bucket_start/bucket_count 补齐。 */
+  hourly: DegradationHourBucket[]
 }
 export interface DegradationGroupOverview {
   group_id: number
@@ -41,6 +53,10 @@ export interface DegradationOverview {
   window_hours: number
   threshold: number
   generated_at: string
+  /** 第一个小时桶的起点（整点），共 bucket_count 个，最后一个是当前小时。 */
+  bucket_start?: string
+  bucket_count?: number
+  bucket_seconds?: number
   groups: DegradationGroupOverview[]
 }
 export interface DegradationUserRun {
