@@ -42,6 +42,19 @@
             </button>
           </div>
         </header>
+        <div
+          v-if="groups.length > 0"
+          class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-4 text-[11px] text-gray-500 dark:border-dark-700 dark:text-gray-400"
+          role="list"
+          :aria-label="t('degradation.hourly.legendAria')"
+          data-testid="degradation-legend"
+        >
+          <span class="font-semibold text-gray-600 dark:text-gray-300">{{ t('degradation.hourly.title') }}</span>
+          <span v-for="level in HOURLY_LEVELS" :key="level" class="inline-flex items-center gap-1.5" role="listitem">
+            <i class="inline-block h-3 w-1.5 rounded-sm" :class="HOURLY_LEVEL_STYLE[level].bar" aria-hidden="true"></i>
+            {{ t(`degradation.hourly.levels.${level}`) }}
+          </span>
+        </div>
       </section>
 
       <div v-if="loadError && overview" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300" role="alert">
@@ -71,7 +84,7 @@
         />
       </section>
 
-      <div v-else class="grid gap-5 xl:grid-cols-2">
+      <div v-else class="space-y-5">
         <article
           v-for="group in groups"
           :key="group.group_id"
@@ -94,50 +107,45 @@
           </header>
 
           <div class="divide-y divide-gray-100 dark:divide-dark-700">
-            <div v-for="model in group.models" :key="model.model" class="px-5 py-4">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <strong class="min-w-0 break-all text-sm font-semibold text-gray-900 dark:text-white">{{ model.model }}</strong>
-                <span class="badge shrink-0" :class="isPureVisualModel(model) ? 'badge-gray' : verdictBadgeClass(model.verdict)">
-                  {{ isPureVisualModel(model) ? t('degradation.visual.badge') : t(`degradation.verdict.${model.verdict}`) }}
-                </span>
-              </div>
-              <template v-if="!isPureVisualModel(model)">
-                <div class="mt-3 flex items-center gap-3">
-                  <div
-                    class="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-700"
-                    role="progressbar"
-                    :aria-label="t('degradation.passRate')"
-                    :aria-valuenow="passRatePercent(model.pass_rate)"
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                  >
-                    <div
-                      class="h-full rounded-full transition-[width]"
-                      :class="verdictBarClass(model.verdict)"
-                      :style="{ width: `${passRatePercent(model.pass_rate)}%` }"
-                    ></div>
-                  </div>
-                  <span class="w-14 text-right text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-                    {{ formatPercent(model.pass_rate) }}
+            <div v-for="model in group.models" :key="model.model" class="px-5 py-4" data-testid="degradation-model">
+              <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                <div class="flex min-w-0 items-center gap-2">
+                  <strong class="min-w-0 break-all font-mono text-sm font-semibold text-gray-900 dark:text-white">{{ model.model }}</strong>
+                  <span class="badge shrink-0" :class="isPureVisualModel(model) ? 'badge-gray' : verdictBadgeClass(model.verdict)">
+                    {{ isPureVisualModel(model) ? t('degradation.visual.badge') : t(`degradation.verdict.${model.verdict}`) }}
                   </span>
                 </div>
-                <dl class="mt-3 grid grid-cols-2 gap-3 text-xs text-gray-500 dark:text-gray-400 sm:grid-cols-3">
-                  <div>
-                    <dt class="text-gray-400 dark:text-gray-500">{{ t('degradation.samples') }}</dt>
-                    <dd class="mt-0.5 font-medium tabular-nums text-gray-700 dark:text-gray-300">{{ model.total }}</dd>
+                <dl
+                  v-if="!isPureVisualModel(model)"
+                  class="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-xs text-gray-400 dark:text-gray-500"
+                >
+                  <div class="flex items-baseline gap-1.5">
+                    <dt>{{ t('degradation.passRate') }}</dt>
+                    <dd class="text-sm font-bold tabular-nums" :class="verdictTextClass(model.verdict)">{{ formatModelPassRate(model) }}</dd>
                   </div>
-                  <div>
-                    <dt class="text-gray-400 dark:text-gray-500">{{ t('degradation.avgLatency') }}</dt>
-                    <dd class="mt-0.5 font-medium tabular-nums text-gray-700 dark:text-gray-300">{{ formatLatency(model.avg_latency_ms) }}</dd>
+                  <div class="flex items-baseline gap-1.5">
+                    <dt>{{ t('degradation.samples') }}</dt>
+                    <dd class="font-medium tabular-nums text-gray-700 dark:text-gray-300">{{ model.total }}</dd>
                   </div>
-                  <div class="col-span-2 sm:col-span-1">
-                    <dt class="text-gray-400 dark:text-gray-500">{{ t('degradation.sampleBreakdown') }}</dt>
-                    <dd class="mt-0.5 font-medium tabular-nums text-gray-700 dark:text-gray-300">
+                  <div class="flex items-baseline gap-1.5">
+                    <dt>{{ t('degradation.avgLatency') }}</dt>
+                    <dd class="font-medium tabular-nums text-gray-700 dark:text-gray-300">{{ formatLatency(model.avg_latency_ms) }}</dd>
+                  </div>
+                  <div class="flex items-baseline gap-1.5">
+                    <dt class="sr-only">{{ t('degradation.sampleBreakdown') }}</dt>
+                    <dd class="font-medium tabular-nums text-gray-500 dark:text-gray-400">
                       {{ t('degradation.sampleCounts', { passed: model.passed, failed: model.failed, error: model.error }) }}
                     </dd>
                   </div>
                 </dl>
-              </template>
+              </div>
+              <DegradationHourlyStrip
+                v-if="!isPureVisualModel(model) && hourlyWindow"
+                class="mt-3"
+                :buckets="model.hourly"
+                :bucket-window="hourlyWindow"
+                :threshold="threshold"
+              />
 
               <div v-if="model.showcases.length > 0" class="mt-5 space-y-3" data-testid="visual-showcases">
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('degradation.visual.showcases') }}</p>
@@ -184,6 +192,8 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
 import VisualArtifactFrame from '@/components/degradation/VisualArtifactFrame.vue'
 import VisualHistoryDialog from '@/components/degradation/VisualHistoryDialog.vue'
+import DegradationHourlyStrip from '@/components/degradation/DegradationHourlyStrip.vue'
+import { HOURLY_LEVELS, HOURLY_LEVEL_STYLE, resolveHourlyWindow } from '@/components/degradation/hourly'
 import { degradationAPI } from '@/api/degradation'
 import type {
   DegradationGroupOverview,
@@ -216,6 +226,8 @@ const windowOptions = computed(() => [
   { value: 168, label: t('degradation.windows.7d') },
 ])
 const groups = computed(() => overview.value?.groups ?? [])
+const hourlyWindow = computed(() => (overview.value ? resolveHourlyWindow(overview.value) : null))
+const threshold = computed(() => overview.value?.threshold ?? 0.8)
 
 function isPureVisualModel(model: DegradationModelOverview) {
   return model.total === 0 && model.showcases.length > 0
@@ -244,7 +256,11 @@ async function loadOverview(showLoading = false) {
       ...result,
       groups: (result.groups ?? []).map((group) => ({
         ...group,
-        models: (group.models ?? []).map((model) => ({ ...model, showcases: model.showcases ?? [] })),
+        models: (group.models ?? []).map((model) => ({
+          ...model,
+          showcases: model.showcases ?? [],
+          hourly: model.hourly ?? [],
+        })),
       })),
     }
     loadError.value = false
@@ -295,12 +311,13 @@ function passRatePercent(value: number) {
   return Math.min(100, Math.max(0, value * 100))
 }
 
-function formatPercent(value: number) {
-  return `${(passRatePercent(value)).toFixed(1)}%`
+function formatModelPassRate(model: DegradationModelOverview) {
+  if (model.passed + model.failed <= 0) return '-'
+  return `${passRatePercent(model.pass_rate).toFixed(1)}%`
 }
 
 function formatLatency(value: number) {
-  if (!Number.isFinite(value) || value < 0) return '-'
+  if (!Number.isFinite(value) || value <= 0) return '-'
   return value >= 1000 ? `${(value / 1000).toFixed(1)}s` : `${Math.round(value)}ms`
 }
 
@@ -325,11 +342,11 @@ function verdictBadgeClass(verdict: DegradationVerdict) {
   }[verdict]
 }
 
-function verdictBarClass(verdict: DegradationVerdict) {
+function verdictTextClass(verdict: DegradationVerdict) {
   return {
-    healthy: 'bg-green-500 dark:bg-green-400',
-    degraded: 'bg-red-500 dark:bg-red-400',
-    unknown: 'bg-gray-400 dark:bg-gray-500',
+    healthy: 'text-emerald-600 dark:text-emerald-400',
+    degraded: 'text-red-600 dark:text-red-400',
+    unknown: 'text-gray-900 dark:text-gray-100',
   }[verdict]
 }
 

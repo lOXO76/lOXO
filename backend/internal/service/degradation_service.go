@@ -18,6 +18,15 @@ type DegradationService struct {
 	gateway   *GatewayService
 	settings  *SettingService
 	executor  degradationExecutor
+	// now 仅供测试注入时钟；为 nil 时使用 time.Now。
+	now func() time.Time
+}
+
+func (s *DegradationService) currentTime() time.Time {
+	if s.now != nil {
+		return s.now()
+	}
+	return time.Now()
 }
 
 type degradationExecutor interface {
@@ -354,8 +363,23 @@ func (s *DegradationService) GetOverview(ctx context.Context, viewerGroupIDs []i
 	if s.settings != nil {
 		runtime = s.settings.GetDegradationRuntime(ctx)
 	}
+	// 统计窗口与小时桶对齐：共 windowHours 个整点桶，最后一个是当前小时。
+	now := s.currentTime().UTC()
+	bucketStart := degradationBucketStart(now, windowHours)
+	newOverview := func(enabled bool) *DegradationOverview {
+		return &DegradationOverview{
+			Enabled:       enabled,
+			WindowHours:   windowHours,
+			Threshold:     runtime.Threshold,
+			GeneratedAt:   now,
+			BucketStart:   bucketStart,
+			BucketCount:   windowHours,
+			BucketSeconds: DegradationBucketSeconds,
+			Groups:        []DegradationGroupOverview{},
+		}
+	}
 	if !runtime.Enabled && !admin {
-		return &DegradationOverview{Enabled: false, WindowHours: windowHours, Threshold: runtime.Threshold, GeneratedAt: time.Now().UTC(), Groups: []DegradationGroupOverview{}}, nil
+		return newOverview(false), nil
 	}
 	targets, err := s.repo.ListTargets(ctx, nil, !admin)
 	if err != nil {
@@ -383,9 +407,9 @@ func (s *DegradationService) GetOverview(ctx context.Context, viewerGroupIDs []i
 		}
 	}
 	if len(targets) == 0 {
-		return &DegradationOverview{Enabled: runtime.Enabled, WindowHours: windowHours, Threshold: runtime.Threshold, GeneratedAt: time.Now().UTC(), Groups: []DegradationGroupOverview{}}, nil
+		return newOverview(runtime.Enabled), nil
 	}
-	runs, err := s.repo.ListRunsSince(ctx, time.Now().Add(-time.Duration(windowHours)*time.Hour), groupIDs)
+	runs, err := s.repo.ListRunsSince(ctx, bucketStart, groupIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -443,6 +467,7 @@ func (s *DegradationService) GetOverview(ctx context.Context, viewerGroupIDs []i
 	for _, target := range targets {
 		items := byModel[modelKey{target.GroupID, target.Model}]
 		model := summarizeDegradationModel(target.Model, items, runtime.Threshold)
+		model.Hourly = degradationHourlyBuckets(items, bucketStart, windowHours)
 		for _, probe := range visualProbes {
 			if len(target.ProbeIDs) > 0 && !containsInt64(target.ProbeIDs, probe.ID) {
 				continue
@@ -453,7 +478,7 @@ func (s *DegradationService) GetOverview(ctx context.Context, viewerGroupIDs []i
 		}
 		groupModels[target.GroupID] = append(groupModels[target.GroupID], model)
 	}
-	out := &DegradationOverview{Enabled: runtime.Enabled, WindowHours: windowHours, Threshold: runtime.Threshold, GeneratedAt: time.Now().UTC(), Groups: []DegradationGroupOverview{}}
+	out := newOverview(runtime.Enabled)
 	for groupID, models := range groupModels {
 		sort.Slice(models, func(i, j int) bool { return models[i].Model < models[j].Model })
 		group := DegradationGroupOverview{GroupID: groupID, Models: models, Verdict: groupVerdict(models)}
@@ -475,7 +500,7 @@ func (s *DegradationService) GetOverview(ctx context.Context, viewerGroupIDs []i
 }
 
 func summarizeDegradationModel(model string, runs []*DegradationRun, threshold float64) DegradationModelOverview {
-	item := DegradationModelOverview{Model: model, Verdict: DegradationVerdictUnknown, Showcases: []DegradationShowcase{}}
+	item := DegradationModelOverview{Model: model, Verdict: DegradationVerdictUnknown, Showcases: []DegradationShowcase{}, Hourly: []DegradationHourBucket{}}
 	var latencyTotal int64
 	var lastRegexAt time.Time
 	for _, run := range runs {
@@ -515,6 +540,63 @@ func summarizeDegradationModel(model string, runs []*DegradationRun, threshold f
 		}
 	}
 	return item
+}
+
+// degradationBucketStart 返回 count 个整点小时桶中第一个桶的起点，最后一个桶包含 now。
+func degradationBucketStart(now time.Time, count int) time.Time {
+	if count < 1 {
+		count = 1
+	}
+	return now.UTC().Truncate(time.Hour).Add(-time.Duration(count-1) * time.Hour)
+}
+
+// degradationHourlyBuckets 把正则题流水按整点小时聚合，只返回有数据的小时（升序）。
+// 通过率口径与 summarizeDegradationModel 一致：error 不计入分母，平均延迟只算 passed/failed。
+func degradationHourlyBuckets(runs []*DegradationRun, start time.Time, count int) []DegradationHourBucket {
+	out := []DegradationHourBucket{}
+	if count < 1 {
+		return out
+	}
+	end := start.Add(time.Duration(count) * time.Hour)
+	type accumulator struct {
+		bucket       DegradationHourBucket
+		latencyTotal int64
+	}
+	byHour := make(map[int64]*accumulator)
+	for _, run := range runs {
+		if run == nil || degradationProbeType(run.ProbeType) != DegradationProbeTypeRegex {
+			continue
+		}
+		if run.CreatedAt.Before(start) || !run.CreatedAt.Before(end) {
+			continue
+		}
+		hour := run.CreatedAt.UTC().Truncate(time.Hour)
+		acc := byHour[hour.Unix()]
+		if acc == nil {
+			acc = &accumulator{bucket: DegradationHourBucket{Start: hour}}
+			byHour[hour.Unix()] = acc
+		}
+		switch run.Status {
+		case DegradationRunPassed:
+			acc.bucket.Passed++
+			acc.latencyTotal += run.LatencyMs
+		case DegradationRunFailed:
+			acc.bucket.Failed++
+			acc.latencyTotal += run.LatencyMs
+		case DegradationRunError:
+			acc.bucket.Error++
+		}
+	}
+	for _, acc := range byHour {
+		bucket := acc.bucket
+		if denominator := bucket.Passed + bucket.Failed; denominator > 0 {
+			bucket.PassRate = float64(bucket.Passed) / float64(denominator)
+			bucket.AvgLatencyMs = acc.latencyTotal / denominator
+		}
+		out = append(out, bucket)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Start.Before(out[j].Start) })
+	return out
 }
 
 func groupVerdict(models []DegradationModelOverview) string {

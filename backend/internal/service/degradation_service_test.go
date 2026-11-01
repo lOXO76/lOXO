@@ -246,3 +246,91 @@ func TestDegradationOverviewAggregatesRecreatedTargetHistoryByGroupAndModel(t *t
 	require.Zero(t, model.Failed)
 	require.Equal(t, DegradationVerdictHealthy, model.Verdict)
 }
+
+func TestDegradationBucketStartAlignsToHour(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, time.October, 30, 10, 42, 13, 0, time.UTC)
+	require.Equal(t, time.Date(2026, time.October, 29, 11, 0, 0, 0, time.UTC), degradationBucketStart(now, 24))
+	require.Equal(t, time.Date(2026, time.October, 30, 10, 0, 0, 0, time.UTC), degradationBucketStart(now, 1))
+	require.Equal(t, time.Date(2026, time.October, 30, 10, 0, 0, 0, time.UTC), degradationBucketStart(now, 0))
+
+	shanghai := time.FixedZone("UTC+8", 8*3600)
+	require.Equal(t, time.Date(2026, time.October, 30, 9, 0, 0, 0, time.UTC), degradationBucketStart(now.In(shanghai), 2))
+}
+
+func TestDegradationHourlyBucketsAggregatesRegexRunsByHour(t *testing.T) {
+	t.Parallel()
+
+	start := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
+	runs := []*DegradationRun{
+		// 窗口之前的流水被忽略
+		{Status: DegradationRunFailed, LatencyMs: 1, CreatedAt: start.Add(-time.Second)},
+		// 08:00 小时：2 通过 1 未通过 1 错误
+		{Status: DegradationRunPassed, LatencyMs: 100, CreatedAt: start},
+		{Status: DegradationRunPassed, LatencyMs: 200, CreatedAt: start.Add(10 * time.Minute)},
+		{Status: DegradationRunFailed, LatencyMs: 300, CreatedAt: start.Add(59 * time.Minute)},
+		{Status: DegradationRunError, LatencyMs: 90000, CreatedAt: start.Add(30 * time.Minute)},
+		// 可视化题不计入
+		{ProbeType: DegradationProbeTypeVisual, Status: DegradationRunRendered, CreatedAt: start.Add(5 * time.Minute)},
+		// 10:00 小时：只有错误
+		{ProbeType: DegradationProbeTypeRegex, Status: DegradationRunError, CreatedAt: start.Add(2*time.Hour + time.Minute)},
+		// 窗口结束（11:00）及之后被忽略
+		{Status: DegradationRunPassed, LatencyMs: 1, CreatedAt: start.Add(3 * time.Hour)},
+		nil,
+	}
+
+	got := degradationHourlyBuckets(runs, start, 3)
+
+	require.Len(t, got, 2)
+	require.Equal(t, start, got[0].Start)
+	require.Equal(t, int64(2), got[0].Passed)
+	require.Equal(t, int64(1), got[0].Failed)
+	require.Equal(t, int64(1), got[0].Error)
+	require.InDelta(t, 2.0/3, got[0].PassRate, 1e-12)
+	require.Equal(t, int64(200), got[0].AvgLatencyMs)
+
+	require.Equal(t, start.Add(2*time.Hour), got[1].Start)
+	require.Zero(t, got[1].Passed+got[1].Failed)
+	require.Equal(t, int64(1), got[1].Error)
+	require.Zero(t, got[1].PassRate)
+	require.Zero(t, got[1].AvgLatencyMs)
+
+	require.NotNil(t, degradationHourlyBuckets(nil, start, 3))
+	require.Empty(t, degradationHourlyBuckets(runs, start, 0))
+}
+
+func TestDegradationOverviewIncludesHourlyBuckets(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, time.October, 30, 10, 42, 0, 0, time.UTC)
+	currentHour := now.Truncate(time.Hour)
+	repo := &degradationServiceRepoStub{
+		targets: []*DegradationTarget{
+			{ID: 1, GroupID: 7, Model: "model-a", Enabled: true},
+			{ID: 2, GroupID: 7, Model: "model-b", Enabled: true},
+		},
+		runs: []*DegradationRun{
+			{TargetID: 1, GroupID: 7, Model: "model-a", Status: DegradationRunPassed, CreatedAt: currentHour},
+			{TargetID: 1, GroupID: 7, Model: "model-a", Status: DegradationRunFailed, CreatedAt: currentHour.Add(-2 * time.Hour)},
+		},
+	}
+	svc := NewDegradationService(repo, nil, nil, nil, nil)
+	svc.now = func() time.Time { return now }
+	got, err := svc.GetOverview(context.Background(), nil, 24)
+
+	require.NoError(t, err)
+	require.Equal(t, now, got.GeneratedAt)
+	require.Equal(t, 24, got.BucketCount)
+	require.Equal(t, DegradationBucketSeconds, got.BucketSeconds)
+	require.Equal(t, currentHour.Add(-23*time.Hour), got.BucketStart)
+	require.Len(t, got.Groups, 1)
+	modelA, modelB := got.Groups[0].Models[0], got.Groups[0].Models[1]
+	require.Len(t, modelA.Hourly, 2)
+	require.Equal(t, currentHour.Add(-2*time.Hour), modelA.Hourly[0].Start)
+	require.Equal(t, int64(1), modelA.Hourly[0].Failed)
+	require.Equal(t, currentHour, modelA.Hourly[1].Start)
+	require.Equal(t, int64(1), modelA.Hourly[1].Passed)
+	require.NotNil(t, modelB.Hourly)
+	require.Empty(t, modelB.Hourly)
+}
