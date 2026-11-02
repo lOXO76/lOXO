@@ -9,6 +9,7 @@ import type {
   AccountPlatform,
   CustomEndpoint,
   CustomMenuItem,
+  HeaderLink,
   LoginAgreementDocument,
   NotifyEmailEntry,
 } from "@/types";
@@ -501,6 +502,7 @@ export interface SystemSettings {
   table_page_size_options: number[];
   backend_mode_enabled: boolean;
   custom_menu_items: CustomMenuItem[];
+  header_links: HeaderLink[];
   custom_endpoints: CustomEndpoint[];
   // SMTP settings
   smtp_host: string;
@@ -762,6 +764,7 @@ export interface SystemSettings {
   check_in_captcha_enabled: boolean;
   check_in_tiers: CheckInTier[];
   api_docs_enabled: boolean;
+  creation_enabled: boolean;
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: boolean;
@@ -858,6 +861,7 @@ export interface UpdateSettingsRequest {
   table_page_size_options?: number[];
   backend_mode_enabled?: boolean;
   custom_menu_items?: CustomMenuItem[];
+  header_links?: HeaderLink[];
   custom_endpoints?: CustomEndpoint[];
   smtp_host?: string;
   smtp_port?: number;
@@ -1079,6 +1083,7 @@ export interface UpdateSettingsRequest {
   check_in_captcha_enabled?: boolean;
   check_in_tiers?: CheckInTier[];
   api_docs_enabled?: boolean;
+  creation_enabled?: boolean;
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled?: boolean;

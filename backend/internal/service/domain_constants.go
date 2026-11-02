@@ -394,6 +394,7 @@ const (
 	SettingKeyTableDefaultPageSize        = "table_default_page_size"       // 表格默认每页条数
 	SettingKeyTablePageSizeOptions        = "table_page_size_options"       // 表格可选每页条数（JSON 数组）
 	SettingKeyCustomMenuItems             = "custom_menu_items"             // 自定义菜单项（JSON 数组）
+	SettingKeyHeaderLinks                 = "header_links"                  // 顶栏自定义链接（JSON 数组）
 	SettingKeyCustomEndpoints             = "custom_endpoints"              // 自定义端点列表（JSON 数组）
 
 	// 默认配置
@@ -575,7 +576,8 @@ const (
 	// SettingKeyAPIDocsEnabled is a DB-backed soft switch for the user-facing
 	// API documentation sidebar entry. Defaults to true (opt-out); disabling it
 	// only hides the entry and does not block direct access to /docs/api.
-	SettingKeyAPIDocsEnabled = "api_docs_enabled"
+	SettingKeyAPIDocsEnabled  = "api_docs_enabled"
+	SettingKeyCreationEnabled = "creation_enabled"
 
 	// SettingKeyUpstreamBillingProbeSettings stores the global enable switch and interval
 	// for probing remote Sub2API API-key billing metadata.

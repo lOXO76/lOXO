@@ -195,6 +195,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyTableDefaultPageSize,
 		SettingKeyTablePageSizeOptions,
 		SettingKeyCustomMenuItems,
+		SettingKeyHeaderLinks,
 		SettingKeyCustomEndpoints,
 		SettingKeyLinuxDoConnectEnabled,
 		SettingKeyDingTalkConnectEnabled,
@@ -242,6 +243,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyModelPlazaRequireAuth,
 		SettingKeyPluginManagementEnabled,
 		SettingKeyAPIDocsEnabled,
+		SettingKeyCreationEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyAllowUserViewErrorRequests,
@@ -342,6 +344,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		TableDefaultPageSize:                tableDefaultPageSize,
 		TablePageSizeOptions:                tablePageSizeOptions,
 		CustomMenuItems:                     settings[SettingKeyCustomMenuItems],
+		HeaderLinks:                         s.getStringOrDefault(settings, SettingKeyHeaderLinks, "[]"),
 		CustomEndpoints:                     settings[SettingKeyCustomEndpoints],
 		LinuxDoOAuthEnabled:                 linuxDoEnabled,
 		DingTalkOAuthEnabled:                dingTalkEnabled,
@@ -377,6 +380,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ModelPlazaRequireAuth:   settings[SettingKeyModelPlazaRequireAuth] == "true",
 		PluginManagementEnabled: settings[SettingKeyPluginManagementEnabled] == "true",
 		APIDocsEnabled:          !isFalseSettingValue(settings[SettingKeyAPIDocsEnabled]),
+		CreationEnabled:         !isFalseSettingValue(settings[SettingKeyCreationEnabled]),
 
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
@@ -634,6 +638,7 @@ type PublicSettingsInjectionPayload struct {
 	TableDefaultPageSize                int                      `json:"table_default_page_size"`
 	TablePageSizeOptions                []int                    `json:"table_page_size_options"`
 	CustomMenuItems                     json.RawMessage          `json:"custom_menu_items"`
+	HeaderLinks                         json.RawMessage          `json:"header_links"`
 	CustomEndpoints                     json.RawMessage          `json:"custom_endpoints"`
 	LinuxDoOAuthEnabled                 bool                     `json:"linuxdo_oauth_enabled"`
 	DingTalkOAuthEnabled                bool                     `json:"dingtalk_oauth_enabled"`
@@ -679,6 +684,7 @@ type PublicSettingsInjectionPayload struct {
 	ModelPlazaRequireAuth         bool `json:"model_plaza_require_auth"`
 	PluginManagementEnabled       bool `json:"plugin_management_enabled"`
 	APIDocsEnabled                bool `json:"api_docs_enabled"`
+	CreationEnabled               bool `json:"creation_enabled"`
 	AffiliateEnabled              bool `json:"affiliate_enabled"`
 	RiskControlEnabled            bool `json:"risk_control_enabled"`
 	AllowUserViewErrorRequests    bool `json:"allow_user_view_error_requests"`
@@ -731,6 +737,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		TableDefaultPageSize:                settings.TableDefaultPageSize,
 		TablePageSizeOptions:                settings.TablePageSizeOptions,
 		CustomMenuItems:                     filterUserVisibleMenuItems(settings.CustomMenuItems),
+		HeaderLinks:                         filterUserVisibleMenuItems(settings.HeaderLinks),
 		CustomEndpoints:                     safeRawJSONArray(settings.CustomEndpoints),
 		LinuxDoOAuthEnabled:                 settings.LinuxDoOAuthEnabled,
 		DingTalkOAuthEnabled:                settings.DingTalkOAuthEnabled,
@@ -766,6 +773,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ModelPlazaRequireAuth:                settings.ModelPlazaRequireAuth,
 		PluginManagementEnabled:              settings.PluginManagementEnabled,
 		APIDocsEnabled:                       settings.APIDocsEnabled,
+		CreationEnabled:                      settings.CreationEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,

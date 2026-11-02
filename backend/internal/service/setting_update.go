@@ -370,6 +370,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	}
 	updates[SettingKeyTablePageSizeOptions] = string(tablePageSizeOptionsJSON)
 	updates[SettingKeyCustomMenuItems] = settings.CustomMenuItems
+	updates[SettingKeyHeaderLinks] = string(safeRawJSONArray(settings.HeaderLinks))
 	updates[SettingKeyCustomEndpoints] = settings.CustomEndpoints
 
 	// 默认配置
@@ -467,6 +468,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyModelPlazaDescription] = settings.ModelPlazaDescription
 	updates[SettingKeyPluginManagementEnabled] = strconv.FormatBool(settings.PluginManagementEnabled)
 	updates[SettingKeyAPIDocsEnabled] = strconv.FormatBool(settings.APIDocsEnabled)
+	updates[SettingKeyCreationEnabled] = strconv.FormatBool(settings.CreationEnabled)
 
 	// Affiliate (邀请返利) feature switch
 	updates[SettingKeyAffiliateEnabled] = strconv.FormatBool(settings.AffiliateEnabled)

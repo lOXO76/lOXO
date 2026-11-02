@@ -15,6 +15,26 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); localStorage.clear() })
 
 describe('admin settings fetch retry', () => {
+  it('loads full header links, refreshes them and defaults older responses to an empty list', async () => {
+    const links = [
+      { id: 'public', label: 'Public', url: '/help', visibility: 'user', open_in_new_tab: true, sort_order: 1 },
+      { id: 'private', label: 'Private', url: 'https://example.com/admin', visibility: 'admin', open_in_new_tab: false, sort_order: 0 },
+    ]
+    mocks.getSettings.mockResolvedValueOnce({ header_links: links })
+    const store = useAdminSettingsStore()
+    await store.fetch()
+    expect(store.headerLinks).toEqual(links)
+    mocks.getSettings.mockRejectedValueOnce(new Error('Temporary failure'))
+    await store.fetch(true)
+    expect(store.headerLinks).toEqual(links)
+    mocks.getSettings.mockResolvedValueOnce({})
+    await store.fetch(true)
+    expect(store.headerLinks).toEqual([])
+    mocks.getSettings.mockResolvedValueOnce({ header_links: null })
+    await store.fetch(true)
+    expect(store.headerLinks).toEqual([])
+  })
+
   it.each(['settings', 'payment'])('retries a failed initial %s request without forcing a refresh', async (source) => {
     const request = source === 'settings' ? mocks.getSettings : mocks.getConfig
     request.mockRejectedValueOnce(new Error('Temporarily unavailable'))

@@ -446,6 +446,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.CustomMenuItems != after.CustomMenuItems {
 		changed = append(changed, "custom_menu_items")
 	}
+	if before.HeaderLinks != after.HeaderLinks {
+		changed = append(changed, service.SettingKeyHeaderLinks)
+	}
 	if before.CustomEndpoints != after.CustomEndpoints {
 		changed = append(changed, "custom_endpoints")
 	}
@@ -596,6 +599,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.ModelPlazaDescription != after.ModelPlazaDescription {
 		changed = append(changed, "model_plaza_description")
+	}
+	if before.CreationEnabled != after.CreationEnabled {
+		changed = append(changed, service.SettingKeyCreationEnabled)
 	}
 	if before.AffiliateEnabled != after.AffiliateEnabled {
 		changed = append(changed, "affiliate_enabled")

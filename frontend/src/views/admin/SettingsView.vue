@@ -6903,6 +6903,17 @@
 
                   <label class="flex items-center gap-2 sm:col-span-2">
                     <input
+                      v-model="item.open_in_new_tab"
+                      type="checkbox"
+                      data-testid="custom-menu-new-tab"
+                    />
+                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                      {{ t("admin.settings.customMenu.openInNewTab") }}
+                    </span>
+                  </label>
+
+                  <label class="flex items-center gap-2 sm:col-span-2">
+                    <input
                       v-model="item.hide_open_button"
                       type="checkbox"
                       data-testid="custom-menu-hide-open-button"
@@ -6935,6 +6946,7 @@
               <button
                 type="button"
                 class="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 py-3 text-sm text-gray-500 transition-colors hover:border-primary-400 hover:text-primary-600 dark:border-dark-600 dark:text-gray-400 dark:hover:border-primary-500 dark:hover:text-primary-400"
+                data-testid="custom-menu-add"
                 @click="addMenuItem"
               >
                 <svg
@@ -6951,6 +6963,65 @@
                   />
                 </svg>
                 {{ t("admin.settings.customMenu.add") }}
+              </button>
+            </div>
+          </div>
+
+          <div class="card" data-testid="header-links-settings">
+            <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t("admin.settings.headerLinks.title") }}</h2>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t("admin.settings.headerLinks.description") }}</p>
+            </div>
+            <div class="space-y-4 p-6">
+              <div
+                v-for="(item, index) in form.header_links"
+                :key="item.id || index"
+                data-testid="header-link-item"
+                class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
+              >
+                <div class="mb-3 flex items-center justify-between">
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t("admin.settings.headerLinks.itemLabel", { n: index + 1 }) }}</span>
+                  <div class="flex items-center gap-2">
+                    <button v-if="index > 0" type="button" data-testid="header-link-up" class="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700" :title="t('admin.settings.customMenu.moveUp')" @click="moveHeaderLink(index, -1)">
+                      <Icon name="chevronUp" size="sm" />
+                    </button>
+                    <button v-if="index < form.header_links.length - 1" type="button" data-testid="header-link-down" class="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700" :title="t('admin.settings.customMenu.moveDown')" @click="moveHeaderLink(index, 1)">
+                      <Icon name="chevronDown" size="sm" />
+                    </button>
+                    <button type="button" data-testid="header-link-remove" class="rounded p-1 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" :title="t('admin.settings.customMenu.remove')" @click="removeHeaderLink(index)">
+                      <Icon name="trash" size="sm" />
+                    </button>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                    {{ t("admin.settings.customMenu.name") }}
+                    <input v-model="item.label" data-testid="header-link-label" type="text" maxlength="30" required class="input mt-1 text-sm" :placeholder="t('admin.settings.customMenu.namePlaceholder')" />
+                  </label>
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                    {{ t("admin.settings.customMenu.visibility") }}
+                    <select v-model="item.visibility" data-testid="header-link-visibility" class="input mt-1 text-sm">
+                      <option value="user">{{ t("admin.settings.customMenu.visibilityUser") }}</option>
+                      <option value="admin">{{ t("admin.settings.customMenu.visibilityAdmin") }}</option>
+                    </select>
+                  </label>
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 sm:col-span-2">
+                    {{ t("admin.settings.headerLinks.url") }}
+                    <input v-model="item.url" data-testid="header-link-url" type="text" maxlength="2048" required class="input mt-1 text-sm" :placeholder="t('admin.settings.headerLinks.urlPlaceholder')" />
+                  </label>
+                  <label class="flex items-center gap-2 sm:col-span-2">
+                    <input v-model="item.open_in_new_tab" type="checkbox" data-testid="header-link-new-tab" />
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ t("admin.settings.customMenu.openInNewTab") }}</span>
+                  </label>
+                  <div class="sm:col-span-2">
+                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t("admin.settings.customMenu.iconSvg") }}</label>
+                    <ImageUpload :model-value="item.icon_svg || ''" mode="svg" size="sm" :max-size="10 * 1024" :upload-label="t('admin.settings.customMenu.uploadSvg')" :remove-label="t('admin.settings.customMenu.removeSvg')" @update:model-value="(value: string) => (item.icon_svg = value)" />
+                  </div>
+                </div>
+              </div>
+              <button type="button" data-testid="header-link-add" :disabled="form.header_links.length >= 10" class="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 py-3 text-sm text-gray-500 transition-colors hover:border-primary-400 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-dark-600 dark:text-gray-400" @click="addHeaderLink">
+                <Icon name="plus" size="sm" />
+                {{ t("admin.settings.headerLinks.add") }}
               </button>
             </div>
           </div>
@@ -7346,6 +7417,30 @@
                 </p>
               </div>
               <Toggle v-model="form.api_docs_enabled" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.features.creation.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.features.creation.description') }}
+            </p>
+          </div>
+          <div class="space-y-5 p-6">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.features.creation.enabled') }}
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.features.creation.enabledHint') }}
+                </p>
+              </div>
+              <Toggle v-model="form.creation_enabled" />
             </div>
           </div>
         </div>
@@ -9178,6 +9273,7 @@ import type {
 } from "@/api/admin/settings";
 import type {
   AdminGroup,
+  HeaderLink,
   LoginAgreementDocument,
   NotifyEmailEntry,
   Proxy,
@@ -10027,7 +10123,9 @@ const form = reactive<SettingsForm>({
     visibility: "user" | "admin";
     sort_order: number;
     hide_open_button?: boolean;
+    open_in_new_tab?: boolean;
   }>,
+  header_links: [] as HeaderLink[],
   custom_endpoints: [] as Array<{
     name: string;
     endpoint: string;
@@ -10242,6 +10340,7 @@ const form = reactive<SettingsForm>({
   check_in_tiers: [] as CheckInTier[],
   // API documentation menu visibility; direct route access is unaffected.
   api_docs_enabled: true,
+  creation_enabled: true,
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
   // Allow user view error requests
@@ -11050,6 +11149,7 @@ function addMenuItem() {
     url: "",
     visibility: "user",
     sort_order: form.custom_menu_items.length,
+    open_in_new_tab: false,
   });
 }
 
@@ -11072,6 +11172,32 @@ function moveMenuItem(index: number, direction: -1 | 1) {
   items.forEach((item, i) => {
     item.sort_order = i;
   });
+}
+
+function addHeaderLink() {
+  if (form.header_links.length >= 10) return;
+  form.header_links.push({
+    id: "",
+    label: "",
+    url: "",
+    icon_svg: "",
+    visibility: "user",
+    open_in_new_tab: true,
+    sort_order: form.header_links.length,
+  });
+}
+
+function removeHeaderLink(index: number) {
+  form.header_links.splice(index, 1);
+  form.header_links.forEach((item, order) => { item.sort_order = order; });
+}
+
+function moveHeaderLink(index: number, direction: -1 | 1) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= form.header_links.length) return;
+  const items = form.header_links;
+  [items[index], items[targetIndex]] = [items[targetIndex], items[index]];
+  items.forEach((item, order) => { item.sort_order = order; });
 }
 
 // Custom endpoint management
@@ -11260,6 +11386,9 @@ async function loadSettings() {
       ...tier,
     }));
     form.api_docs_enabled = settings.api_docs_enabled !== false;
+    form.creation_enabled = settings.creation_enabled !== false;
+    form.custom_menu_items = (settings.custom_menu_items ?? []).map(item => ({ ...item })).sort((first, second) => first.sort_order - second.sort_order);
+    form.header_links = (settings.header_links ?? []).map(item => ({ ...item })).sort((first, second) => first.sort_order - second.sort_order);
     // For this optional override, null explicitly selects per-account rates.
     if (settings.openai_oauth_scheduling_rate_multiplier === null) {
       form.openai_oauth_scheduling_rate_multiplier = null;
@@ -11800,6 +11929,7 @@ async function saveSettings() {
       table_default_page_size: form.table_default_page_size,
       table_page_size_options: form.table_page_size_options,
       custom_menu_items: form.custom_menu_items,
+      header_links: form.header_links,
       custom_endpoints: form.custom_endpoints,
       frontend_url: form.frontend_url,
       smtp_host: form.smtp_host,
@@ -12088,6 +12218,7 @@ async function saveSettings() {
             Number.isFinite(tier.weight),
         ),
       api_docs_enabled: form.api_docs_enabled,
+      creation_enabled: form.creation_enabled,
       // Affiliate (邀请返利) feature switch
       affiliate_enabled: form.affiliate_enabled,
       allow_user_view_error_requests: form.allow_user_view_error_requests,

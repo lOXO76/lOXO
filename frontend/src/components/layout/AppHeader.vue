@@ -40,6 +40,21 @@
           <span class="hidden" :class="enterprise ? '2xl:inline' : 'xl:inline'">{{ t('nav.docs') }}</span>
         </a>
 
+        <component
+          v-for="link in headerLinks"
+          :key="link.id"
+          :is="!link.open_in_new_tab && link.url.startsWith('/') ? 'router-link' : 'a'"
+          v-bind="!link.open_in_new_tab && link.url.startsWith('/') ? { to: link.url } : { href: link.url, target: link.open_in_new_tab ? '_blank' : undefined, rel: link.open_in_new_tab ? 'noopener noreferrer' : undefined }"
+          :title="link.open_in_new_tab ? `${link.label} · ${t('nav.opensInNewTab')}` : link.label"
+          :aria-label="link.label"
+          :data-header-link="link.id"
+          class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
+        >
+          <span v-if="link.icon_svg" class="h-4 w-4 shrink-0 [&>svg]:block [&>svg]:h-full [&>svg]:w-full" aria-hidden="true" v-html="sanitizeSvg(link.icon_svg)"></span>
+          <Icon v-else name="externalLink" size="sm" aria-hidden="true" />
+          <span class="hidden" :class="enterprise ? '2xl:inline' : 'xl:inline'">{{ link.label }}</span>
+        </component>
+
         <!-- Enterprise quota entry needs extra room before 2xl. -->
         <router-link
           v-if="user && modelPlazaEnabled"
@@ -317,6 +332,8 @@ import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMi
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeUrl } from '@/utils/url'
+import { sanitizeSvg } from '@/utils/sanitize'
+import { headerLinkUrl } from '@/utils/navigationLinks'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
 import { resolveRouteMetaKeys } from '@/router/title'
 import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
@@ -335,6 +352,14 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => sanitizeUrl(appStore.docUrl))
 const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
+const headerLinks = computed(() => {
+  const publicLinks = (appStore.cachedPublicSettings?.header_links ?? []).filter(link => link.visibility === 'user')
+  const adminLinks = authStore.isAdmin ? (adminSettingsStore.headerLinks ?? []).filter(link => link.visibility === 'admin') : []
+  return [...publicLinks, ...adminLinks]
+    .map(link => ({ ...link, url: headerLinkUrl(link.url) }))
+    .filter(link => link.url)
+    .sort((first, second) => first.sort_order - second.sort_order)
+})
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
 const enterprise = computed(() => user.value?.enterprise)
 const enterpriseIdentity = computed(() => {

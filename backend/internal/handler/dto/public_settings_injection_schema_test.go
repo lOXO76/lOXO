@@ -1,12 +1,55 @@
 package dto
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
+
+func TestPublicSettingsInjectionPayload_CreationEnabledIsAlwaysPresent(t *testing.T) {
+	for _, payload := range []any{
+		service.PublicSettingsInjectionPayload{},
+		service.PublicSettings{},
+		service.SystemSettings{},
+		PublicSettings{},
+		SystemSettings{},
+	} {
+		encoded, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(encoded, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if string(fields[service.SettingKeyCreationEnabled]) != "false" {
+			t.Errorf("%T must include creation_enabled=false, got %s", payload, fields[service.SettingKeyCreationEnabled])
+		}
+	}
+}
+
+func TestPublicSettingsInjectionPayload_HeaderLinksIsAlwaysPresent(t *testing.T) {
+	for _, payload := range []any{
+		service.PublicSettingsInjectionPayload{},
+		PublicSettings{},
+		SystemSettings{},
+	} {
+		encoded, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(encoded, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if _, present := fields[service.SettingKeyHeaderLinks]; !present {
+			t.Errorf("%T must include header_links", payload)
+		}
+	}
+}
 
 // TestPublicSettingsInjectionPayload_SchemaDoesNotDrift guarantees the SSR
 // injection struct exposes every JSON field consumed by the frontend.

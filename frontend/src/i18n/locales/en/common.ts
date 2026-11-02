@@ -172,6 +172,7 @@ export default {
 
   // Navigation
   nav: {
+    opensInNewTab: 'Opens in a new tab',
     asyncTasks: 'Async tasks',
     apiDocs: 'API Docs',
     globalAsyncTasks: 'Global async tasks',

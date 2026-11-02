@@ -749,6 +749,102 @@ describe("admin SettingsView payment visible method controls", () => {
     wrapper.unmount();
   });
 
+  it("loads and saves custom menu new-tab state and header links", async () => {
+    const menuItems = [
+      { id: "docs", label: "Docs", url: "https://example.com/docs", icon_svg: "", visibility: "user", sort_order: 0, open_in_new_tab: true },
+    ];
+    const headerLinks = [
+      { id: "help", label: "Help", url: "/help", icon_svg: "", visibility: "user", sort_order: 0, open_in_new_tab: false },
+    ];
+    getSettings.mockResolvedValue({ ...baseSettingsResponse, custom_menu_items: menuItems, header_links: headerLinks });
+    const wrapper = mountView();
+    await flushPromises();
+
+    expect(wrapper.find<HTMLInputElement>('[data-testid="custom-menu-new-tab"]').element.checked).toBe(true);
+    expect(wrapper.find('[data-testid="header-links-settings"]').exists()).toBe(true);
+    expect(wrapper.find<HTMLInputElement>('[data-testid="header-link-label"]').element.value).toBe("Help");
+    expect(wrapper.find<HTMLInputElement>('[data-testid="header-link-new-tab"]').element.checked).toBe(false);
+
+    await wrapper.find('[data-testid="custom-menu-new-tab"]').setValue(false);
+    await wrapper.find('[data-testid="header-link-new-tab"]').setValue(true);
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({
+      custom_menu_items: [{ ...menuItems[0], open_in_new_tab: false }],
+      header_links: [{ ...headerLinks[0], open_in_new_tab: true }],
+    }));
+    wrapper.unmount();
+  });
+
+  it("adds a header link with new-tab enabled by default and caps the list at ten", async () => {
+    getSettings.mockResolvedValue({ ...baseSettingsResponse, header_links: [] });
+    const wrapper = mountView();
+    await flushPromises();
+    const add = wrapper.find('[data-testid="header-link-add"]');
+    await add.trigger("click");
+    expect(wrapper.findAll('[data-testid="header-link-item"]')).toHaveLength(1);
+    expect(wrapper.find<HTMLInputElement>('[data-testid="header-link-new-tab"]').element.checked).toBe(true);
+    for (let count = 1; count < 10; count += 1) await add.trigger("click");
+    expect(wrapper.findAll('[data-testid="header-link-item"]')).toHaveLength(10);
+    expect(add.attributes("disabled")).toBeDefined();
+    await add.trigger("click");
+    expect(wrapper.findAll('[data-testid="header-link-item"]')).toHaveLength(10);
+    await wrapper.find('[data-testid="header-link-remove"]').trigger("click");
+    expect(wrapper.findAll('[data-testid="header-link-item"]')).toHaveLength(9);
+    expect(add.attributes("disabled")).toBeUndefined();
+    await wrapper.find('[data-testid="custom-menu-add"]').trigger("click");
+    expect(wrapper.find<HTMLInputElement>('[data-testid="custom-menu-new-tab"]').element.checked).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("sorts, edits, moves and removes header links while preserving icon uploads", async () => {
+    const links = [
+      { id: "later", label: "Later", url: "https://example.com/later", icon_svg: "", visibility: "user", sort_order: 9, open_in_new_tab: true },
+      { id: "first", label: "First", url: "/help", icon_svg: "<svg/>", visibility: "admin", sort_order: 2, open_in_new_tab: false },
+    ];
+    getSettings.mockResolvedValue({ ...baseSettingsResponse, header_links: links });
+    const wrapper = mountView();
+    await flushPromises();
+    let rows = wrapper.findAll('[data-testid="header-link-item"]');
+    expect(rows.map(row => row.get<HTMLInputElement>('[data-testid="header-link-label"]').element.value)).toEqual(["First", "Later"]);
+    expect(links.map(link => link.id)).toEqual(["later", "first"]);
+    const uploader = rows[0].findComponent(ImageUploadStub);
+    expect(uploader.props("modelValue")).toBe("<svg/>");
+    uploader.vm.$emit("update:modelValue", "<svg><path/></svg>");
+    await rows[0].get('[data-testid="header-link-label"]').setValue("Edited");
+    await rows[0].get('[data-testid="header-link-url"]').setValue("/docs/api");
+    await rows[0].get('[data-testid="header-link-visibility"]').setValue("user");
+    await rows[0].get('[data-testid="header-link-down"]').trigger("click");
+    rows = wrapper.findAll('[data-testid="header-link-item"]');
+    expect(rows.map(row => row.get<HTMLInputElement>('[data-testid="header-link-label"]').element.value)).toEqual(["Later", "Edited"]);
+    await rows[1].get('[data-testid="header-link-up"]').trigger("click");
+    await wrapper.findAll('[data-testid="header-link-item"]')[1].get('[data-testid="header-link-remove"]').trigger("click");
+    await wrapper.get("form").trigger("submit.prevent");
+    await flushPromises();
+    expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({
+      header_links: [{ ...links[1], label: "Edited", url: "/docs/api", visibility: "user", icon_svg: "<svg><path/></svg>", sort_order: 0 }],
+    }));
+    expect(fetchPublicSettings).toHaveBeenCalledWith(true);
+    expect(adminSettingsFetch).toHaveBeenCalledWith(true);
+    wrapper.unmount();
+  });
+
+  it("defaults missing header links to an empty payload and permits Markdown menus to open in new tabs", async () => {
+    const menu = { id: "markdown", label: "Markdown", url: "md:help", page_slug: "help", icon_svg: "", visibility: "user", sort_order: 0 };
+    getSettings.mockResolvedValue({ ...baseSettingsResponse, custom_menu_items: [menu] });
+    const wrapper = mountView();
+    await flushPromises();
+    expect(wrapper.findAll('[data-testid="header-link-item"]')).toHaveLength(0);
+    const toggle = wrapper.get<HTMLInputElement>('[data-testid="custom-menu-new-tab"]');
+    expect(toggle.element.checked).toBe(false);
+    await toggle.setValue(true);
+    await wrapper.get("form").trigger("submit.prevent");
+    await flushPromises();
+    expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({ header_links: [], custom_menu_items: [{ ...menu, open_in_new_tab: true }] }));
+    wrapper.unmount();
+  });
+
   it("submits the compact home page toggle", async () => {
     const wrapper = mountView();
     await flushPromises();

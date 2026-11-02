@@ -11,6 +11,7 @@ import apiDocs from './apiDocs'
 import checkIn from './checkIn'
 import clientImport from './clientImport'
 import degradation from './degradation'
+import creation from './creation'
 
 export default {
   ...landing,
@@ -25,6 +26,7 @@ export default {
   ...checkIn,
   ...degradation,
   ...clientImport,
+  ...creation,
   admin: { ...admin, ...degradation.admin },
-  nav: { ...common.nav, ...checkIn.nav, ...clientImport.nav, ...degradation.nav },
+  nav: { ...common.nav, ...checkIn.nav, ...clientImport.nav, ...degradation.nav, ...creation.nav },
 }

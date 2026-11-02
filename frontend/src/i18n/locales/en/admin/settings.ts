@@ -51,6 +51,12 @@ export default {
           enabled: 'Show API Docs entry',
           enabledHint: 'When off, the entry is hidden in both normal and simple modes. Direct access to /docs/api remains available.',
         },
+        creation: {
+          title: 'Creation Studio',
+          description: 'Allow users to select a group and generate images and videos in the browser. Enabled by default.',
+          enabled: 'Enable Creation Studio',
+          enabledHint: 'When off, the user sidebar entry is hidden and the creation catalog endpoint returns 404.',
+        },
         siteBillingMode: {
           title: 'Site Billing Mode',
           description: 'Controls which purchase options users see. Defaults to "Recharge & Subscription".',
@@ -743,6 +749,7 @@ export default {
         url: 'Page URL',
         urlPlaceholder: 'https://example.com/page',
         hideOpenButton: 'Hide the “Open in new tab” button',
+        openInNewTab: 'Open in a new tab',
         iconSvg: 'SVG Icon',
         iconSvgPlaceholder: '<svg>...</svg>',
         iconPreview: 'Icon Preview',
@@ -755,6 +762,14 @@ export default {
         remove: 'Remove',
         moveUp: 'Move Up',
         moveDown: 'Move Down',
+      },
+      headerLinks: {
+        title: 'Header Links',
+        description: 'Add up to 10 links beside Docs and Model Plaza. Set their order, visibility and opening behavior.',
+        itemLabel: 'Header Link #{n}',
+        url: 'Link URL',
+        urlPlaceholder: 'https://example.com/help or /docs/api',
+        add: 'Add Header Link',
       },
       payment: {
         title: 'Payment Settings',
