@@ -116,14 +116,16 @@ describe('CheckInView', () => {
     expect(wrapper.find('[data-testid="check-in-today-done"]').exists()).toBe(true)
   })
 
-  it('never exposes tier weights or probabilities', async () => {
+  it('never exposes tier weights, probabilities or the reward range', async () => {
     const wrapper = mountView()
     await flushPromises()
 
     const text = wrapper.text()
     expect(text).not.toContain('%')
-    // 只保留聚合后的奖励区间提示
-    expect(wrapper.get('[data-testid="check-in-range"]').text()).toContain('checkIn.rewardRange')
+    // 用户端不展示可获取的额度范围
+    expect(wrapper.find('[data-testid="check-in-range"]').exists()).toBe(false)
+    expect(text).not.toContain('$0.10')
+    expect(text).not.toContain('$5.00')
   })
 
   it('renders a month calendar with signed days highlighted', async () => {

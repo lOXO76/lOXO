@@ -48,9 +48,6 @@
             >
               {{ status.checked_in_today ? formatReward(status.today_reward) : t('checkIn.rewardPending') }}
             </p>
-            <p v-if="!status.checked_in_today" class="mt-2 text-sm text-gray-500 dark:text-dark-400" data-testid="check-in-range">
-              {{ rewardRangeHint }}
-            </p>
 
             <p class="mt-4 inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-dark-300" data-testid="check-in-streak">
               <Icon name="fire" size="sm" :class="status.streak_days > 0 ? 'text-orange-500' : 'text-gray-300 dark:text-dark-600'" />
@@ -259,15 +256,6 @@ function formatReward(amount: number | null | undefined): string {
 function formatCompactReward(amount: number): string {
   return compactRewardFormatter.format(amount)
 }
-
-// 只展示合并后的奖励区间，不涉及各档位权重与概率。
-const rewardRangeHint = computed(() => {
-  const min = status.value?.reward_min ?? 0
-  const max = status.value?.reward_max ?? 0
-  if (max <= 0) return t('checkIn.rewardRangeUnknown')
-  if (min === max) return t('checkIn.rewardFixed', { amount: formatReward(min) })
-  return t('checkIn.rewardRange', { min: formatReward(min), max: formatReward(max) })
-})
 
 const resetTime = computed(() => {
   const value = status.value?.next_reset_at
