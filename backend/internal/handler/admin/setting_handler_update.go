@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
@@ -170,6 +172,7 @@ type UpdateSettingsRequest struct {
 	TableDefaultPageSize        int                   `json:"table_default_page_size"`
 	TablePageSizeOptions        []int                 `json:"table_page_size_options"`
 	CustomMenuItems             *[]dto.CustomMenuItem `json:"custom_menu_items"`
+	HeaderLinks                 *[]dto.HeaderLink     `json:"header_links"`
 	CustomEndpoints             *[]dto.CustomEndpoint `json:"custom_endpoints"`
 
 	// 默认配置
@@ -370,6 +373,8 @@ type UpdateSettingsRequest struct {
 
 	// API documentation menu visibility switch; direct route access is unaffected.
 	APIDocsEnabled *bool `json:"api_docs_enabled"`
+
+	CreationEnabled *bool `json:"creation_enabled"`
 
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
@@ -1363,6 +1368,81 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		customMenuJSON = string(menuBytes)
 	}
 
+	headerLinksJSON := previousSettings.HeaderLinks
+	if req.HeaderLinks != nil {
+		links := *req.HeaderLinks
+		if len(links) > 10 {
+			response.BadRequest(c, "Too many header links (max 10)")
+			return
+		}
+		seen := make(map[string]struct{}, len(links))
+		for index := range links {
+			link := &links[index]
+			link.Label = strings.TrimSpace(link.Label)
+			if link.Label == "" {
+				response.BadRequest(c, "Header link label is required")
+				return
+			}
+			if utf8.RuneCountInString(link.Label) > 30 {
+				response.BadRequest(c, "Header link label is too long (max 30 characters)")
+				return
+			}
+			if strings.TrimSpace(link.URL) == "" {
+				response.BadRequest(c, "Header link URL is required")
+				return
+			}
+			if len(link.URL) > maxMenuItemURLLen {
+				response.BadRequest(c, "Header link URL is too long (max 2048 characters)")
+				return
+			}
+			validURL := strings.IndexFunc(link.URL, func(character rune) bool {
+				return unicode.IsSpace(character) || unicode.IsControl(character)
+			}) < 0
+			if strings.HasPrefix(link.URL, "/") {
+				validURL = validURL && !strings.HasPrefix(link.URL, "//") && !strings.Contains(link.URL, "\\")
+			} else {
+				validURL = validURL && config.ValidateAbsoluteHTTPURL(link.URL) == nil
+			}
+			if !validURL {
+				response.BadRequest(c, "Header link URL must be an absolute http(s) URL or a site path starting with a single / without whitespace")
+				return
+			}
+			if link.Visibility != "user" && link.Visibility != "admin" {
+				response.BadRequest(c, "Header link visibility must be 'user' or 'admin'")
+				return
+			}
+			if len(link.IconSVG) > maxMenuItemIconSVGLen {
+				response.BadRequest(c, "Header link icon SVG is too large (max 10KB)")
+				return
+			}
+			if strings.TrimSpace(link.ID) == "" {
+				id, err := generateMenuItemID()
+				if err != nil {
+					response.Error(c, http.StatusInternalServerError, "Failed to generate header link ID")
+					return
+				}
+				link.ID = id
+			} else if len(link.ID) > maxMenuItemIDLen {
+				response.BadRequest(c, "Header link ID is too long (max 32 characters)")
+				return
+			} else if !menuItemIDPattern.MatchString(link.ID) {
+				response.BadRequest(c, "Header link ID contains invalid characters (only a-z, A-Z, 0-9, - and _ are allowed)")
+				return
+			}
+			if _, exists := seen[link.ID]; exists {
+				response.BadRequest(c, "Duplicate header link ID: "+link.ID)
+				return
+			}
+			seen[link.ID] = struct{}{}
+		}
+		linksBytes, err := json.Marshal(links)
+		if err != nil {
+			response.BadRequest(c, "Failed to serialize header links")
+			return
+		}
+		headerLinksJSON = string(linksBytes)
+	}
+
 	// 自定义端点验证
 	const (
 		maxCustomEndpoints        = 10
@@ -1679,6 +1759,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		TableDefaultPageSize:                   req.TableDefaultPageSize,
 		TablePageSizeOptions:                   req.TablePageSizeOptions,
 		CustomMenuItems:                        customMenuJSON,
+		HeaderLinks:                            headerLinksJSON,
 		CustomEndpoints:                        customEndpointsJSON,
 		DefaultConcurrency:                     req.DefaultConcurrency,
 		DefaultBalance:                         req.DefaultBalance,
@@ -2042,6 +2123,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.APIDocsEnabled
 		}(),
+		CreationEnabled: func() bool {
+			if req.CreationEnabled != nil {
+				return *req.CreationEnabled
+			}
+			return previousSettings.CreationEnabled
+		}(),
 		AffiliateEnabled: func() bool {
 			if req.AffiliateEnabled != nil {
 				return *req.AffiliateEnabled
@@ -2355,6 +2442,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		TableDefaultPageSize:                                   updatedSettings.TableDefaultPageSize,
 		TablePageSizeOptions:                                   updatedSettings.TablePageSizeOptions,
 		CustomMenuItems:                                        dto.ParseCustomMenuItems(updatedSettings.CustomMenuItems),
+		HeaderLinks:                                            dto.ParseHeaderLinks(updatedSettings.HeaderLinks),
 		CustomEndpoints:                                        dto.ParseCustomEndpoints(updatedSettings.CustomEndpoints),
 		DefaultConcurrency:                                     updatedSettings.DefaultConcurrency,
 		DefaultBalance:                                         updatedSettings.DefaultBalance,
@@ -2489,6 +2577,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ModelPlazaDescription:   updatedSettings.ModelPlazaDescription,
 		PluginManagementEnabled: updatedSettings.PluginManagementEnabled,
 		APIDocsEnabled:          updatedSettings.APIDocsEnabled,
+		CreationEnabled:         updatedSettings.CreationEnabled,
 
 		AffiliateEnabled: updatedSettings.AffiliateEnabled,
 

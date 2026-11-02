@@ -166,6 +166,7 @@ type SystemSettings struct {
 	TableDefaultPageSize        int
 	TablePageSizeOptions        []int
 	CustomMenuItems             string // JSON array of custom menu items
+	HeaderLinks                 string // 顶栏自定义链接（JSON 数组）
 	CustomEndpoints             string // JSON array of custom endpoints
 
 	DefaultConcurrency           int
@@ -232,6 +233,7 @@ type SystemSettings struct {
 	ModelPlazaDescription   string `json:"model_plaza_description"`
 	PluginManagementEnabled bool   `json:"plugin_management_enabled"`
 	APIDocsEnabled          bool   `json:"api_docs_enabled"`
+	CreationEnabled         bool   `json:"creation_enabled"`
 
 	// Claude Code version check
 	MinClaudeCodeVersion string
@@ -375,6 +377,7 @@ type PublicSettings struct {
 	TableDefaultPageSize        int
 	TablePageSizeOptions        []int
 	CustomMenuItems             string // JSON array of custom menu items
+	HeaderLinks                 string // 顶栏自定义链接（JSON 数组）
 	CustomEndpoints             string // JSON array of custom endpoints
 
 	LinuxDoOAuthEnabled      bool
@@ -422,6 +425,7 @@ type PublicSettings struct {
 	ModelPlazaRequireAuth   bool `json:"model_plaza_require_auth"`
 	PluginManagementEnabled bool `json:"plugin_management_enabled"`
 	APIDocsEnabled          bool `json:"api_docs_enabled"`
+	CreationEnabled         bool `json:"creation_enabled"`
 
 	// Affiliate (邀请返利) feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`

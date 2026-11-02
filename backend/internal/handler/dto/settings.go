@@ -21,6 +21,17 @@ type CustomMenuItem struct {
 	Visibility     string `json:"visibility"` // "user" or "admin"
 	SortOrder      int    `json:"sort_order"`
 	HideOpenButton bool   `json:"hide_open_button,omitempty"`
+	OpenInNewTab   bool   `json:"open_in_new_tab,omitempty"`
+}
+
+type HeaderLink struct {
+	ID           string `json:"id"`
+	Label        string `json:"label"`
+	URL          string `json:"url"`
+	IconSVG      string `json:"icon_svg"`
+	Visibility   string `json:"visibility"`
+	OpenInNewTab bool   `json:"open_in_new_tab"`
+	SortOrder    int    `json:"sort_order"`
 }
 
 // CustomEndpoint represents an admin-configured API endpoint for quick copy.
@@ -170,6 +181,7 @@ type SystemSettings struct {
 	TableDefaultPageSize        int              `json:"table_default_page_size"`
 	TablePageSizeOptions        []int            `json:"table_page_size_options"`
 	CustomMenuItems             []CustomMenuItem `json:"custom_menu_items"`
+	HeaderLinks                 []HeaderLink     `json:"header_links"`
 	CustomEndpoints             []CustomEndpoint `json:"custom_endpoints"`
 
 	DefaultConcurrency           int                          `json:"default_concurrency"`
@@ -346,6 +358,7 @@ type SystemSettings struct {
 	ModelPlazaDescription   string `json:"model_plaza_description"`
 	PluginManagementEnabled bool   `json:"plugin_management_enabled"`
 	APIDocsEnabled          bool   `json:"api_docs_enabled"`
+	CreationEnabled         bool   `json:"creation_enabled"`
 
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
@@ -416,6 +429,7 @@ type PublicSettings struct {
 	TableDefaultPageSize                int                      `json:"table_default_page_size"`
 	TablePageSizeOptions                []int                    `json:"table_page_size_options"`
 	CustomMenuItems                     []CustomMenuItem         `json:"custom_menu_items"`
+	HeaderLinks                         []HeaderLink             `json:"header_links"`
 	CustomEndpoints                     []CustomEndpoint         `json:"custom_endpoints"`
 	DingTalkOAuthEnabled                bool                     `json:"dingtalk_oauth_enabled"`
 	LinuxDoOAuthEnabled                 bool                     `json:"linuxdo_oauth_enabled"`
@@ -459,6 +473,7 @@ type PublicSettings struct {
 	ModelPlazaRequireAuth   bool `json:"model_plaza_require_auth"`
 	PluginManagementEnabled bool `json:"plugin_management_enabled"`
 	APIDocsEnabled          bool `json:"api_docs_enabled"`
+	CreationEnabled         bool `json:"creation_enabled"`
 
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
@@ -628,6 +643,25 @@ func ParseUserVisibleMenuItems(raw string) []CustomMenuItem {
 	for _, item := range items {
 		if item.Visibility != "admin" {
 			filtered = append(filtered, item)
+		}
+	}
+	return filtered
+}
+
+func ParseHeaderLinks(raw string) []HeaderLink {
+	var links []HeaderLink
+	if err := json.Unmarshal([]byte(raw), &links); err != nil || links == nil {
+		return []HeaderLink{}
+	}
+	return links
+}
+
+func ParseUserVisibleHeaderLinks(raw string) []HeaderLink {
+	links := ParseHeaderLinks(raw)
+	filtered := make([]HeaderLink, 0, len(links))
+	for _, link := range links {
+		if link.Visibility != "admin" {
+			filtered = append(filtered, link)
 		}
 	}
 	return filtered

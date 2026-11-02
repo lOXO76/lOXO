@@ -129,6 +129,11 @@ export const FeatureFlags = {
     mode: 'opt-out',
     label: 'API Docs',
   }),
+  creation: defineFlag({
+    key: 'creation_enabled',
+    mode: 'opt-out',
+    label: 'Creation Studio',
+  }),
   payment: defineFlag({
     key: 'payment_enabled',
     mode: 'opt-out',

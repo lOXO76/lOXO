@@ -172,6 +172,7 @@ export default {
 
   // Navigation
   nav: {
+    opensInNewTab: '在新标签页打开',
     asyncTasks: '异步任务',
     apiDocs: 'API 文档',
     globalAsyncTasks: '全局异步任务',

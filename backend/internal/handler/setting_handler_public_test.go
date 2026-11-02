@@ -82,6 +82,34 @@ func TestSettingHandler_GetPublicSettings_ExposesForceEmailOnThirdPartySignup(t 
 	require.True(t, resp.Data.ForceEmailOnThirdPartySignup)
 }
 
+func TestSettingHandler_GetPublicSettings_FiltersAdminHeaderLinks(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyHeaderLinks:     `[{"id":"public","label":"Public","url":"/help","visibility":"user","open_in_new_tab":true},{"id":"private","label":"Private","url":"/admin","visibility":"admin","open_in_new_tab":true}]`,
+		service.SettingKeyCustomMenuItems: `[{"id":"menu","label":"Menu","url":"https://example.com","visibility":"user","open_in_new_tab":true},{"id":"admin-menu","visibility":"admin"}]`,
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/public", nil)
+	h.GetPublicSettings(c)
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var response struct {
+		Data struct {
+			HeaderLinks     []map[string]any `json:"header_links"`
+			CustomMenuItems []map[string]any `json:"custom_menu_items"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	require.Len(t, response.Data.HeaderLinks, 1)
+	require.Equal(t, "public", response.Data.HeaderLinks[0]["id"])
+	require.Equal(t, true, response.Data.HeaderLinks[0]["open_in_new_tab"])
+	require.Len(t, response.Data.CustomMenuItems, 1)
+	require.Equal(t, true, response.Data.CustomMenuItems[0]["open_in_new_tab"])
+	require.NotContains(t, recorder.Body.String(), `"private"`)
+	require.NotContains(t, recorder.Body.String(), "admin-menu")
+}
+
 func TestSettingHandler_GetPublicSettings_ExposesTencentCaptchaConfiguration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

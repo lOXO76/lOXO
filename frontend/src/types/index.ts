@@ -197,7 +197,18 @@ export interface CustomMenuItem {
   url: string
   page_slug?: string
   hide_open_button?: boolean
+  open_in_new_tab?: boolean
   visibility: 'user' | 'admin'
+  sort_order: number
+}
+
+export interface HeaderLink {
+  id: string
+  label: string
+  url: string
+  icon_svg?: string
+  visibility: 'user' | 'admin'
+  open_in_new_tab: boolean
   sort_order: number
 }
 
@@ -253,6 +264,7 @@ export interface PublicSettings {
   table_default_page_size: number
   table_page_size_options: number[]
   custom_menu_items: CustomMenuItem[]
+  header_links?: HeaderLink[]
   custom_endpoints: CustomEndpoint[]
   linuxdo_oauth_enabled: boolean
   dingtalk_oauth_enabled?: boolean
@@ -294,6 +306,7 @@ export interface PublicSettings {
   plugin_management_enabled: boolean
   /** When false, only the API documentation sidebar entry is hidden. */
   api_docs_enabled: boolean
+  creation_enabled?: boolean
   service_quota_enabled: boolean
   affiliate_enabled: boolean
   allow_user_view_error_requests?: boolean

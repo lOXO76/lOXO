@@ -23,6 +23,11 @@ const (
 	OpenAIEndpointCapabilityGeminiVideo OpenAIEndpointCapability = "gemini_video"
 )
 
+// DefaultVideoModelIDs 视频平台账号未配置模型映射时对外展示的默认模型（/v1/models 与创作页共用）。
+func DefaultVideoModelIDs() []string {
+	return []string{"doubao-seedance-1-0-pro", "veo-3.0-generate-001", "veo-3.0-fast-generate-001", "MiniMax-Hailuo-2.3", "MiniMax-Hailuo-2.3-Fast", "MiniMax-Hailuo-02"}
+}
+
 func (s *OpenAIGatewayService) HasVideoTaskPricing(ctx context.Context, key *APIKey, model, resolution string) bool {
 	return s.VideoTaskBillingMode(ctx, key, model, resolution) != ""
 }

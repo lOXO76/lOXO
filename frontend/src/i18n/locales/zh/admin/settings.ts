@@ -51,6 +51,12 @@ export default {
           enabled: '显示 API 文档入口',
           enabledHint: '关闭后普通模式与简易模式均隐藏入口，仍可直接访问 /docs/api。',
         },
+        creation: {
+          title: '创作',
+          description: '允许用户在浏览器中选择分组生成图片和视频，默认开启。',
+          enabled: '启用创作',
+          enabledHint: '关闭后用户端侧边栏入口隐藏，创作目录接口返回 404。',
+        },
         siteBillingMode: {
           title: '站点类型',
           description: '决定用户端提供哪些购买方式。默认「充值 & 订阅」。',
@@ -738,6 +744,7 @@ export default {
         url: '页面 URL',
         urlPlaceholder: 'https://example.com/page',
         hideOpenButton: '隐藏“新窗口打开”按钮',
+        openInNewTab: '新标签页打开',
         iconSvg: 'SVG 图标',
         iconSvgPlaceholder: '<svg>...</svg>',
         iconPreview: '图标预览',
@@ -750,6 +757,14 @@ export default {
         remove: '删除',
         moveUp: '上移',
         moveDown: '下移',
+      },
+      headerLinks: {
+        title: '顶栏链接',
+        description: '在文档、模型广场旁添加最多 10 条链接，可设置顺序、可见范围和打开方式。',
+        itemLabel: '顶栏链接 #{n}',
+        url: '链接地址',
+        urlPlaceholder: 'https://example.com/help 或 /docs/api',
+        add: '添加顶栏链接',
       },
       payment: {
         title: '支付设置',

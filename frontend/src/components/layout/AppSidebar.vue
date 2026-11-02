@@ -77,9 +77,10 @@
               </div>
             </template>
             <!-- Normal item (no children) -->
-            <router-link
+            <component
               v-else
-              :to="item.path"
+              :is="item.externalUrl ? 'a' : 'router-link'"
+              v-bind="item.externalUrl ? { href: item.externalUrl, target: '_blank', rel: 'noopener noreferrer' } : { to: item.path }"
               class="sidebar-link mb-1"
               :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
@@ -97,7 +98,7 @@
               <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
               <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
               <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
-            </router-link>
+            </component>
           </template>
         </div>
 
@@ -139,9 +140,10 @@
                 </router-link>
               </div>
             </template>
-          <router-link
+          <component
             v-else
-            :to="item.path"
+            :is="item.externalUrl ? 'a' : 'router-link'"
+            v-bind="item.externalUrl ? { href: item.externalUrl, target: '_blank', rel: 'noopener noreferrer' } : { to: item.path }"
             class="sidebar-link mb-1"
             :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
             :title="sidebarCollapsed ? item.label : undefined"
@@ -151,7 +153,7 @@
             <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
             <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
             <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
-          </router-link>
+          </component>
           </template>
         </div>
       </template>
@@ -189,9 +191,10 @@
                 </router-link>
               </div>
             </template>
-          <router-link
+          <component
             v-else
-            :to="item.path"
+            :is="item.externalUrl ? 'a' : 'router-link'"
+            v-bind="item.externalUrl ? { href: item.externalUrl, target: '_blank', rel: 'noopener noreferrer' } : { to: item.path }"
             class="sidebar-link mb-1"
             :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
             :title="sidebarCollapsed ? item.label : undefined"
@@ -201,7 +204,7 @@
             <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
             <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
             <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
-          </router-link>
+          </component>
           </template>
         </div>
       </template>
@@ -256,9 +259,10 @@ import VersionBadge from '@/components/common/VersionBadge.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
+import { customMenuNewTabUrl } from '@/utils/navigationLinks'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
 import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
-import { Building2, CalendarCheck2, MonitorDown } from '@lucide/vue'
+import { Building2, CalendarCheck2, MonitorDown, Sparkles } from '@lucide/vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { canAccessEnterprise, enterpriseSectionPath } from '@/features/enterprise/navigation'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
@@ -266,12 +270,14 @@ import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
 const BuildingIcon = { render: () => h(Building2, { strokeWidth: 1.5 }) }
 const CheckInIcon = { render: () => h(CalendarCheck2, { strokeWidth: 1.5 }) }
 const ImportClientIcon = { render: () => h(MonitorDown, { strokeWidth: 1.5 }) }
+const CreationIcon = { render: () => h(Sparkles, { strokeWidth: 1.5 }) }
 
 interface NavItem {
   path: string
   label: string
   icon: unknown
   iconSvg?: string
+  externalUrl?: string
   hideInSimpleMode?: boolean
   children?: NavItem[]
   /**
@@ -776,6 +782,7 @@ const flagDegradationDetection = makeSidebarFlag(FeatureFlags.degradationDetecti
 const flagPayment = makeSidebarFlag(FeatureFlags.payment)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagApiDocs = makeSidebarFlag(FeatureFlags.apiDocs)
+const flagCreation = makeSidebarFlag(FeatureFlags.creation)
 const flagSubscription = makeSidebarFlag(FeatureFlags.subscription)
 
 // 购买入口文案随站点计费模式切换：仅充值 → 「充值」，仅订阅 → 「订阅」，否则「充值/订阅」。
@@ -827,6 +834,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/import-clients', label: t('nav.importClients'), icon: ImportClientIcon },
     { path: '/batch-image', label: t('nav.batchImage'), icon: BatchImageIcon, hideInSimpleMode: true, featureFlag: flagBatchImageAccess },
+    { path: '/create', label: t('nav.creation'), icon: CreationIcon, hideInSimpleMode: true, featureFlag: flagCreation },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/async-tasks', label: t('nav.asyncTasks'), icon: ServerIcon },
     { path: '/docs/api', label: t('nav.apiDocs'), icon: BookIcon, featureFlag: flagApiDocs },
@@ -845,6 +853,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
       label: item.label,
       icon: null,
       iconSvg: item.icon_svg,
+      externalUrl: customMenuNewTabUrl(item),
     })),
   )
   return items
@@ -962,14 +971,14 @@ const adminNavItems = computed((): NavItem[] => {
     }
     filtered.push({ path: '/admin/settings', label: t('nav.settings'), icon: CogIcon })
     for (const cm of customMenuItemsForAdmin.value) {
-      filtered.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg })
+      filtered.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg, externalUrl: customMenuNewTabUrl(cm) })
     }
     return filtered
   }
 
   visible.push({ path: '/admin/settings', label: t('nav.settings'), icon: CogIcon })
   for (const cm of customMenuItemsForAdmin.value) {
-    visible.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg })
+    visible.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg, externalUrl: customMenuNewTabUrl(cm) })
   }
   return visible
 })
