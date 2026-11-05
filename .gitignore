@@ -152,6 +152,8 @@ docs/screenshots/*
 !docs/screenshots/codex-referral-success.png
 .serena/
 .codex/
+# 多 agent 协作时的跨端契约/任务文档（工作目录，不入库）
+.codex-tasks/
 frontend/coverage/
 aicodex
 output/

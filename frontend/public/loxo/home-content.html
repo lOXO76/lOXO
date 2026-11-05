@@ -1,0 +1,386 @@
+<style>
+.lx{--paper:#FFFBF3;--paper2:#F6EFE1;--card:#FFFFFF;--ink:#0F172A;--ink2:#334155;--mute:#64748B;--line:rgba(15,23,42,.09);--line2:rgba(15,23,42,.18);--teal:#14B8A6;--teal-ink:#0F766E;--teal-soft:rgba(20,184,166,.14);--mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;position:relative;min-height:100vh;overflow-x:hidden;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+.dark .lx{--paper:#0B1220;--paper2:#0E1628;--card:#111B2F;--ink:#F6F1E6;--ink2:#C6CFDC;--mute:#8E9BB0;--line:rgba(246,241,230,.08);--line2:rgba(246,241,230,.18);--teal:#2DD4BF;--teal-ink:#5EEAD4;--teal-soft:rgba(45,212,191,.13)}
+.lx *,.lx *::before,.lx *::after{box-sizing:border-box;border-color:var(--line)}
+.lx a{color:inherit;text-decoration:none}
+.lx ::selection{background:var(--teal);color:#0F172A}
+.lx-wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+.lx-mono{font-family:var(--mono)}
+.lx-eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-ink)}
+.lx-eyebrow::before{content:"";width:22px;height:1.5px;background:currentColor}
+.lx-h2{margin:14px 0 0;font-size:clamp(28px,3.6vw,42px);line-height:1.15;font-weight:700;letter-spacing:-.02em}
+.lx-lead{margin:16px 0 0;max-width:560px;color:var(--ink2);font-size:16px}
+
+/* buttons */
+.lx-btn{display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 22px;border-radius:999px;background:var(--ink);color:var(--paper)!important;font-size:15px;font-weight:600;transition:transform .2s,box-shadow .2s,background .2s}
+.lx-btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px -10px rgba(15,23,42,.55)}
+.lx-btn svg{width:16px;height:16px;transition:transform .2s}
+.lx-btn:hover svg{transform:translateX(3px)}
+.lx-btn-sm{height:38px;padding:0 16px;font-size:14px}
+.lx a:focus-visible,.lx label:focus-visible{outline:2px solid var(--teal);outline-offset:3px;border-radius:8px}
+
+/* nav */
+.lx-nav{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--paper) 82%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
+.lx-nav-in{display:flex;align-items:center;justify-content:space-between;height:68px}
+.lx-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:.02em}
+.lx-brand svg{display:block;width:30px;height:30px}
+.lx-links{display:flex;align-items:center;gap:6px}
+.lx-x{stroke:var(--ink)}
+
+/* hero */
+.lx-hero{position:relative;padding:72px 0 88px}
+.lx-hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(var(--line2) 1px,transparent 1.2px);background-size:26px 26px;-webkit-mask-image:radial-gradient(ellipse 70% 70% at 70% 40%,#000 20%,transparent 75%);mask-image:radial-gradient(ellipse 70% 70% at 70% 40%,#000 20%,transparent 75%);opacity:.7;pointer-events:none}
+.lx-hero-in{position:relative;display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:48px}
+.lx-tag{display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 8px;border:1px solid var(--line2);border-radius:999px;background:var(--card);font-family:var(--mono);font-size:12px;color:var(--ink2)}
+.lx-tag b{padding:2px 8px;border-radius:999px;background:var(--ink);color:var(--paper);font-weight:600}
+.lx-h1{margin:26px 0 0;font-size:clamp(42px,6.4vw,80px);line-height:1.1;font-weight:800;letter-spacing:-.03em}
+.lx-ringword{position:relative;display:inline-block;padding:0 .08em;color:var(--teal-ink)}
+.lx-ringword svg{position:absolute;left:-1%;bottom:-.16em;width:102%;height:.34em;overflow:visible;pointer-events:none}
+.lx-ringword path{fill:none;stroke:var(--teal);stroke-width:7;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:lx-draw .8s 1.1s cubic-bezier(.65,0,.35,1) forwards}
+.lx-ringword .lx-u2{stroke-width:4.5;opacity:.7;animation-delay:1.55s;animation-duration:.6s}
+.lx-sub{margin:26px 0 0;max-width:540px;font-size:clamp(16px,1.5vw,18px);color:var(--ink2)}
+.lx-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:36px}
+.lx-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px var(--teal-soft);animation:lx-pulse 2.4s ease-in-out infinite}
+.lx-rise{opacity:0;animation:lx-rise .8s cubic-bezier(.2,.7,.2,1) forwards}
+.lx-d1{animation-delay:.05s}.lx-d2{animation-delay:.15s}.lx-d3{animation-delay:.25s}.lx-d4{animation-delay:.35s}
+
+/* hero stage */
+.lx-stage{position:relative;width:100%;max-width:540px;aspect-ratio:1/.9;margin-left:auto;container-type:inline-size}
+.lx-orbit{position:absolute;left:21%;top:-3%;width:76%;aspect-ratio:1;border:1.5px dashed var(--line2);border-radius:50%;animation:lx-spin 80s linear infinite}
+.lx-orbit::after{content:"";position:absolute;top:12%;right:12%;width:10px;height:10px;border-radius:50%;background:var(--teal)}
+.lx-tile{position:absolute;left:30%;top:6%;width:58%;aspect-ratio:1;border-radius:24%;background:#FFFBF3;box-shadow:0 0 0 1px rgba(15,23,42,.08),0 2px 0 rgba(15,23,42,.06),0 40px 70px -30px rgba(15,23,42,.45);animation:lx-float 7s ease-in-out infinite}
+.dark .lx-tile{box-shadow:0 0 0 1px rgba(246,241,230,.1),0 40px 80px -30px rgba(0,0,0,.8),0 0 80px -20px rgba(45,212,191,.25)}
+.lx-tile svg{display:block;width:100%;height:100%}
+.lx-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:lx-draw .9s cubic-bezier(.65,0,.35,1) forwards}
+.lx-draw.lx-s2{animation-delay:.3s}
+.lx-draw.lx-s3{animation-duration:1.3s;animation-delay:.75s}
+.lx-chip{position:absolute;left:0;display:flex;align-items:center;gap:8px;padding:.62em 1em;border:1px solid var(--line2);border-radius:12px;background:var(--card);font-size:max(11px,2.5cqw);font-weight:600;white-space:nowrap;box-shadow:0 12px 24px -16px rgba(15,23,42,.4);opacity:0;animation:lx-in .7s cubic-bezier(.2,.7,.2,1) forwards}
+.lx-chip i{width:.7em;height:.7em;border-radius:3px;flex:none}
+.lx-chip small{font-family:var(--mono);font-size:.82em;font-weight:500;color:var(--mute)}
+.lx-c1{top:16%;animation-delay:1.3s}.lx-c2{top:31%;left:5%;animation-delay:1.45s}.lx-c3{top:46%;animation-delay:1.6s}
+.lx-term{position:absolute;left:3%;bottom:0;width:70%;border-radius:14px;background:#0F172A;color:#E2E8F0;font-family:var(--mono);font-size:max(10.5px,2.35cqw);line-height:1.9;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 30px 60px -24px rgba(15,23,42,.6);overflow:hidden;opacity:0;animation:lx-in .7s 1.9s cubic-bezier(.2,.7,.2,1) forwards}
+.dark .lx-term{box-shadow:0 0 0 1px rgba(246,241,230,.14),0 30px 60px -24px rgba(0,0,0,.8)}
+.lx-term-bar{display:flex;align-items:center;gap:6px;padding:9px 14px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.06)}
+.lx-term-bar span{width:9px;height:9px;border-radius:50%;background:#334155}
+.lx-term-bar em{margin-left:8px;font-style:normal;font-size:.9em;color:#64748B}
+.lx-term-body{padding:12px 16px 14px}
+.lx-term-body div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lx-k{color:#5EEAD4}.lx-s{color:#F2C48D}.lx-c{color:#64748B}.lx-v{color:#93C5FD}.lx-ok{color:#0F172A;background:#5EEAD4;padding:1px 6px;border-radius:4px;font-weight:700}
+.lx-cursor{display:inline-block;width:.55em;height:1.05em;vertical-align:-.15em;background:#5EEAD4;animation:lx-blink 1s steps(1) infinite}
+
+/* strip */
+.lx-strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--paper2)}
+.lx-strip-in{display:flex;align-items:center;gap:28px;padding-top:22px;padding-bottom:22px}
+.lx-strip-label{flex:none;font-size:13px;font-weight:600;color:var(--ink2)}
+.lx-clients{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0;padding:0;list-style:none;font-family:var(--mono);font-size:13.5px;color:var(--ink)}
+.lx-clients li{display:flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card)}
+.lx-clients li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--teal)}
+
+/* features */
+.lx-sec{padding:104px 0}
+.lx-sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:52px}
+.lx-grid{display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--line2);border-left:1px solid var(--line2)}
+.lx-feat{position:relative;padding:36px 36px 40px;border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);transition:background .3s}
+.lx-feat:hover{background:var(--card)}
+.lx-feat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px}
+.lx-ico{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:var(--teal-soft);color:var(--teal-ink)}
+.lx-ico svg{width:22px;height:22px}
+.lx-num{font-family:var(--mono);font-size:13px;color:var(--mute)}
+.lx-feat h3{margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em}
+.lx-feat p{margin:10px 0 0;max-width:440px;color:var(--ink2);font-size:15px}
+
+/* protocols (inverted) */
+.lx-inv{position:relative;background:#0F172A;color:#F6F1E6;overflow:hidden}
+.dark .lx-inv{background:#111B2F;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.lx-inv .lx-eyebrow{color:#5EEAD4}
+.lx-inv .lx-lead{color:#A9B4C4}
+.lx-inv-x{position:absolute;right:-120px;top:50%;width:560px;height:560px;transform:translateY(-50%);opacity:.07;pointer-events:none}
+.lx-proto{position:relative;display:grid;grid-template-columns:.9fr 1.1fr;gap:56px;align-items:center}
+.lx-base{margin-top:30px;display:inline-flex;align-items:center;gap:14px;padding:14px 20px;border:1px solid rgba(246,241,230,.16);border-radius:14px;background:rgba(255,255,255,.03);font-family:var(--mono);font-size:15px}
+.lx-base span{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#7C8AA0}
+.lx-base b{color:#5EEAD4;font-weight:600}
+.lx-base-note{margin:12px 0 0;font-size:13px;color:#7C8AA0}
+.lx-table{border-top:1px solid rgba(246,241,230,.14)}
+.lx-row{display:grid;grid-template-columns:190px 1fr;gap:20px;align-items:center;padding:22px 4px;border-bottom:1px solid rgba(246,241,230,.14)}
+.lx-row-name{font-weight:700;font-size:16px}
+.lx-row-name small{display:block;margin-top:2px;font-weight:400;font-size:12.5px;color:#7C8AA0}
+.lx-eps{display:flex;flex-wrap:wrap;gap:8px}
+.lx-ep{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.05);font-family:var(--mono);font-size:13px;color:#E2E8F0}
+.lx-ep em{font-style:normal;font-size:11px;font-weight:700;color:#0F172A;background:#5EEAD4;padding:0 5px;border-radius:4px}
+
+/* quick start */
+.lx-qs{background:var(--paper2);border-bottom:1px solid var(--line)}
+.lx-qs-in{display:grid;grid-template-columns:.85fr 1.15fr;gap:56px;align-items:start}
+.lx-steps{margin:40px 0 0;padding:0;list-style:none;counter-reset:s}
+.lx-steps li{position:relative;padding:0 0 30px 62px;counter-increment:s}
+.lx-steps li::before{content:"0" counter(s);position:absolute;left:0;top:0;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;border:1.5px solid var(--ink);font-family:var(--mono);font-size:13px;font-weight:700;background:var(--paper2)}
+.lx-steps li::after{content:"";position:absolute;left:21px;top:46px;bottom:4px;width:1.5px;background:repeating-linear-gradient(var(--line2) 0 4px,transparent 4px 8px)}
+.lx-steps li:last-child{padding-bottom:0}
+.lx-steps li:last-child::after{display:none}
+.lx-steps h4{margin:0;padding-top:8px;font-size:18px;font-weight:700}
+.lx-steps p{margin:6px 0 0;color:var(--ink2);font-size:15px}
+.lx-steps a{color:var(--teal-ink);font-weight:600;border-bottom:1px solid currentColor}
+.lx-code{position:relative;border-radius:18px;background:#0F172A;color:#E2E8F0;box-shadow:0 0 0 1px rgba(15,23,42,.08),0 40px 80px -40px rgba(15,23,42,.55);overflow:hidden}
+.dark .lx-code{background:#060B16;box-shadow:0 0 0 1px rgba(246,241,230,.08)}
+.lx-code input{position:absolute;opacity:0;pointer-events:none}
+.lx-tabbar{display:flex;gap:4px;padding:10px 10px 0;border-bottom:1px solid rgba(255,255,255,.07);overflow-x:auto}
+.lx-tabbar label{flex:none;padding:10px 16px 12px;border-radius:10px 10px 0 0;font-size:13.5px;font-weight:600;color:#7C8AA0;cursor:pointer;transition:color .2s,background .2s;user-select:none}
+.lx-tabbar label:hover{color:#E2E8F0}
+.lx-pane{display:none;margin:0;padding:24px 26px 28px;font-family:var(--mono);font-size:13.5px;line-height:1.85;white-space:pre;overflow-x:auto;tab-size:2}
+#lx-t1:checked~.lx-tabbar label[for=lx-t1],#lx-t2:checked~.lx-tabbar label[for=lx-t2],#lx-t3:checked~.lx-tabbar label[for=lx-t3],#lx-t4:checked~.lx-tabbar label[for=lx-t4]{color:#0F172A;background:#5EEAD4}
+#lx-t1:focus-visible~.lx-tabbar label[for=lx-t1],#lx-t2:focus-visible~.lx-tabbar label[for=lx-t2],#lx-t3:focus-visible~.lx-tabbar label[for=lx-t3],#lx-t4:focus-visible~.lx-tabbar label[for=lx-t4]{outline:2px solid #5EEAD4;outline-offset:2px}
+#lx-t1:checked~.lx-p1,#lx-t2:checked~.lx-p2,#lx-t3:checked~.lx-p3,#lx-t4:checked~.lx-p4{display:block;animation:lx-fade .35s ease}
+.lx-code-foot{display:flex;align-items:flex-start;gap:10px;padding:14px 26px;border-top:1px solid rgba(255,255,255,.07);font-size:13px;color:#7C8AA0}
+.lx-code-foot .lx-dot{flex:none;margin-top:6px}
+.lx-code-foot b{color:#E2E8F0;font-weight:600}
+
+/* final cta */
+.lx-final{position:relative;padding:120px 0;text-align:center;overflow:hidden}
+.lx-final-x{position:absolute;left:50%;top:50%;width:720px;height:720px;transform:translate(-50%,-50%);opacity:.06;pointer-events:none}
+.lx-final h2{position:relative;margin:18px auto 0;max-width:720px;font-size:clamp(32px,4.6vw,56px);line-height:1.12;font-weight:800;letter-spacing:-.03em}
+.lx-final p{position:relative;margin:18px auto 0;max-width:520px;color:var(--ink2)}
+.lx-final .lx-cta{position:relative;justify-content:center}
+
+/* footer */
+.lx-foot{border-top:1px solid var(--line)}
+.lx-foot-in{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding-top:28px;padding-bottom:28px;font-size:13px;color:var(--mute)}
+.lx-foot-in .lx-brand{font-size:16px;color:var(--ink)}
+.lx-foot-in .lx-brand svg{width:24px;height:24px}
+.lx-foot-links{display:flex;gap:20px}
+.lx-foot-links a:hover{color:var(--ink)}
+
+@keyframes lx-draw{to{stroke-dashoffset:0}}
+@keyframes lx-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes lx-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes lx-float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(-1deg)}}
+@keyframes lx-spin{to{transform:rotate(360deg)}}
+@keyframes lx-pulse{0%,100%{box-shadow:0 0 0 4px var(--teal-soft)}50%{box-shadow:0 0 0 8px transparent}}
+@keyframes lx-blink{50%{opacity:0}}
+@keyframes lx-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+@media (max-width:960px){
+  .lx-hero{padding:48px 0 64px}
+  .lx-hero-in,.lx-proto,.lx-qs-in{grid-template-columns:1fr;gap:48px}
+  .lx-stage{margin:0 auto}
+  .lx-strip-in{flex-direction:column;align-items:flex-start;gap:12px}
+}
+@media (max-width:640px){
+  .lx-wrap{padding:0 18px}
+  .lx-sec{padding:72px 0}
+  .lx-grid{grid-template-columns:1fr}
+  .lx-feat{padding:28px 24px 32px}
+  .lx-row{grid-template-columns:1fr;gap:10px}
+  .lx-base{font-size:13px;flex-wrap:wrap}
+  .lx-pane{padding:20px;font-size:12.5px}
+  .lx-tabbar label{padding:9px 10px 11px;font-size:12.5px}
+  .lx-code-foot{padding:14px 20px}
+  .lx-final{padding:88px 0}
+  .lx-btn{height:46px}
+}
+@media (prefers-reduced-motion:reduce){
+  .lx *,.lx *::before,.lx *::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition:none!important}
+}
+</style>
+
+<div class="lx">
+
+  <header class="lx-nav">
+    <div class="lx-wrap lx-nav-in">
+      <a class="lx-brand" href="/home" aria-label="lOXO 首页">
+        <svg viewBox="104 104 304 304" aria-hidden="true"><defs><mask id="lx-cut-nav" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><rect width="512" height="512" fill="#fff"/><circle cx="257" cy="255" r="90.4" fill="#000"/></mask></defs><g fill="none" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"><g class="lx-x" mask="url(#lx-cut-nav)"><path d="M126 134C132 142 149.5 166.5 162.3 181.8C175 197.1 188.3 211.7 202.3 225.6C216.2 239.6 231.1 252.5 246.1 265.4C261 278.4 276.6 290.6 291.8 303.2C307.1 315.7 322.5 328.2 337.8 340.7C353.2 353.2 376.3 371.8 384 378"/><path d="M380 126C374.1 134.2 357 159.2 344.6 175C332.2 190.7 319.2 205.9 305.6 220.6C292.1 235.3 277.6 249.1 263.2 262.9C248.8 276.7 233.8 290 219.2 303.7C204.6 317.3 190 331 175.5 344.7C160.9 358.4 139.2 379.1 132 386"/></g><path d="M297 216.9C294.9 215.4 289.2 210.3 284.7 207.9C280.1 205.5 274.9 203.6 269.6 202.5C264.3 201.4 258.4 201 252.8 201.4C247.3 201.9 241.3 203.2 236 205.2C230.7 207.2 225.5 210.3 221 213.6C216.5 217 212.4 221.2 209 225.5C205.7 229.9 202.9 234.9 201 239.9C199.1 244.9 197.9 250.3 197.6 255.5C197.3 260.7 197.9 266.1 199.2 271.1C200.5 276 202.7 281 205.6 285.3C208.4 289.6 212.1 293.7 216.2 297C220.4 300.3 225.2 303.2 230.3 305.2C235.3 307.2 241 308.6 246.6 309.2C252.1 309.8 258.1 309.7 263.7 308.8C269.3 307.9 275.1 306.1 280.3 303.8C285.5 301.5 290.6 298.4 294.9 294.8C299.3 291.3 303.3 287 306.4 282.5C309.6 278 312.1 272.9 313.8 267.9C315.5 262.8 316.4 257.4 316.4 252.2C316.5 247 315.6 241.8 314.3 236.7C312.9 231.7 311 226.7 308.5 221.9C306 217.1 303.1 212.3 299.3 207.8C295.5 203.3 291.1 198.8 285.8 194.9C280.5 191 270.4 186 267.4 184.2" stroke="#14B8A6" stroke-width="30"/></g></svg>
+        <span>lOXO</span>
+      </a>
+      <nav class="lx-links">
+        <a class="lx-btn lx-btn-sm" href="/login">进入控制台</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="lx-hero">
+    <div class="lx-wrap lx-hero-in">
+      <div>
+        <span class="lx-tag lx-rise lx-d1"><b>lOXO</b>Claude · GPT · Gemini</span>
+        <h1 class="lx-h1 lx-rise lx-d2">顶级模型，<br><span class="lx-ringword">开箱即用<svg viewBox="0 0 200 30" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M4 19C48 9 122 5 196 13"/><path class="lx-u2" pathLength="1" d="M34 27C82 19 136 17 176 21"/></svg></span>。</h1>
+        <p class="lx-sub lx-rise lx-d3">不用自己购买订阅，也不用折腾账号。在 lOXO 拿到密钥，Claude Code、Codex CLI、Gemini CLI 改一行地址就能用；按量计费，用多少付多少。</p>
+        <div class="lx-cta lx-rise lx-d4">
+          <a class="lx-btn" href="/login">进入控制台<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </div>
+
+      <div class="lx-stage" aria-hidden="true">
+        <div class="lx-orbit"></div>
+        <div class="lx-tile">
+          <svg viewBox="0 0 512 512"><defs><mask id="lx-cut-hero" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><rect width="512" height="512" fill="#fff"/><circle cx="257" cy="255" r="90.4" fill="#000"/></mask></defs><g fill="none" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"><g stroke="#0F172A" mask="url(#lx-cut-hero)"><path class="lx-draw" pathLength="1" d="M126 134C132 142 149.5 166.5 162.3 181.8C175 197.1 188.3 211.7 202.3 225.6C216.2 239.6 231.1 252.5 246.1 265.4C261 278.4 276.6 290.6 291.8 303.2C307.1 315.7 322.5 328.2 337.8 340.7C353.2 353.2 376.3 371.8 384 378"/><path class="lx-draw lx-s2" pathLength="1" d="M380 126C374.1 134.2 357 159.2 344.6 175C332.2 190.7 319.2 205.9 305.6 220.6C292.1 235.3 277.6 249.1 263.2 262.9C248.8 276.7 233.8 290 219.2 303.7C204.6 317.3 190 331 175.5 344.7C160.9 358.4 139.2 379.1 132 386"/></g><path class="lx-draw lx-s3" pathLength="1" d="M297 216.9C294.9 215.4 289.2 210.3 284.7 207.9C280.1 205.5 274.9 203.6 269.6 202.5C264.3 201.4 258.4 201 252.8 201.4C247.3 201.9 241.3 203.2 236 205.2C230.7 207.2 225.5 210.3 221 213.6C216.5 217 212.4 221.2 209 225.5C205.7 229.9 202.9 234.9 201 239.9C199.1 244.9 197.9 250.3 197.6 255.5C197.3 260.7 197.9 266.1 199.2 271.1C200.5 276 202.7 281 205.6 285.3C208.4 289.6 212.1 293.7 216.2 297C220.4 300.3 225.2 303.2 230.3 305.2C235.3 307.2 241 308.6 246.6 309.2C252.1 309.8 258.1 309.7 263.7 308.8C269.3 307.9 275.1 306.1 280.3 303.8C285.5 301.5 290.6 298.4 294.9 294.8C299.3 291.3 303.3 287 306.4 282.5C309.6 278 312.1 272.9 313.8 267.9C315.5 262.8 316.4 257.4 316.4 252.2C316.5 247 315.6 241.8 314.3 236.7C312.9 231.7 311 226.7 308.5 221.9C306 217.1 303.1 212.3 299.3 207.8C295.5 203.3 291.1 198.8 285.8 194.9C280.5 191 270.4 186 267.4 184.2" stroke="#14B8A6" stroke-width="30"/></g></svg>
+        </div>
+        <div class="lx-chip lx-c1"><i style="background:#D97757"></i>Claude<small>Claude Code</small></div>
+        <div class="lx-chip lx-c2"><i style="background:#10A37F"></i>GPT<small>Codex CLI</small></div>
+        <div class="lx-chip lx-c3"><i style="background:#4285F4"></i>Gemini<small>Gemini CLI</small></div>
+        <div class="lx-term">
+          <div class="lx-term-bar"><span></span><span></span><span></span><em>~/my-app — claude</em></div>
+          <div class="lx-term-body">
+            <div><span class="lx-k">$</span> claude</div>
+            <div><span class="lx-s">✻</span> Welcome to Claude Code!</div>
+            <div><span class="lx-c">  API Base URL:</span> <span class="lx-v">https://loxo.cc</span></div>
+            <div><span class="lx-k">&gt;</span> 帮我给这个函数补上单元测试<span class="lx-cursor"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lx-strip">
+    <div class="lx-wrap lx-strip-in">
+      <span class="lx-strip-label">你常用的工具，直接就能用</span>
+      <ul class="lx-clients">
+        <li>Claude Code</li><li>Codex CLI</li><li>Gemini CLI</li><li>OpenCode</li><li>Cherry Studio</li><li>OpenAI / Anthropic SDK</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="lx-sec">
+    <div class="lx-wrap">
+      <div class="lx-sec-head">
+        <div>
+          <span class="lx-eyebrow">Why lOXO</span>
+          <h2 class="lx-h2">专心写代码，<br>其余交给 lOXO。</h2>
+        </div>
+        <p class="lx-lead">订阅、账号、额度这些琐事都不用你操心。拿到密钥，填进工具，马上开始。</p>
+      </div>
+      <div class="lx-grid">
+        <article class="lx-feat">
+          <div class="lx-feat-top"><span class="lx-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.5h18M15.5 15h2"/></svg></span><span class="lx-num">01</span></div>
+          <h3>免订阅，按量付费</h3>
+          <p>不用自己购买 Claude、ChatGPT 等订阅，也不用为用不满的月费买单。按实际 Token 计费，用多少扣多少。</p>
+        </article>
+        <article class="lx-feat">
+          <div class="lx-feat-top"><span class="lx-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7.5 9.5l3 2.5-3 2.5M13 15h3.5"/></svg></span><span class="lx-num">02</span></div>
+          <h3>主流工具，原生兼容</h3>
+          <p>Claude Code、Codex CLI、Gemini CLI、Cherry Studio 等直接可用，同时兼容 Anthropic、OpenAI、Gemini 三种接口格式，官方 SDK 改个地址即可。</p>
+        </article>
+        <article class="lx-feat">
+          <div class="lx-feat-top"><span class="lx-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span><span class="lx-num">03</span></div>
+          <h3>稳定在线，长对话不断档</h3>
+          <p>多线路自动调度，遇到异常自动切换；同一段对话保持在同一线路上，上下文更连贯，缓存命中也更省钱。</p>
+        </article>
+        <article class="lx-feat">
+          <div class="lx-feat-top"><span class="lx-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span class="lx-num">04</span></div>
+          <h3>每一笔，都明明白白</h3>
+          <p>每次调用的 Token 用量与费用逐条可查，余额实时更新；登录后还能看到各模型的实时可用状态。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="lx-sec lx-inv">
+    <svg class="lx-inv-x" viewBox="104 104 304 304" aria-hidden="true"><g fill="none" stroke="#F6F1E6" stroke-width="34" stroke-linecap="round"><path d="M126 134C132 142 149.5 166.5 162.3 181.8C175 197.1 188.3 211.7 202.3 225.6C216.2 239.6 231.1 252.5 246.1 265.4C261 278.4 276.6 290.6 291.8 303.2C307.1 315.7 322.5 328.2 337.8 340.7C353.2 353.2 376.3 371.8 384 378"/><path d="M380 126C374.1 134.2 357 159.2 344.6 175C332.2 190.7 319.2 205.9 305.6 220.6C292.1 235.3 277.6 249.1 263.2 262.9C248.8 276.7 233.8 290 219.2 303.7C204.6 317.3 190 331 175.5 344.7C160.9 358.4 139.2 379.1 132 386"/></g></svg>
+    <div class="lx-wrap lx-proto">
+      <div>
+        <span class="lx-eyebrow">One Endpoint</span>
+        <h2 class="lx-h2">一个地址，<br>三种协议。</h2>
+        <p class="lx-lead">无论你的工具说的是 Anthropic、OpenAI 还是 Gemini 的“方言”，都指向同一个 Base URL。</p>
+        <div class="lx-base"><span>Base URL</span><b>https://loxo.cc</b></div>
+        <p class="lx-base-note">可用模型以密钥所属分组为准，可通过 /v1/models 查询</p>
+      </div>
+      <div class="lx-table">
+        <div class="lx-row">
+          <div class="lx-row-name">Anthropic<small>Claude Code · Anthropic SDK</small></div>
+          <div class="lx-eps"><span class="lx-ep"><em>POST</em>/v1/messages</span><span class="lx-ep"><em>POST</em>/v1/messages/count_tokens</span></div>
+        </div>
+        <div class="lx-row">
+          <div class="lx-row-name">OpenAI<small>Codex CLI · OpenAI SDK</small></div>
+          <div class="lx-eps"><span class="lx-ep"><em>POST</em>/v1/chat/completions</span><span class="lx-ep"><em>POST</em>/v1/responses</span><span class="lx-ep"><em>GET</em>/v1/models</span></div>
+        </div>
+        <div class="lx-row">
+          <div class="lx-row-name">Gemini<small>Gemini CLI · Google GenAI SDK</small></div>
+          <div class="lx-eps"><span class="lx-ep"><em>POST</em>/v1beta/models/{model}:generateContent</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lx-sec lx-qs">
+    <div class="lx-wrap lx-qs-in">
+      <div>
+        <span class="lx-eyebrow">Quick Start</span>
+        <h2 class="lx-h2">三步接入，<br>三分钟跑通。</h2>
+        <ol class="lx-steps">
+          <li><h4>注册并登录</h4><p><a href="/register">注册</a>一个 lOXO 账号，或直接 <a href="/login">登录</a>，查看余额与可用分组。</p></li>
+          <li><h4>创建 API 密钥</h4><p>在「API 密钥」页面新建密钥并选择分组，点击「使用」即可生成各客户端的完整配置。</p></li>
+          <li><h4>填入客户端</h4><p>把 Base URL 与密钥填进你常用的工具，开始调用；用量与费用随时可在控制台查看。</p></li>
+        </ol>
+      </div>
+
+      <div class="lx-code">
+        <input type="radio" name="lx-tab" id="lx-t1" checked>
+        <input type="radio" name="lx-tab" id="lx-t2">
+        <input type="radio" name="lx-tab" id="lx-t3">
+        <input type="radio" name="lx-tab" id="lx-t4">
+        <div class="lx-tabbar">
+          <label for="lx-t1">Claude Code</label>
+          <label for="lx-t2">Codex CLI</label>
+          <label for="lx-t3">Gemini CLI</label>
+          <label for="lx-t4">cURL</label>
+        </div>
+<pre class="lx-pane lx-p1"><span class="lx-c"># macOS / Linux 终端</span>
+<span class="lx-k">export</span> <span class="lx-v">ANTHROPIC_BASE_URL</span>=<span class="lx-s">"https://loxo.cc"</span>
+<span class="lx-k">export</span> <span class="lx-v">ANTHROPIC_AUTH_TOKEN</span>=<span class="lx-s">"sk-你的密钥"</span>
+
+<span class="lx-c"># 启动 Claude Code</span>
+<span class="lx-k">claude</span></pre>
+<pre class="lx-pane lx-p2"><span class="lx-c"># ~/.codex/config.toml</span>
+<span class="lx-v">model_provider</span> = <span class="lx-s">"OpenAI"</span>
+
+<span class="lx-k">[model_providers.OpenAI]</span>
+<span class="lx-v">name</span> = <span class="lx-s">"OpenAI"</span>
+<span class="lx-v">base_url</span> = <span class="lx-s">"https://loxo.cc/v1"</span>
+<span class="lx-v">wire_api</span> = <span class="lx-s">"responses"</span>
+<span class="lx-v">requires_openai_auth</span> = <span class="lx-k">true</span>
+
+<span class="lx-c"># ~/.codex/auth.json</span>
+{ <span class="lx-v">"OPENAI_API_KEY"</span>: <span class="lx-s">"sk-你的密钥"</span> }</pre>
+<pre class="lx-pane lx-p3"><span class="lx-c"># macOS / Linux 终端</span>
+<span class="lx-k">export</span> <span class="lx-v">GOOGLE_GEMINI_BASE_URL</span>=<span class="lx-s">"https://loxo.cc"</span>
+<span class="lx-k">export</span> <span class="lx-v">GEMINI_API_KEY</span>=<span class="lx-s">"sk-你的密钥"</span>
+
+<span class="lx-c"># 启动 Gemini CLI</span>
+<span class="lx-k">gemini</span></pre>
+<pre class="lx-pane lx-p4"><span class="lx-c"># 查看当前密钥可用的模型</span>
+<span class="lx-k">curl</span> <span class="lx-s">https://loxo.cc/v1/models</span> \
+  -H <span class="lx-s">"Authorization: Bearer sk-你的密钥"</span>
+
+<span class="lx-c"># 发起一次对话（OpenAI 兼容格式）</span>
+<span class="lx-k">curl</span> <span class="lx-s">https://loxo.cc/v1/chat/completions</span> \
+  -H <span class="lx-s">"Authorization: Bearer sk-你的密钥"</span> \
+  -H <span class="lx-s">"Content-Type: application/json"</span> \
+  -d <span class="lx-s">'{"model":"模型名","messages":[{"role":"user","content":"你好"}]}'</span></pre>
+        <div class="lx-code-foot"><span class="lx-dot"></span><span>完整配置（含 Windows / 模型参数）请在控制台 <b>API 密钥 → 使用</b> 中一键生成</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lx-final">
+    <svg class="lx-final-x" viewBox="104 104 304 304" aria-hidden="true"><g fill="none" stroke-width="34" stroke-linecap="round"><g class="lx-x"><path d="M126 134C132 142 149.5 166.5 162.3 181.8C175 197.1 188.3 211.7 202.3 225.6C216.2 239.6 231.1 252.5 246.1 265.4C261 278.4 276.6 290.6 291.8 303.2C307.1 315.7 322.5 328.2 337.8 340.7C353.2 353.2 376.3 371.8 384 378"/><path d="M380 126C374.1 134.2 357 159.2 344.6 175C332.2 190.7 319.2 205.9 305.6 220.6C292.1 235.3 277.6 249.1 263.2 262.9C248.8 276.7 233.8 290 219.2 303.7C204.6 317.3 190 331 175.5 344.7C160.9 358.4 139.2 379.1 132 386"/></g></g></svg>
+    <div class="lx-wrap">
+      <span class="lx-eyebrow">Get Started</span>
+      <h2>现在开始，<br>把顶级模型接进你的终端。</h2>
+      <p>登录控制台创建密钥，几分钟内就能让 Claude Code、Codex 跑起来。</p>
+      <div class="lx-cta">
+        <a class="lx-btn" href="/login">进入控制台<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="lx-foot">
+    <div class="lx-wrap lx-foot-in">
+      <a class="lx-brand" href="/home">
+        <svg viewBox="104 104 304 304" aria-hidden="true"><defs><mask id="lx-cut-foot" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><rect width="512" height="512" fill="#fff"/><circle cx="257" cy="255" r="90.4" fill="#000"/></mask></defs><g fill="none" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"><g class="lx-x" mask="url(#lx-cut-foot)"><path d="M126 134C132 142 149.5 166.5 162.3 181.8C175 197.1 188.3 211.7 202.3 225.6C216.2 239.6 231.1 252.5 246.1 265.4C261 278.4 276.6 290.6 291.8 303.2C307.1 315.7 322.5 328.2 337.8 340.7C353.2 353.2 376.3 371.8 384 378"/><path d="M380 126C374.1 134.2 357 159.2 344.6 175C332.2 190.7 319.2 205.9 305.6 220.6C292.1 235.3 277.6 249.1 263.2 262.9C248.8 276.7 233.8 290 219.2 303.7C204.6 317.3 190 331 175.5 344.7C160.9 358.4 139.2 379.1 132 386"/></g><path d="M297 216.9C294.9 215.4 289.2 210.3 284.7 207.9C280.1 205.5 274.9 203.6 269.6 202.5C264.3 201.4 258.4 201 252.8 201.4C247.3 201.9 241.3 203.2 236 205.2C230.7 207.2 225.5 210.3 221 213.6C216.5 217 212.4 221.2 209 225.5C205.7 229.9 202.9 234.9 201 239.9C199.1 244.9 197.9 250.3 197.6 255.5C197.3 260.7 197.9 266.1 199.2 271.1C200.5 276 202.7 281 205.6 285.3C208.4 289.6 212.1 293.7 216.2 297C220.4 300.3 225.2 303.2 230.3 305.2C235.3 307.2 241 308.6 246.6 309.2C252.1 309.8 258.1 309.7 263.7 308.8C269.3 307.9 275.1 306.1 280.3 303.8C285.5 301.5 290.6 298.4 294.9 294.8C299.3 291.3 303.3 287 306.4 282.5C309.6 278 312.1 272.9 313.8 267.9C315.5 262.8 316.4 257.4 316.4 252.2C316.5 247 315.6 241.8 314.3 236.7C312.9 231.7 311 226.7 308.5 221.9C306 217.1 303.1 212.3 299.3 207.8C295.5 203.3 291.1 198.8 285.8 194.9C280.5 191 270.4 186 267.4 184.2" stroke="#14B8A6" stroke-width="30"/></g></svg>
+        <span>lOXO</span>
+      </a>
+      <span>稳定、透明的 AI 模型 API 服务</span>
+      <div class="lx-foot-links">
+        <a href="/login">控制台</a>
+      </div>
+    </div>
+  </footer>
+
+</div>

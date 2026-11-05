@@ -33,57 +33,61 @@ type EnterpriseUsageNamedResource struct {
 // EnterpriseUsageLog deliberately contains only the enterprise-visible fields.
 // Never serialize UsageLog or its full User/APIKey/Account associations here.
 type EnterpriseUsageLog struct {
-	ID                        int64                         `json:"id"`
-	UserID                    int64                         `json:"user_id"`
-	APIKeyID                  int64                         `json:"api_key_id"`
-	RequestID                 string                        `json:"request_id"`
-	Model                     string                        `json:"model"`
-	ServiceTier               *string                       `json:"service_tier,omitempty"`
-	ReasoningEffort           *string                       `json:"reasoning_effort,omitempty"`
-	InboundEndpoint           *string                       `json:"inbound_endpoint,omitempty"`
-	GroupID                   *int64                        `json:"group_id"`
-	InputTokens               int                           `json:"input_tokens"`
-	OutputTokens              int                           `json:"output_tokens"`
-	CacheCreationTokens       int                           `json:"cache_creation_tokens"`
-	CacheReadTokens           int                           `json:"cache_read_tokens"`
-	CacheCreation5mTokens     int                           `json:"cache_creation_5m_tokens"`
-	CacheCreation1hTokens     int                           `json:"cache_creation_1h_tokens"`
-	InputCost                 float64                       `json:"input_cost"`
-	OutputCost                float64                       `json:"output_cost"`
-	CacheCreationCost         float64                       `json:"cache_creation_cost"`
-	CacheReadCost             float64                       `json:"cache_read_cost"`
-	TotalCost                 float64                       `json:"total_cost"`
-	ActualCost                float64                       `json:"actual_cost"`
-	RateMultiplier            float64                       `json:"rate_multiplier"`
-	LongContextBillingApplied bool                          `json:"long_context_billing_applied"`
-	BillingType               int8                          `json:"billing_type"`
-	RequestType               string                        `json:"request_type"`
-	Stream                    bool                          `json:"stream"`
-	OpenAIWSMode              bool                          `json:"openai_ws_mode"`
-	NativeCompactionV2        bool                          `json:"native_compaction_v2"`
-	DurationMs                *int                          `json:"duration_ms"`
-	FirstTokenMs              *int                          `json:"first_token_ms"`
-	ImageCount                int                           `json:"image_count"`
-	ImageSize                 *string                       `json:"image_size"`
-	ImageInputSize            *string                       `json:"image_input_size"`
-	ImageOutputSize           *string                       `json:"image_output_size"`
-	ImageInputTokens          int                           `json:"image_input_tokens"`
-	ImageInputCost            float64                       `json:"image_input_cost"`
-	ImageOutputTokens         int                           `json:"image_output_tokens"`
-	ImageOutputCost           float64                       `json:"image_output_cost"`
-	ImageSizeSource           *string                       `json:"image_size_source"`
-	ImageSizeBreakdown        map[string]int                `json:"image_size_breakdown"`
-	MediaType                 *string                       `json:"media_type"`
-	UserAgent                 *string                       `json:"user_agent"`
-	IPAddress                 *string                       `json:"ip_address,omitempty"`
-	CacheTTLOverridden        bool                          `json:"cache_ttl_overridden"`
-	BillingMode               *string                       `json:"billing_mode,omitempty"`
-	CreatedAt                 time.Time                     `json:"created_at"`
-	User                      EnterpriseUsageUser           `json:"user"`
-	DepartmentID              *int64                        `json:"department_id"`
-	DepartmentName            *string                       `json:"department_name"`
-	APIKey                    *EnterpriseUsageNamedResource `json:"api_key"`
-	Group                     *EnterpriseUsageGroup         `json:"group"`
+	ID                        int64          `json:"id"`
+	UserID                    int64          `json:"user_id"`
+	APIKeyID                  int64          `json:"api_key_id"`
+	RequestID                 string         `json:"request_id"`
+	Model                     string         `json:"model"`
+	ServiceTier               *string        `json:"service_tier,omitempty"`
+	ReasoningEffort           *string        `json:"reasoning_effort,omitempty"`
+	InboundEndpoint           *string        `json:"inbound_endpoint,omitempty"`
+	GroupID                   *int64         `json:"group_id"`
+	InputTokens               int            `json:"input_tokens"`
+	OutputTokens              int            `json:"output_tokens"`
+	CacheCreationTokens       int            `json:"cache_creation_tokens"`
+	CacheReadTokens           int            `json:"cache_read_tokens"`
+	CacheCreation5mTokens     int            `json:"cache_creation_5m_tokens"`
+	CacheCreation1hTokens     int            `json:"cache_creation_1h_tokens"`
+	InputCost                 float64        `json:"input_cost"`
+	OutputCost                float64        `json:"output_cost"`
+	CacheCreationCost         float64        `json:"cache_creation_cost"`
+	CacheReadCost             float64        `json:"cache_read_cost"`
+	TotalCost                 float64        `json:"total_cost"`
+	ActualCost                float64        `json:"actual_cost"`
+	RateMultiplier            float64        `json:"rate_multiplier"`
+	LongContextBillingApplied bool           `json:"long_context_billing_applied"`
+	BillingType               int8           `json:"billing_type"`
+	RequestType               string         `json:"request_type"`
+	Stream                    bool           `json:"stream"`
+	OpenAIWSMode              bool           `json:"openai_ws_mode"`
+	NativeCompactionV2        bool           `json:"native_compaction_v2"`
+	DurationMs                *int           `json:"duration_ms"`
+	FirstTokenMs              *int           `json:"first_token_ms"`
+	ImageCount                int            `json:"image_count"`
+	ImageSize                 *string        `json:"image_size"`
+	ImageInputSize            *string        `json:"image_input_size"`
+	ImageOutputSize           *string        `json:"image_output_size"`
+	ImageInputTokens          int            `json:"image_input_tokens"`
+	ImageInputCost            float64        `json:"image_input_cost"`
+	ImageOutputTokens         int            `json:"image_output_tokens"`
+	ImageOutputCost           float64        `json:"image_output_cost"`
+	ImageSizeSource           *string        `json:"image_size_source"`
+	ImageSizeBreakdown        map[string]int `json:"image_size_breakdown"`
+	MediaType                 *string        `json:"media_type"`
+	// 视频生成字段，与个人用量 DTO 保持一致（按秒计费时用于还原每秒单价）
+	VideoCount           int                           `json:"video_count"`
+	VideoResolution      *string                       `json:"video_resolution"`
+	VideoDurationSeconds *int                          `json:"video_duration_seconds"`
+	UserAgent            *string                       `json:"user_agent"`
+	IPAddress            *string                       `json:"ip_address,omitempty"`
+	CacheTTLOverridden   bool                          `json:"cache_ttl_overridden"`
+	BillingMode          *string                       `json:"billing_mode,omitempty"`
+	CreatedAt            time.Time                     `json:"created_at"`
+	User                 EnterpriseUsageUser           `json:"user"`
+	DepartmentID         *int64                        `json:"department_id"`
+	DepartmentName       *string                       `json:"department_name"`
+	APIKey               *EnterpriseUsageNamedResource `json:"api_key"`
+	Group                *EnterpriseUsageGroup         `json:"group"`
 }
 type EnterpriseUsageGroup struct {
 	ID       int64  `json:"id"`
@@ -147,6 +151,9 @@ func EnterpriseUsageLogFromUsageLog(l *UsageLog) EnterpriseUsageLog {
 		ImageSizeSource:           l.ImageSizeSource,
 		ImageSizeBreakdown:        l.ImageSizeBreakdown,
 		MediaType:                 l.MediaType,
+		VideoCount:                l.VideoCount,
+		VideoResolution:           l.VideoResolution,
+		VideoDurationSeconds:      l.VideoDurationSeconds,
 		UserAgent:                 l.UserAgent,
 		IPAddress:                 l.IPAddress,
 		CacheTTLOverridden:        l.CacheTTLOverridden,

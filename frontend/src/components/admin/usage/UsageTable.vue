@@ -492,6 +492,32 @@
                 <span class="font-medium text-white">${{ tooltipData.total_cost?.toFixed(8) || '0.00000000' }}</span>
               </div>
             </template>
+            <template v-else-if="tooltipData && isVideoPerSecondUsage(tooltipData) && (tooltipData.video_duration_seconds ?? 0) > 0">
+              <div v-if="(tooltipData.video_count ?? 1) > 1" class="flex items-center justify-between gap-4">
+                <span class="text-gray-400">{{ t('usage.videoCount') }}</span>
+                <span class="font-medium text-white">{{ tooltipData.video_count }}</span>
+              </div>
+              <div v-if="formatVideoResolution(tooltipData)" class="flex items-center justify-between gap-4">
+                <span class="text-gray-400">{{ t('usage.videoResolution') }}</span>
+                <span class="font-medium text-white">{{ formatVideoResolution(tooltipData) }}</span>
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-gray-400">{{ t('usage.videoDuration') }}</span>
+                <span class="font-medium text-white">{{ tooltipData.video_duration_seconds }}{{ t('usage.secondUnit') }}</span>
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-gray-400">{{ t('usage.videoUnitPrice') }}</span>
+                <span class="font-medium text-sky-300">${{ videoUnitPricePerSecond(tooltipData).toFixed(8) }}</span>
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-gray-400">{{ t('usage.videoTotalPrice') }}</span>
+                <span class="font-medium text-white">${{ tooltipData.total_cost?.toFixed(8) || '0.00000000' }}</span>
+              </div>
+            </template>
+            <div v-else-if="tooltipData && isVideoPerSecondUsage(tooltipData)" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.videoTotalPrice') }}</span>
+              <span class="font-medium text-sky-300">${{ tooltipData.total_cost?.toFixed(8) || '0.00000000' }}</span>
+            </div>
             <div v-else class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('usage.unitPrice') }}</span>
               <span class="font-medium text-sky-300">${{ tooltipData?.total_cost?.toFixed(8) || '0.00000000' }}</span>
@@ -572,6 +598,7 @@ import {
   getDisplayBillingMode,
   imageUnitPrice,
 } from '@/utils/billingMode'
+import { isVideoPerSecondUsage, videoUnitPricePerSecond, formatVideoResolution } from '@/utils/videoUsage'
 import {
   formatImageBillingSize,
   formatImageInputSize,
