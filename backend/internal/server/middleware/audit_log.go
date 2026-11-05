@@ -135,6 +135,8 @@ var auditActionOverrides = map[string]string{
 	"POST /api/v1/auth/refresh":                               service.AuditActionTokenRefresh,
 	"POST /api/v1/user/totp/step-up":                          service.AuditActionStepUpVerify,
 	"POST /api/v1/user/check-in":                              service.AuditActionCheckIn,
+	"POST /api/v1/user/reward-tasks/:id/start":                "user.reward_task.start",
+	"POST /api/v1/user/reward-tasks/:id/claim":                "user.reward_task.claim",
 	"POST /api/v1/admin/audit-logs/clear":                     service.AuditActionAuditLogClear,
 	"POST /api/v1/admin/accounts/data":                        "admin.accounts.import",
 	"POST /api/v1/admin/backups":                              "admin.backups.create",
@@ -226,6 +228,7 @@ func NewAuditLogMiddleware(auditService *service.AuditLogService) AuditLogMiddle
 			return
 		}
 
+		// Never capture responses: partner creation/reset returns a one-time secret.
 		entry := &service.AuditLog{
 			CreatedAt:   time.Now().UTC(),
 			Action:      action,

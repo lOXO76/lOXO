@@ -154,6 +154,11 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Daily Check-in',
   }),
+  rewardTasks: defineFlag({
+    key: 'reward_tasks_enabled',
+    mode: 'opt-in',
+    label: 'Reward Tasks',
+  }),
 } as const
 
 export type RegisteredFeatureFlag = keyof typeof FeatureFlags

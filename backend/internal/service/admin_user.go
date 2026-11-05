@@ -746,10 +746,13 @@ func (s *adminServiceImpl) GetUserUsageStats(ctx context.Context, userID int64, 
 // GetUserBalanceHistory returns paginated balance/concurrency change records for a user.
 func (s *adminServiceImpl) GetUserBalanceHistory(ctx context.Context, userID int64, page, pageSize int, codeType string) ([]RedeemCode, int64, float64, error) {
 	params := pagination.PaginationParams{Page: page, PageSize: pageSize}
-	if codeType == RedeemTypeAffiliateBalance || codeType == RedeemTypeCheckIn {
+	if codeType == RedeemTypeAffiliateBalance || codeType == RedeemTypeCheckIn || codeType == RedeemTypeTaskReward {
 		list := s.listAffiliateBalanceHistory
-		if codeType == RedeemTypeCheckIn {
+		switch codeType {
+		case RedeemTypeCheckIn:
 			list = s.listCheckInBalanceHistory
+		case RedeemTypeTaskReward:
+			list = s.listRewardTaskBalanceHistory
 		}
 		codes, total, err := list(ctx, userID, params)
 		if err != nil {
@@ -797,13 +800,19 @@ func (s *adminServiceImpl) getAllUserBalanceHistory(ctx context.Context, userID 
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	codes := mergeBalanceHistoryCodes(redeemCodes, append(affiliateCodes, checkInCodes...), params)
+	taskCodes, taskTotal, err := s.listRewardTaskBalanceHistoryForMerge(ctx, userID, needed)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	rewardCodes := append(affiliateCodes, checkInCodes...)
+	rewardCodes = append(rewardCodes, taskCodes...)
+	codes := mergeBalanceHistoryCodes(redeemCodes, rewardCodes, params)
 
 	totalRecharged, err := s.redeemCodeRepo.SumPositiveBalanceByUser(ctx, userID)
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	return codes, redeemTotal + affiliateTotal + checkInTotal, totalRecharged, nil
+	return codes, redeemTotal + affiliateTotal + checkInTotal + taskTotal, totalRecharged, nil
 }
 
 func (s *adminServiceImpl) listRedeemBalanceHistoryForMerge(ctx context.Context, userID int64, needed int) ([]RedeemCode, int64, error) {
@@ -841,6 +850,69 @@ func (s *adminServiceImpl) listAffiliateBalanceHistoryForMerge(ctx context.Conte
 
 func (s *adminServiceImpl) listCheckInBalanceHistoryForMerge(ctx context.Context, userID int64, needed int) ([]RedeemCode, int64, error) {
 	return collectBalanceHistoryForMerge(ctx, userID, needed, s.listCheckInBalanceHistory)
+}
+
+func (s *adminServiceImpl) listRewardTaskBalanceHistoryForMerge(ctx context.Context, userID int64, needed int) ([]RedeemCode, int64, error) {
+	return collectBalanceHistoryForMerge(ctx, userID, needed, s.listRewardTaskBalanceHistory)
+}
+
+func (s *adminServiceImpl) listRewardTaskBalanceHistory(ctx context.Context, userID int64, params pagination.PaginationParams) ([]RedeemCode, int64, error) {
+	if s == nil || s.entClient == nil || userID <= 0 {
+		return nil, 0, nil
+	}
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, reward_amount::double precision, task_title, completed_at
+FROM reward_task_records
+WHERE user_id = $1 AND status = 'completed'
+ORDER BY completed_at DESC, id DESC
+OFFSET $2 LIMIT $3`, userID, params.Offset(), params.Limit())
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+	codes := make([]RedeemCode, 0, params.Limit())
+	for rows.Next() {
+		var id int64
+		var reward float64
+		var title string
+		var completedAt time.Time
+		if err := rows.Scan(&id, &reward, &title, &completedAt); err != nil {
+			return nil, 0, err
+		}
+		codes = append(codes, rewardTaskBalanceHistoryCode(userID, id, reward, title, completedAt))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	counts, err := s.entClient.QueryContext(ctx, `SELECT COUNT(*) FROM reward_task_records WHERE user_id = $1 AND status = 'completed'`, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = counts.Close() }()
+	var total int64
+	if counts.Next() {
+		if err := counts.Scan(&total); err != nil {
+			return nil, 0, err
+		}
+	}
+	if err := counts.Err(); err != nil {
+		return nil, 0, err
+	}
+	return codes, total, nil
+}
+
+func rewardTaskBalanceHistoryCode(userID, recordID int64, reward float64, title string, completedAt time.Time) RedeemCode {
+	return RedeemCode{
+		ID:        -recordID,
+		Code:      fmt.Sprintf("TASK-%d", recordID),
+		Type:      RedeemTypeTaskReward,
+		Value:     reward,
+		Status:    StatusUsed,
+		UsedBy:    &userID,
+		UsedAt:    &completedAt,
+		CreatedAt: completedAt,
+		Notes:     title,
+	}
 }
 
 // collectBalanceHistoryForMerge 按页拉取某一流水来源，直到凑够合并分页所需的前 needed 条。

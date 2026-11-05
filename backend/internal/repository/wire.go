@@ -71,6 +71,7 @@ func ProvideVideoBillingReservationRepository(db *sql.DB, cache service.Enterpri
 
 // ProviderSet is the Wire provider set for all repositories
 var ProviderSet = wire.NewSet(
+	NewRewardTaskNonceStore,
 	NewUserRepository,
 	NewAPIKeyRepository,
 	NewGroupRepository,

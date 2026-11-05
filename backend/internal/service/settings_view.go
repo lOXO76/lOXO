@@ -18,6 +18,7 @@ type SystemSettings struct {
 	RegistrationEmailDomainQuotaEnabled bool // 白名单非空时放行非白名单域名限量注册（默认关闭）
 	PromoCodeEnabled                    bool
 	CheckInEnabled                      bool
+	RewardTasksEnabled                  bool
 	CheckInCaptchaEnabled               bool
 	CheckInTiers                        []CheckInTier
 	PasswordResetEnabled                bool
@@ -344,6 +345,7 @@ type PublicSettings struct {
 	RegistrationEmailDomainQuotaEnabled bool
 	PromoCodeEnabled                    bool
 	CheckInEnabled                      bool
+	RewardTasksEnabled                  bool
 	PasswordResetEnabled                bool
 	InvitationCodeEnabled               bool
 	TotpEnabled                         bool // TOTP 双因素认证

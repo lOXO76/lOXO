@@ -48,6 +48,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtask"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskevent"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskpartner"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskrecord"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
@@ -1172,6 +1176,114 @@ func (f TraverseRedeemCode) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.RedeemCodeQuery", q)
 }
 
+// The RewardTaskFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RewardTaskFunc func(context.Context, *ent.RewardTaskQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RewardTaskFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RewardTaskQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RewardTaskQuery", q)
+}
+
+// The TraverseRewardTask type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRewardTask func(context.Context, *ent.RewardTaskQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRewardTask) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRewardTask) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RewardTaskQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RewardTaskQuery", q)
+}
+
+// The RewardTaskEventFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RewardTaskEventFunc func(context.Context, *ent.RewardTaskEventQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RewardTaskEventFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RewardTaskEventQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RewardTaskEventQuery", q)
+}
+
+// The TraverseRewardTaskEvent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRewardTaskEvent func(context.Context, *ent.RewardTaskEventQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRewardTaskEvent) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRewardTaskEvent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RewardTaskEventQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RewardTaskEventQuery", q)
+}
+
+// The RewardTaskPartnerFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RewardTaskPartnerFunc func(context.Context, *ent.RewardTaskPartnerQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RewardTaskPartnerFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RewardTaskPartnerQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RewardTaskPartnerQuery", q)
+}
+
+// The TraverseRewardTaskPartner type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRewardTaskPartner func(context.Context, *ent.RewardTaskPartnerQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRewardTaskPartner) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRewardTaskPartner) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RewardTaskPartnerQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RewardTaskPartnerQuery", q)
+}
+
+// The RewardTaskRecordFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RewardTaskRecordFunc func(context.Context, *ent.RewardTaskRecordQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RewardTaskRecordFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RewardTaskRecordQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RewardTaskRecordQuery", q)
+}
+
+// The TraverseRewardTaskRecord type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRewardTaskRecord func(context.Context, *ent.RewardTaskRecordQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRewardTaskRecord) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRewardTaskRecord) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RewardTaskRecordQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RewardTaskRecordQuery", q)
+}
+
 // The SecuritySecretFunc type is an adapter to allow the use of ordinary function as a Querier.
 type SecuritySecretFunc func(context.Context, *ent.SecuritySecretQuery) (ent.Value, error)
 
@@ -1604,6 +1716,14 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ProxyQuery, predicate.Proxy, proxy.OrderOption]{typ: ent.TypeProxy, tq: q}, nil
 	case *ent.RedeemCodeQuery:
 		return &query[*ent.RedeemCodeQuery, predicate.RedeemCode, redeemcode.OrderOption]{typ: ent.TypeRedeemCode, tq: q}, nil
+	case *ent.RewardTaskQuery:
+		return &query[*ent.RewardTaskQuery, predicate.RewardTask, rewardtask.OrderOption]{typ: ent.TypeRewardTask, tq: q}, nil
+	case *ent.RewardTaskEventQuery:
+		return &query[*ent.RewardTaskEventQuery, predicate.RewardTaskEvent, rewardtaskevent.OrderOption]{typ: ent.TypeRewardTaskEvent, tq: q}, nil
+	case *ent.RewardTaskPartnerQuery:
+		return &query[*ent.RewardTaskPartnerQuery, predicate.RewardTaskPartner, rewardtaskpartner.OrderOption]{typ: ent.TypeRewardTaskPartner, tq: q}, nil
+	case *ent.RewardTaskRecordQuery:
+		return &query[*ent.RewardTaskRecordQuery, predicate.RewardTaskRecord, rewardtaskrecord.OrderOption]{typ: ent.TypeRewardTaskRecord, tq: q}, nil
 	case *ent.SecuritySecretQuery:
 		return &query[*ent.SecuritySecretQuery, predicate.SecuritySecret, securitysecret.OrderOption]{typ: ent.TypeSecuritySecret, tq: q}, nil
 	case *ent.SettingQuery:

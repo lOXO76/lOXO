@@ -52,6 +52,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtask"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskevent"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskpartner"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskrecord"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
@@ -116,6 +120,10 @@ const (
 	TypePromoCodeUsage                = "PromoCodeUsage"
 	TypeProxy                         = "Proxy"
 	TypeRedeemCode                    = "RedeemCode"
+	TypeRewardTask                    = "RewardTask"
+	TypeRewardTaskEvent               = "RewardTaskEvent"
+	TypeRewardTaskPartner             = "RewardTaskPartner"
+	TypeRewardTaskRecord              = "RewardTaskRecord"
 	TypeSecuritySecret                = "SecuritySecret"
 	TypeSetting                       = "Setting"
 	TypeSubscriptionPlan              = "SubscriptionPlan"
@@ -52893,6 +52901,5394 @@ func (m *RedeemCodeMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode edge %s", name)
+}
+
+// RewardTaskMutation represents an operation that mutates the RewardTask nodes in the graph.
+type RewardTaskMutation struct {
+	config
+	op                      Op
+	typ                     string
+	id                      *int64
+	created_at              *time.Time
+	updated_at              *time.Time
+	deleted_at              *time.Time
+	title                   *string
+	description             *string
+	task_type               *string
+	verify_mode             *string
+	partner_id              *int64
+	addpartner_id           *int64
+	target_url              *string
+	icon_url                *string
+	reward_amount           *float64
+	addreward_amount        *float64
+	period                  *string
+	browse_seconds          *int
+	addbrowse_seconds       *int
+	idle_timeout_seconds    *int
+	addidle_timeout_seconds *int
+	min_recharge_amount     *float64
+	addmin_recharge_amount  *float64
+	max_completions         *int
+	addmax_completions      *int
+	completed_count         *int
+	addcompleted_count      *int
+	starts_at               *time.Time
+	ends_at                 *time.Time
+	enabled                 *bool
+	sort_order              *int
+	addsort_order           *int
+	clearedFields           map[string]struct{}
+	done                    bool
+	oldValue                func(context.Context) (*RewardTask, error)
+	predicates              []predicate.RewardTask
+}
+
+var _ ent.Mutation = (*RewardTaskMutation)(nil)
+
+// rewardtaskOption allows management of the mutation configuration using functional options.
+type rewardtaskOption func(*RewardTaskMutation)
+
+// newRewardTaskMutation creates new mutation for the RewardTask entity.
+func newRewardTaskMutation(c config, op Op, opts ...rewardtaskOption) *RewardTaskMutation {
+	m := &RewardTaskMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRewardTask,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRewardTaskID sets the ID field of the mutation.
+func withRewardTaskID(id int64) rewardtaskOption {
+	return func(m *RewardTaskMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RewardTask
+		)
+		m.oldValue = func(ctx context.Context) (*RewardTask, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RewardTask.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRewardTask sets the old RewardTask of the mutation.
+func withRewardTask(node *RewardTask) rewardtaskOption {
+	return func(m *RewardTaskMutation) {
+		m.oldValue = func(context.Context) (*RewardTask, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RewardTaskMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RewardTaskMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RewardTaskMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RewardTaskMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RewardTask.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RewardTaskMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RewardTaskMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RewardTaskMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RewardTaskMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RewardTaskMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RewardTaskMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *RewardTaskMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *RewardTaskMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *RewardTaskMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[rewardtask.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *RewardTaskMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[rewardtask.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *RewardTaskMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, rewardtask.FieldDeletedAt)
+}
+
+// SetTitle sets the "title" field.
+func (m *RewardTaskMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *RewardTaskMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *RewardTaskMutation) ResetTitle() {
+	m.title = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *RewardTaskMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *RewardTaskMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *RewardTaskMutation) ResetDescription() {
+	m.description = nil
+}
+
+// SetTaskType sets the "task_type" field.
+func (m *RewardTaskMutation) SetTaskType(s string) {
+	m.task_type = &s
+}
+
+// TaskType returns the value of the "task_type" field in the mutation.
+func (m *RewardTaskMutation) TaskType() (r string, exists bool) {
+	v := m.task_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTaskType returns the old "task_type" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldTaskType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTaskType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTaskType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTaskType: %w", err)
+	}
+	return oldValue.TaskType, nil
+}
+
+// ResetTaskType resets all changes to the "task_type" field.
+func (m *RewardTaskMutation) ResetTaskType() {
+	m.task_type = nil
+}
+
+// SetVerifyMode sets the "verify_mode" field.
+func (m *RewardTaskMutation) SetVerifyMode(s string) {
+	m.verify_mode = &s
+}
+
+// VerifyMode returns the value of the "verify_mode" field in the mutation.
+func (m *RewardTaskMutation) VerifyMode() (r string, exists bool) {
+	v := m.verify_mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVerifyMode returns the old "verify_mode" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldVerifyMode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVerifyMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVerifyMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVerifyMode: %w", err)
+	}
+	return oldValue.VerifyMode, nil
+}
+
+// ResetVerifyMode resets all changes to the "verify_mode" field.
+func (m *RewardTaskMutation) ResetVerifyMode() {
+	m.verify_mode = nil
+}
+
+// SetPartnerID sets the "partner_id" field.
+func (m *RewardTaskMutation) SetPartnerID(i int64) {
+	m.partner_id = &i
+	m.addpartner_id = nil
+}
+
+// PartnerID returns the value of the "partner_id" field in the mutation.
+func (m *RewardTaskMutation) PartnerID() (r int64, exists bool) {
+	v := m.partner_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPartnerID returns the old "partner_id" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldPartnerID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPartnerID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPartnerID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPartnerID: %w", err)
+	}
+	return oldValue.PartnerID, nil
+}
+
+// AddPartnerID adds i to the "partner_id" field.
+func (m *RewardTaskMutation) AddPartnerID(i int64) {
+	if m.addpartner_id != nil {
+		*m.addpartner_id += i
+	} else {
+		m.addpartner_id = &i
+	}
+}
+
+// AddedPartnerID returns the value that was added to the "partner_id" field in this mutation.
+func (m *RewardTaskMutation) AddedPartnerID() (r int64, exists bool) {
+	v := m.addpartner_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPartnerID clears the value of the "partner_id" field.
+func (m *RewardTaskMutation) ClearPartnerID() {
+	m.partner_id = nil
+	m.addpartner_id = nil
+	m.clearedFields[rewardtask.FieldPartnerID] = struct{}{}
+}
+
+// PartnerIDCleared returns if the "partner_id" field was cleared in this mutation.
+func (m *RewardTaskMutation) PartnerIDCleared() bool {
+	_, ok := m.clearedFields[rewardtask.FieldPartnerID]
+	return ok
+}
+
+// ResetPartnerID resets all changes to the "partner_id" field.
+func (m *RewardTaskMutation) ResetPartnerID() {
+	m.partner_id = nil
+	m.addpartner_id = nil
+	delete(m.clearedFields, rewardtask.FieldPartnerID)
+}
+
+// SetTargetURL sets the "target_url" field.
+func (m *RewardTaskMutation) SetTargetURL(s string) {
+	m.target_url = &s
+}
+
+// TargetURL returns the value of the "target_url" field in the mutation.
+func (m *RewardTaskMutation) TargetURL() (r string, exists bool) {
+	v := m.target_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTargetURL returns the old "target_url" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldTargetURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTargetURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTargetURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTargetURL: %w", err)
+	}
+	return oldValue.TargetURL, nil
+}
+
+// ResetTargetURL resets all changes to the "target_url" field.
+func (m *RewardTaskMutation) ResetTargetURL() {
+	m.target_url = nil
+}
+
+// SetIconURL sets the "icon_url" field.
+func (m *RewardTaskMutation) SetIconURL(s string) {
+	m.icon_url = &s
+}
+
+// IconURL returns the value of the "icon_url" field in the mutation.
+func (m *RewardTaskMutation) IconURL() (r string, exists bool) {
+	v := m.icon_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIconURL returns the old "icon_url" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldIconURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIconURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIconURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIconURL: %w", err)
+	}
+	return oldValue.IconURL, nil
+}
+
+// ResetIconURL resets all changes to the "icon_url" field.
+func (m *RewardTaskMutation) ResetIconURL() {
+	m.icon_url = nil
+}
+
+// SetRewardAmount sets the "reward_amount" field.
+func (m *RewardTaskMutation) SetRewardAmount(f float64) {
+	m.reward_amount = &f
+	m.addreward_amount = nil
+}
+
+// RewardAmount returns the value of the "reward_amount" field in the mutation.
+func (m *RewardTaskMutation) RewardAmount() (r float64, exists bool) {
+	v := m.reward_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRewardAmount returns the old "reward_amount" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldRewardAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRewardAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRewardAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRewardAmount: %w", err)
+	}
+	return oldValue.RewardAmount, nil
+}
+
+// AddRewardAmount adds f to the "reward_amount" field.
+func (m *RewardTaskMutation) AddRewardAmount(f float64) {
+	if m.addreward_amount != nil {
+		*m.addreward_amount += f
+	} else {
+		m.addreward_amount = &f
+	}
+}
+
+// AddedRewardAmount returns the value that was added to the "reward_amount" field in this mutation.
+func (m *RewardTaskMutation) AddedRewardAmount() (r float64, exists bool) {
+	v := m.addreward_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRewardAmount resets all changes to the "reward_amount" field.
+func (m *RewardTaskMutation) ResetRewardAmount() {
+	m.reward_amount = nil
+	m.addreward_amount = nil
+}
+
+// SetPeriod sets the "period" field.
+func (m *RewardTaskMutation) SetPeriod(s string) {
+	m.period = &s
+}
+
+// Period returns the value of the "period" field in the mutation.
+func (m *RewardTaskMutation) Period() (r string, exists bool) {
+	v := m.period
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPeriod returns the old "period" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldPeriod(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPeriod is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPeriod requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPeriod: %w", err)
+	}
+	return oldValue.Period, nil
+}
+
+// ResetPeriod resets all changes to the "period" field.
+func (m *RewardTaskMutation) ResetPeriod() {
+	m.period = nil
+}
+
+// SetBrowseSeconds sets the "browse_seconds" field.
+func (m *RewardTaskMutation) SetBrowseSeconds(i int) {
+	m.browse_seconds = &i
+	m.addbrowse_seconds = nil
+}
+
+// BrowseSeconds returns the value of the "browse_seconds" field in the mutation.
+func (m *RewardTaskMutation) BrowseSeconds() (r int, exists bool) {
+	v := m.browse_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBrowseSeconds returns the old "browse_seconds" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldBrowseSeconds(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBrowseSeconds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBrowseSeconds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBrowseSeconds: %w", err)
+	}
+	return oldValue.BrowseSeconds, nil
+}
+
+// AddBrowseSeconds adds i to the "browse_seconds" field.
+func (m *RewardTaskMutation) AddBrowseSeconds(i int) {
+	if m.addbrowse_seconds != nil {
+		*m.addbrowse_seconds += i
+	} else {
+		m.addbrowse_seconds = &i
+	}
+}
+
+// AddedBrowseSeconds returns the value that was added to the "browse_seconds" field in this mutation.
+func (m *RewardTaskMutation) AddedBrowseSeconds() (r int, exists bool) {
+	v := m.addbrowse_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetBrowseSeconds resets all changes to the "browse_seconds" field.
+func (m *RewardTaskMutation) ResetBrowseSeconds() {
+	m.browse_seconds = nil
+	m.addbrowse_seconds = nil
+}
+
+// SetIdleTimeoutSeconds sets the "idle_timeout_seconds" field.
+func (m *RewardTaskMutation) SetIdleTimeoutSeconds(i int) {
+	m.idle_timeout_seconds = &i
+	m.addidle_timeout_seconds = nil
+}
+
+// IdleTimeoutSeconds returns the value of the "idle_timeout_seconds" field in the mutation.
+func (m *RewardTaskMutation) IdleTimeoutSeconds() (r int, exists bool) {
+	v := m.idle_timeout_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIdleTimeoutSeconds returns the old "idle_timeout_seconds" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldIdleTimeoutSeconds(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIdleTimeoutSeconds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIdleTimeoutSeconds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIdleTimeoutSeconds: %w", err)
+	}
+	return oldValue.IdleTimeoutSeconds, nil
+}
+
+// AddIdleTimeoutSeconds adds i to the "idle_timeout_seconds" field.
+func (m *RewardTaskMutation) AddIdleTimeoutSeconds(i int) {
+	if m.addidle_timeout_seconds != nil {
+		*m.addidle_timeout_seconds += i
+	} else {
+		m.addidle_timeout_seconds = &i
+	}
+}
+
+// AddedIdleTimeoutSeconds returns the value that was added to the "idle_timeout_seconds" field in this mutation.
+func (m *RewardTaskMutation) AddedIdleTimeoutSeconds() (r int, exists bool) {
+	v := m.addidle_timeout_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetIdleTimeoutSeconds resets all changes to the "idle_timeout_seconds" field.
+func (m *RewardTaskMutation) ResetIdleTimeoutSeconds() {
+	m.idle_timeout_seconds = nil
+	m.addidle_timeout_seconds = nil
+}
+
+// SetMinRechargeAmount sets the "min_recharge_amount" field.
+func (m *RewardTaskMutation) SetMinRechargeAmount(f float64) {
+	m.min_recharge_amount = &f
+	m.addmin_recharge_amount = nil
+}
+
+// MinRechargeAmount returns the value of the "min_recharge_amount" field in the mutation.
+func (m *RewardTaskMutation) MinRechargeAmount() (r float64, exists bool) {
+	v := m.min_recharge_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMinRechargeAmount returns the old "min_recharge_amount" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldMinRechargeAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMinRechargeAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMinRechargeAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMinRechargeAmount: %w", err)
+	}
+	return oldValue.MinRechargeAmount, nil
+}
+
+// AddMinRechargeAmount adds f to the "min_recharge_amount" field.
+func (m *RewardTaskMutation) AddMinRechargeAmount(f float64) {
+	if m.addmin_recharge_amount != nil {
+		*m.addmin_recharge_amount += f
+	} else {
+		m.addmin_recharge_amount = &f
+	}
+}
+
+// AddedMinRechargeAmount returns the value that was added to the "min_recharge_amount" field in this mutation.
+func (m *RewardTaskMutation) AddedMinRechargeAmount() (r float64, exists bool) {
+	v := m.addmin_recharge_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMinRechargeAmount resets all changes to the "min_recharge_amount" field.
+func (m *RewardTaskMutation) ResetMinRechargeAmount() {
+	m.min_recharge_amount = nil
+	m.addmin_recharge_amount = nil
+}
+
+// SetMaxCompletions sets the "max_completions" field.
+func (m *RewardTaskMutation) SetMaxCompletions(i int) {
+	m.max_completions = &i
+	m.addmax_completions = nil
+}
+
+// MaxCompletions returns the value of the "max_completions" field in the mutation.
+func (m *RewardTaskMutation) MaxCompletions() (r int, exists bool) {
+	v := m.max_completions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMaxCompletions returns the old "max_completions" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldMaxCompletions(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMaxCompletions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMaxCompletions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMaxCompletions: %w", err)
+	}
+	return oldValue.MaxCompletions, nil
+}
+
+// AddMaxCompletions adds i to the "max_completions" field.
+func (m *RewardTaskMutation) AddMaxCompletions(i int) {
+	if m.addmax_completions != nil {
+		*m.addmax_completions += i
+	} else {
+		m.addmax_completions = &i
+	}
+}
+
+// AddedMaxCompletions returns the value that was added to the "max_completions" field in this mutation.
+func (m *RewardTaskMutation) AddedMaxCompletions() (r int, exists bool) {
+	v := m.addmax_completions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMaxCompletions resets all changes to the "max_completions" field.
+func (m *RewardTaskMutation) ResetMaxCompletions() {
+	m.max_completions = nil
+	m.addmax_completions = nil
+}
+
+// SetCompletedCount sets the "completed_count" field.
+func (m *RewardTaskMutation) SetCompletedCount(i int) {
+	m.completed_count = &i
+	m.addcompleted_count = nil
+}
+
+// CompletedCount returns the value of the "completed_count" field in the mutation.
+func (m *RewardTaskMutation) CompletedCount() (r int, exists bool) {
+	v := m.completed_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompletedCount returns the old "completed_count" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldCompletedCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompletedCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompletedCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompletedCount: %w", err)
+	}
+	return oldValue.CompletedCount, nil
+}
+
+// AddCompletedCount adds i to the "completed_count" field.
+func (m *RewardTaskMutation) AddCompletedCount(i int) {
+	if m.addcompleted_count != nil {
+		*m.addcompleted_count += i
+	} else {
+		m.addcompleted_count = &i
+	}
+}
+
+// AddedCompletedCount returns the value that was added to the "completed_count" field in this mutation.
+func (m *RewardTaskMutation) AddedCompletedCount() (r int, exists bool) {
+	v := m.addcompleted_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCompletedCount resets all changes to the "completed_count" field.
+func (m *RewardTaskMutation) ResetCompletedCount() {
+	m.completed_count = nil
+	m.addcompleted_count = nil
+}
+
+// SetStartsAt sets the "starts_at" field.
+func (m *RewardTaskMutation) SetStartsAt(t time.Time) {
+	m.starts_at = &t
+}
+
+// StartsAt returns the value of the "starts_at" field in the mutation.
+func (m *RewardTaskMutation) StartsAt() (r time.Time, exists bool) {
+	v := m.starts_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartsAt returns the old "starts_at" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldStartsAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartsAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartsAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartsAt: %w", err)
+	}
+	return oldValue.StartsAt, nil
+}
+
+// ClearStartsAt clears the value of the "starts_at" field.
+func (m *RewardTaskMutation) ClearStartsAt() {
+	m.starts_at = nil
+	m.clearedFields[rewardtask.FieldStartsAt] = struct{}{}
+}
+
+// StartsAtCleared returns if the "starts_at" field was cleared in this mutation.
+func (m *RewardTaskMutation) StartsAtCleared() bool {
+	_, ok := m.clearedFields[rewardtask.FieldStartsAt]
+	return ok
+}
+
+// ResetStartsAt resets all changes to the "starts_at" field.
+func (m *RewardTaskMutation) ResetStartsAt() {
+	m.starts_at = nil
+	delete(m.clearedFields, rewardtask.FieldStartsAt)
+}
+
+// SetEndsAt sets the "ends_at" field.
+func (m *RewardTaskMutation) SetEndsAt(t time.Time) {
+	m.ends_at = &t
+}
+
+// EndsAt returns the value of the "ends_at" field in the mutation.
+func (m *RewardTaskMutation) EndsAt() (r time.Time, exists bool) {
+	v := m.ends_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndsAt returns the old "ends_at" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldEndsAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndsAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndsAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndsAt: %w", err)
+	}
+	return oldValue.EndsAt, nil
+}
+
+// ClearEndsAt clears the value of the "ends_at" field.
+func (m *RewardTaskMutation) ClearEndsAt() {
+	m.ends_at = nil
+	m.clearedFields[rewardtask.FieldEndsAt] = struct{}{}
+}
+
+// EndsAtCleared returns if the "ends_at" field was cleared in this mutation.
+func (m *RewardTaskMutation) EndsAtCleared() bool {
+	_, ok := m.clearedFields[rewardtask.FieldEndsAt]
+	return ok
+}
+
+// ResetEndsAt resets all changes to the "ends_at" field.
+func (m *RewardTaskMutation) ResetEndsAt() {
+	m.ends_at = nil
+	delete(m.clearedFields, rewardtask.FieldEndsAt)
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *RewardTaskMutation) SetEnabled(b bool) {
+	m.enabled = &b
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *RewardTaskMutation) Enabled() (r bool, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *RewardTaskMutation) ResetEnabled() {
+	m.enabled = nil
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (m *RewardTaskMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *RewardTaskMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the RewardTask entity.
+// If the RewardTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *RewardTaskMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *RewardTaskMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *RewardTaskMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
+// Where appends a list predicates to the RewardTaskMutation builder.
+func (m *RewardTaskMutation) Where(ps ...predicate.RewardTask) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RewardTaskMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RewardTaskMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RewardTask, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RewardTaskMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RewardTaskMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RewardTask).
+func (m *RewardTaskMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RewardTaskMutation) Fields() []string {
+	fields := make([]string, 0, 21)
+	if m.created_at != nil {
+		fields = append(fields, rewardtask.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, rewardtask.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, rewardtask.FieldDeletedAt)
+	}
+	if m.title != nil {
+		fields = append(fields, rewardtask.FieldTitle)
+	}
+	if m.description != nil {
+		fields = append(fields, rewardtask.FieldDescription)
+	}
+	if m.task_type != nil {
+		fields = append(fields, rewardtask.FieldTaskType)
+	}
+	if m.verify_mode != nil {
+		fields = append(fields, rewardtask.FieldVerifyMode)
+	}
+	if m.partner_id != nil {
+		fields = append(fields, rewardtask.FieldPartnerID)
+	}
+	if m.target_url != nil {
+		fields = append(fields, rewardtask.FieldTargetURL)
+	}
+	if m.icon_url != nil {
+		fields = append(fields, rewardtask.FieldIconURL)
+	}
+	if m.reward_amount != nil {
+		fields = append(fields, rewardtask.FieldRewardAmount)
+	}
+	if m.period != nil {
+		fields = append(fields, rewardtask.FieldPeriod)
+	}
+	if m.browse_seconds != nil {
+		fields = append(fields, rewardtask.FieldBrowseSeconds)
+	}
+	if m.idle_timeout_seconds != nil {
+		fields = append(fields, rewardtask.FieldIdleTimeoutSeconds)
+	}
+	if m.min_recharge_amount != nil {
+		fields = append(fields, rewardtask.FieldMinRechargeAmount)
+	}
+	if m.max_completions != nil {
+		fields = append(fields, rewardtask.FieldMaxCompletions)
+	}
+	if m.completed_count != nil {
+		fields = append(fields, rewardtask.FieldCompletedCount)
+	}
+	if m.starts_at != nil {
+		fields = append(fields, rewardtask.FieldStartsAt)
+	}
+	if m.ends_at != nil {
+		fields = append(fields, rewardtask.FieldEndsAt)
+	}
+	if m.enabled != nil {
+		fields = append(fields, rewardtask.FieldEnabled)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, rewardtask.FieldSortOrder)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RewardTaskMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case rewardtask.FieldCreatedAt:
+		return m.CreatedAt()
+	case rewardtask.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case rewardtask.FieldDeletedAt:
+		return m.DeletedAt()
+	case rewardtask.FieldTitle:
+		return m.Title()
+	case rewardtask.FieldDescription:
+		return m.Description()
+	case rewardtask.FieldTaskType:
+		return m.TaskType()
+	case rewardtask.FieldVerifyMode:
+		return m.VerifyMode()
+	case rewardtask.FieldPartnerID:
+		return m.PartnerID()
+	case rewardtask.FieldTargetURL:
+		return m.TargetURL()
+	case rewardtask.FieldIconURL:
+		return m.IconURL()
+	case rewardtask.FieldRewardAmount:
+		return m.RewardAmount()
+	case rewardtask.FieldPeriod:
+		return m.Period()
+	case rewardtask.FieldBrowseSeconds:
+		return m.BrowseSeconds()
+	case rewardtask.FieldIdleTimeoutSeconds:
+		return m.IdleTimeoutSeconds()
+	case rewardtask.FieldMinRechargeAmount:
+		return m.MinRechargeAmount()
+	case rewardtask.FieldMaxCompletions:
+		return m.MaxCompletions()
+	case rewardtask.FieldCompletedCount:
+		return m.CompletedCount()
+	case rewardtask.FieldStartsAt:
+		return m.StartsAt()
+	case rewardtask.FieldEndsAt:
+		return m.EndsAt()
+	case rewardtask.FieldEnabled:
+		return m.Enabled()
+	case rewardtask.FieldSortOrder:
+		return m.SortOrder()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RewardTaskMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case rewardtask.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case rewardtask.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case rewardtask.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case rewardtask.FieldTitle:
+		return m.OldTitle(ctx)
+	case rewardtask.FieldDescription:
+		return m.OldDescription(ctx)
+	case rewardtask.FieldTaskType:
+		return m.OldTaskType(ctx)
+	case rewardtask.FieldVerifyMode:
+		return m.OldVerifyMode(ctx)
+	case rewardtask.FieldPartnerID:
+		return m.OldPartnerID(ctx)
+	case rewardtask.FieldTargetURL:
+		return m.OldTargetURL(ctx)
+	case rewardtask.FieldIconURL:
+		return m.OldIconURL(ctx)
+	case rewardtask.FieldRewardAmount:
+		return m.OldRewardAmount(ctx)
+	case rewardtask.FieldPeriod:
+		return m.OldPeriod(ctx)
+	case rewardtask.FieldBrowseSeconds:
+		return m.OldBrowseSeconds(ctx)
+	case rewardtask.FieldIdleTimeoutSeconds:
+		return m.OldIdleTimeoutSeconds(ctx)
+	case rewardtask.FieldMinRechargeAmount:
+		return m.OldMinRechargeAmount(ctx)
+	case rewardtask.FieldMaxCompletions:
+		return m.OldMaxCompletions(ctx)
+	case rewardtask.FieldCompletedCount:
+		return m.OldCompletedCount(ctx)
+	case rewardtask.FieldStartsAt:
+		return m.OldStartsAt(ctx)
+	case rewardtask.FieldEndsAt:
+		return m.OldEndsAt(ctx)
+	case rewardtask.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case rewardtask.FieldSortOrder:
+		return m.OldSortOrder(ctx)
+	}
+	return nil, fmt.Errorf("unknown RewardTask field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RewardTaskMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case rewardtask.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case rewardtask.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case rewardtask.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case rewardtask.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case rewardtask.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case rewardtask.FieldTaskType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTaskType(v)
+		return nil
+	case rewardtask.FieldVerifyMode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVerifyMode(v)
+		return nil
+	case rewardtask.FieldPartnerID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPartnerID(v)
+		return nil
+	case rewardtask.FieldTargetURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTargetURL(v)
+		return nil
+	case rewardtask.FieldIconURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIconURL(v)
+		return nil
+	case rewardtask.FieldRewardAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRewardAmount(v)
+		return nil
+	case rewardtask.FieldPeriod:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPeriod(v)
+		return nil
+	case rewardtask.FieldBrowseSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBrowseSeconds(v)
+		return nil
+	case rewardtask.FieldIdleTimeoutSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIdleTimeoutSeconds(v)
+		return nil
+	case rewardtask.FieldMinRechargeAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMinRechargeAmount(v)
+		return nil
+	case rewardtask.FieldMaxCompletions:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMaxCompletions(v)
+		return nil
+	case rewardtask.FieldCompletedCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompletedCount(v)
+		return nil
+	case rewardtask.FieldStartsAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartsAt(v)
+		return nil
+	case rewardtask.FieldEndsAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndsAt(v)
+		return nil
+	case rewardtask.FieldEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case rewardtask.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTask field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RewardTaskMutation) AddedFields() []string {
+	var fields []string
+	if m.addpartner_id != nil {
+		fields = append(fields, rewardtask.FieldPartnerID)
+	}
+	if m.addreward_amount != nil {
+		fields = append(fields, rewardtask.FieldRewardAmount)
+	}
+	if m.addbrowse_seconds != nil {
+		fields = append(fields, rewardtask.FieldBrowseSeconds)
+	}
+	if m.addidle_timeout_seconds != nil {
+		fields = append(fields, rewardtask.FieldIdleTimeoutSeconds)
+	}
+	if m.addmin_recharge_amount != nil {
+		fields = append(fields, rewardtask.FieldMinRechargeAmount)
+	}
+	if m.addmax_completions != nil {
+		fields = append(fields, rewardtask.FieldMaxCompletions)
+	}
+	if m.addcompleted_count != nil {
+		fields = append(fields, rewardtask.FieldCompletedCount)
+	}
+	if m.addsort_order != nil {
+		fields = append(fields, rewardtask.FieldSortOrder)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RewardTaskMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case rewardtask.FieldPartnerID:
+		return m.AddedPartnerID()
+	case rewardtask.FieldRewardAmount:
+		return m.AddedRewardAmount()
+	case rewardtask.FieldBrowseSeconds:
+		return m.AddedBrowseSeconds()
+	case rewardtask.FieldIdleTimeoutSeconds:
+		return m.AddedIdleTimeoutSeconds()
+	case rewardtask.FieldMinRechargeAmount:
+		return m.AddedMinRechargeAmount()
+	case rewardtask.FieldMaxCompletions:
+		return m.AddedMaxCompletions()
+	case rewardtask.FieldCompletedCount:
+		return m.AddedCompletedCount()
+	case rewardtask.FieldSortOrder:
+		return m.AddedSortOrder()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RewardTaskMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case rewardtask.FieldPartnerID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPartnerID(v)
+		return nil
+	case rewardtask.FieldRewardAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRewardAmount(v)
+		return nil
+	case rewardtask.FieldBrowseSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBrowseSeconds(v)
+		return nil
+	case rewardtask.FieldIdleTimeoutSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddIdleTimeoutSeconds(v)
+		return nil
+	case rewardtask.FieldMinRechargeAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMinRechargeAmount(v)
+		return nil
+	case rewardtask.FieldMaxCompletions:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMaxCompletions(v)
+		return nil
+	case rewardtask.FieldCompletedCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCompletedCount(v)
+		return nil
+	case rewardtask.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTask numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RewardTaskMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(rewardtask.FieldDeletedAt) {
+		fields = append(fields, rewardtask.FieldDeletedAt)
+	}
+	if m.FieldCleared(rewardtask.FieldPartnerID) {
+		fields = append(fields, rewardtask.FieldPartnerID)
+	}
+	if m.FieldCleared(rewardtask.FieldStartsAt) {
+		fields = append(fields, rewardtask.FieldStartsAt)
+	}
+	if m.FieldCleared(rewardtask.FieldEndsAt) {
+		fields = append(fields, rewardtask.FieldEndsAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RewardTaskMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RewardTaskMutation) ClearField(name string) error {
+	switch name {
+	case rewardtask.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	case rewardtask.FieldPartnerID:
+		m.ClearPartnerID()
+		return nil
+	case rewardtask.FieldStartsAt:
+		m.ClearStartsAt()
+		return nil
+	case rewardtask.FieldEndsAt:
+		m.ClearEndsAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTask nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RewardTaskMutation) ResetField(name string) error {
+	switch name {
+	case rewardtask.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case rewardtask.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case rewardtask.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case rewardtask.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case rewardtask.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case rewardtask.FieldTaskType:
+		m.ResetTaskType()
+		return nil
+	case rewardtask.FieldVerifyMode:
+		m.ResetVerifyMode()
+		return nil
+	case rewardtask.FieldPartnerID:
+		m.ResetPartnerID()
+		return nil
+	case rewardtask.FieldTargetURL:
+		m.ResetTargetURL()
+		return nil
+	case rewardtask.FieldIconURL:
+		m.ResetIconURL()
+		return nil
+	case rewardtask.FieldRewardAmount:
+		m.ResetRewardAmount()
+		return nil
+	case rewardtask.FieldPeriod:
+		m.ResetPeriod()
+		return nil
+	case rewardtask.FieldBrowseSeconds:
+		m.ResetBrowseSeconds()
+		return nil
+	case rewardtask.FieldIdleTimeoutSeconds:
+		m.ResetIdleTimeoutSeconds()
+		return nil
+	case rewardtask.FieldMinRechargeAmount:
+		m.ResetMinRechargeAmount()
+		return nil
+	case rewardtask.FieldMaxCompletions:
+		m.ResetMaxCompletions()
+		return nil
+	case rewardtask.FieldCompletedCount:
+		m.ResetCompletedCount()
+		return nil
+	case rewardtask.FieldStartsAt:
+		m.ResetStartsAt()
+		return nil
+	case rewardtask.FieldEndsAt:
+		m.ResetEndsAt()
+		return nil
+	case rewardtask.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case rewardtask.FieldSortOrder:
+		m.ResetSortOrder()
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTask field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RewardTaskMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RewardTaskMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RewardTaskMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RewardTaskMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RewardTaskMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RewardTaskMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RewardTaskMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown RewardTask unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RewardTaskMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown RewardTask edge %s", name)
+}
+
+// RewardTaskEventMutation represents an operation that mutates the RewardTaskEvent nodes in the graph.
+type RewardTaskEventMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *int64
+	partner_id       *int64
+	addpartner_id    *int64
+	event_id         *string
+	event_type       *string
+	ticket           *string
+	task_id          *int64
+	addtask_id       *int64
+	record_id        *int64
+	addrecord_id     *int64
+	user_id          *int64
+	adduser_id       *int64
+	external_user_id *string
+	amount           *float64
+	addamount        *float64
+	order_id         *string
+	result           *string
+	error_code       *string
+	remote_ip        *string
+	payload          *map[string]interface{}
+	created_at       *time.Time
+	clearedFields    map[string]struct{}
+	done             bool
+	oldValue         func(context.Context) (*RewardTaskEvent, error)
+	predicates       []predicate.RewardTaskEvent
+}
+
+var _ ent.Mutation = (*RewardTaskEventMutation)(nil)
+
+// rewardtaskeventOption allows management of the mutation configuration using functional options.
+type rewardtaskeventOption func(*RewardTaskEventMutation)
+
+// newRewardTaskEventMutation creates new mutation for the RewardTaskEvent entity.
+func newRewardTaskEventMutation(c config, op Op, opts ...rewardtaskeventOption) *RewardTaskEventMutation {
+	m := &RewardTaskEventMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRewardTaskEvent,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRewardTaskEventID sets the ID field of the mutation.
+func withRewardTaskEventID(id int64) rewardtaskeventOption {
+	return func(m *RewardTaskEventMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RewardTaskEvent
+		)
+		m.oldValue = func(ctx context.Context) (*RewardTaskEvent, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RewardTaskEvent.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRewardTaskEvent sets the old RewardTaskEvent of the mutation.
+func withRewardTaskEvent(node *RewardTaskEvent) rewardtaskeventOption {
+	return func(m *RewardTaskEventMutation) {
+		m.oldValue = func(context.Context) (*RewardTaskEvent, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RewardTaskEventMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RewardTaskEventMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RewardTaskEventMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RewardTaskEventMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RewardTaskEvent.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetPartnerID sets the "partner_id" field.
+func (m *RewardTaskEventMutation) SetPartnerID(i int64) {
+	m.partner_id = &i
+	m.addpartner_id = nil
+}
+
+// PartnerID returns the value of the "partner_id" field in the mutation.
+func (m *RewardTaskEventMutation) PartnerID() (r int64, exists bool) {
+	v := m.partner_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPartnerID returns the old "partner_id" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldPartnerID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPartnerID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPartnerID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPartnerID: %w", err)
+	}
+	return oldValue.PartnerID, nil
+}
+
+// AddPartnerID adds i to the "partner_id" field.
+func (m *RewardTaskEventMutation) AddPartnerID(i int64) {
+	if m.addpartner_id != nil {
+		*m.addpartner_id += i
+	} else {
+		m.addpartner_id = &i
+	}
+}
+
+// AddedPartnerID returns the value that was added to the "partner_id" field in this mutation.
+func (m *RewardTaskEventMutation) AddedPartnerID() (r int64, exists bool) {
+	v := m.addpartner_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPartnerID resets all changes to the "partner_id" field.
+func (m *RewardTaskEventMutation) ResetPartnerID() {
+	m.partner_id = nil
+	m.addpartner_id = nil
+}
+
+// SetEventID sets the "event_id" field.
+func (m *RewardTaskEventMutation) SetEventID(s string) {
+	m.event_id = &s
+}
+
+// EventID returns the value of the "event_id" field in the mutation.
+func (m *RewardTaskEventMutation) EventID() (r string, exists bool) {
+	v := m.event_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventID returns the old "event_id" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldEventID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventID: %w", err)
+	}
+	return oldValue.EventID, nil
+}
+
+// ResetEventID resets all changes to the "event_id" field.
+func (m *RewardTaskEventMutation) ResetEventID() {
+	m.event_id = nil
+}
+
+// SetEventType sets the "event_type" field.
+func (m *RewardTaskEventMutation) SetEventType(s string) {
+	m.event_type = &s
+}
+
+// EventType returns the value of the "event_type" field in the mutation.
+func (m *RewardTaskEventMutation) EventType() (r string, exists bool) {
+	v := m.event_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventType returns the old "event_type" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldEventType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventType: %w", err)
+	}
+	return oldValue.EventType, nil
+}
+
+// ResetEventType resets all changes to the "event_type" field.
+func (m *RewardTaskEventMutation) ResetEventType() {
+	m.event_type = nil
+}
+
+// SetTicket sets the "ticket" field.
+func (m *RewardTaskEventMutation) SetTicket(s string) {
+	m.ticket = &s
+}
+
+// Ticket returns the value of the "ticket" field in the mutation.
+func (m *RewardTaskEventMutation) Ticket() (r string, exists bool) {
+	v := m.ticket
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTicket returns the old "ticket" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldTicket(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTicket is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTicket requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTicket: %w", err)
+	}
+	return oldValue.Ticket, nil
+}
+
+// ResetTicket resets all changes to the "ticket" field.
+func (m *RewardTaskEventMutation) ResetTicket() {
+	m.ticket = nil
+}
+
+// SetTaskID sets the "task_id" field.
+func (m *RewardTaskEventMutation) SetTaskID(i int64) {
+	m.task_id = &i
+	m.addtask_id = nil
+}
+
+// TaskID returns the value of the "task_id" field in the mutation.
+func (m *RewardTaskEventMutation) TaskID() (r int64, exists bool) {
+	v := m.task_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTaskID returns the old "task_id" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldTaskID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTaskID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTaskID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTaskID: %w", err)
+	}
+	return oldValue.TaskID, nil
+}
+
+// AddTaskID adds i to the "task_id" field.
+func (m *RewardTaskEventMutation) AddTaskID(i int64) {
+	if m.addtask_id != nil {
+		*m.addtask_id += i
+	} else {
+		m.addtask_id = &i
+	}
+}
+
+// AddedTaskID returns the value that was added to the "task_id" field in this mutation.
+func (m *RewardTaskEventMutation) AddedTaskID() (r int64, exists bool) {
+	v := m.addtask_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearTaskID clears the value of the "task_id" field.
+func (m *RewardTaskEventMutation) ClearTaskID() {
+	m.task_id = nil
+	m.addtask_id = nil
+	m.clearedFields[rewardtaskevent.FieldTaskID] = struct{}{}
+}
+
+// TaskIDCleared returns if the "task_id" field was cleared in this mutation.
+func (m *RewardTaskEventMutation) TaskIDCleared() bool {
+	_, ok := m.clearedFields[rewardtaskevent.FieldTaskID]
+	return ok
+}
+
+// ResetTaskID resets all changes to the "task_id" field.
+func (m *RewardTaskEventMutation) ResetTaskID() {
+	m.task_id = nil
+	m.addtask_id = nil
+	delete(m.clearedFields, rewardtaskevent.FieldTaskID)
+}
+
+// SetRecordID sets the "record_id" field.
+func (m *RewardTaskEventMutation) SetRecordID(i int64) {
+	m.record_id = &i
+	m.addrecord_id = nil
+}
+
+// RecordID returns the value of the "record_id" field in the mutation.
+func (m *RewardTaskEventMutation) RecordID() (r int64, exists bool) {
+	v := m.record_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRecordID returns the old "record_id" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldRecordID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRecordID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRecordID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRecordID: %w", err)
+	}
+	return oldValue.RecordID, nil
+}
+
+// AddRecordID adds i to the "record_id" field.
+func (m *RewardTaskEventMutation) AddRecordID(i int64) {
+	if m.addrecord_id != nil {
+		*m.addrecord_id += i
+	} else {
+		m.addrecord_id = &i
+	}
+}
+
+// AddedRecordID returns the value that was added to the "record_id" field in this mutation.
+func (m *RewardTaskEventMutation) AddedRecordID() (r int64, exists bool) {
+	v := m.addrecord_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRecordID clears the value of the "record_id" field.
+func (m *RewardTaskEventMutation) ClearRecordID() {
+	m.record_id = nil
+	m.addrecord_id = nil
+	m.clearedFields[rewardtaskevent.FieldRecordID] = struct{}{}
+}
+
+// RecordIDCleared returns if the "record_id" field was cleared in this mutation.
+func (m *RewardTaskEventMutation) RecordIDCleared() bool {
+	_, ok := m.clearedFields[rewardtaskevent.FieldRecordID]
+	return ok
+}
+
+// ResetRecordID resets all changes to the "record_id" field.
+func (m *RewardTaskEventMutation) ResetRecordID() {
+	m.record_id = nil
+	m.addrecord_id = nil
+	delete(m.clearedFields, rewardtaskevent.FieldRecordID)
+}
+
+// SetUserID sets the "user_id" field.
+func (m *RewardTaskEventMutation) SetUserID(i int64) {
+	m.user_id = &i
+	m.adduser_id = nil
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *RewardTaskEventMutation) UserID() (r int64, exists bool) {
+	v := m.user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldUserID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// AddUserID adds i to the "user_id" field.
+func (m *RewardTaskEventMutation) AddUserID(i int64) {
+	if m.adduser_id != nil {
+		*m.adduser_id += i
+	} else {
+		m.adduser_id = &i
+	}
+}
+
+// AddedUserID returns the value that was added to the "user_id" field in this mutation.
+func (m *RewardTaskEventMutation) AddedUserID() (r int64, exists bool) {
+	v := m.adduser_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (m *RewardTaskEventMutation) ClearUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+	m.clearedFields[rewardtaskevent.FieldUserID] = struct{}{}
+}
+
+// UserIDCleared returns if the "user_id" field was cleared in this mutation.
+func (m *RewardTaskEventMutation) UserIDCleared() bool {
+	_, ok := m.clearedFields[rewardtaskevent.FieldUserID]
+	return ok
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *RewardTaskEventMutation) ResetUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+	delete(m.clearedFields, rewardtaskevent.FieldUserID)
+}
+
+// SetExternalUserID sets the "external_user_id" field.
+func (m *RewardTaskEventMutation) SetExternalUserID(s string) {
+	m.external_user_id = &s
+}
+
+// ExternalUserID returns the value of the "external_user_id" field in the mutation.
+func (m *RewardTaskEventMutation) ExternalUserID() (r string, exists bool) {
+	v := m.external_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalUserID returns the old "external_user_id" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldExternalUserID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalUserID: %w", err)
+	}
+	return oldValue.ExternalUserID, nil
+}
+
+// ResetExternalUserID resets all changes to the "external_user_id" field.
+func (m *RewardTaskEventMutation) ResetExternalUserID() {
+	m.external_user_id = nil
+}
+
+// SetAmount sets the "amount" field.
+func (m *RewardTaskEventMutation) SetAmount(f float64) {
+	m.amount = &f
+	m.addamount = nil
+}
+
+// Amount returns the value of the "amount" field in the mutation.
+func (m *RewardTaskEventMutation) Amount() (r float64, exists bool) {
+	v := m.amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAmount returns the old "amount" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAmount: %w", err)
+	}
+	return oldValue.Amount, nil
+}
+
+// AddAmount adds f to the "amount" field.
+func (m *RewardTaskEventMutation) AddAmount(f float64) {
+	if m.addamount != nil {
+		*m.addamount += f
+	} else {
+		m.addamount = &f
+	}
+}
+
+// AddedAmount returns the value that was added to the "amount" field in this mutation.
+func (m *RewardTaskEventMutation) AddedAmount() (r float64, exists bool) {
+	v := m.addamount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAmount resets all changes to the "amount" field.
+func (m *RewardTaskEventMutation) ResetAmount() {
+	m.amount = nil
+	m.addamount = nil
+}
+
+// SetOrderID sets the "order_id" field.
+func (m *RewardTaskEventMutation) SetOrderID(s string) {
+	m.order_id = &s
+}
+
+// OrderID returns the value of the "order_id" field in the mutation.
+func (m *RewardTaskEventMutation) OrderID() (r string, exists bool) {
+	v := m.order_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrderID returns the old "order_id" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldOrderID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrderID: %w", err)
+	}
+	return oldValue.OrderID, nil
+}
+
+// ResetOrderID resets all changes to the "order_id" field.
+func (m *RewardTaskEventMutation) ResetOrderID() {
+	m.order_id = nil
+}
+
+// SetResult sets the "result" field.
+func (m *RewardTaskEventMutation) SetResult(s string) {
+	m.result = &s
+}
+
+// Result returns the value of the "result" field in the mutation.
+func (m *RewardTaskEventMutation) Result() (r string, exists bool) {
+	v := m.result
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResult returns the old "result" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldResult(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResult is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResult requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResult: %w", err)
+	}
+	return oldValue.Result, nil
+}
+
+// ResetResult resets all changes to the "result" field.
+func (m *RewardTaskEventMutation) ResetResult() {
+	m.result = nil
+}
+
+// SetErrorCode sets the "error_code" field.
+func (m *RewardTaskEventMutation) SetErrorCode(s string) {
+	m.error_code = &s
+}
+
+// ErrorCode returns the value of the "error_code" field in the mutation.
+func (m *RewardTaskEventMutation) ErrorCode() (r string, exists bool) {
+	v := m.error_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorCode returns the old "error_code" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldErrorCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorCode: %w", err)
+	}
+	return oldValue.ErrorCode, nil
+}
+
+// ResetErrorCode resets all changes to the "error_code" field.
+func (m *RewardTaskEventMutation) ResetErrorCode() {
+	m.error_code = nil
+}
+
+// SetRemoteIP sets the "remote_ip" field.
+func (m *RewardTaskEventMutation) SetRemoteIP(s string) {
+	m.remote_ip = &s
+}
+
+// RemoteIP returns the value of the "remote_ip" field in the mutation.
+func (m *RewardTaskEventMutation) RemoteIP() (r string, exists bool) {
+	v := m.remote_ip
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRemoteIP returns the old "remote_ip" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldRemoteIP(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRemoteIP is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRemoteIP requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRemoteIP: %w", err)
+	}
+	return oldValue.RemoteIP, nil
+}
+
+// ResetRemoteIP resets all changes to the "remote_ip" field.
+func (m *RewardTaskEventMutation) ResetRemoteIP() {
+	m.remote_ip = nil
+}
+
+// SetPayload sets the "payload" field.
+func (m *RewardTaskEventMutation) SetPayload(value map[string]interface{}) {
+	m.payload = &value
+}
+
+// Payload returns the value of the "payload" field in the mutation.
+func (m *RewardTaskEventMutation) Payload() (r map[string]interface{}, exists bool) {
+	v := m.payload
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayload returns the old "payload" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldPayload(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayload is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayload requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayload: %w", err)
+	}
+	return oldValue.Payload, nil
+}
+
+// ResetPayload resets all changes to the "payload" field.
+func (m *RewardTaskEventMutation) ResetPayload() {
+	m.payload = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RewardTaskEventMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RewardTaskEventMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RewardTaskEvent entity.
+// If the RewardTaskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskEventMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RewardTaskEventMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// Where appends a list predicates to the RewardTaskEventMutation builder.
+func (m *RewardTaskEventMutation) Where(ps ...predicate.RewardTaskEvent) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RewardTaskEventMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RewardTaskEventMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RewardTaskEvent, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RewardTaskEventMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RewardTaskEventMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RewardTaskEvent).
+func (m *RewardTaskEventMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RewardTaskEventMutation) Fields() []string {
+	fields := make([]string, 0, 15)
+	if m.partner_id != nil {
+		fields = append(fields, rewardtaskevent.FieldPartnerID)
+	}
+	if m.event_id != nil {
+		fields = append(fields, rewardtaskevent.FieldEventID)
+	}
+	if m.event_type != nil {
+		fields = append(fields, rewardtaskevent.FieldEventType)
+	}
+	if m.ticket != nil {
+		fields = append(fields, rewardtaskevent.FieldTicket)
+	}
+	if m.task_id != nil {
+		fields = append(fields, rewardtaskevent.FieldTaskID)
+	}
+	if m.record_id != nil {
+		fields = append(fields, rewardtaskevent.FieldRecordID)
+	}
+	if m.user_id != nil {
+		fields = append(fields, rewardtaskevent.FieldUserID)
+	}
+	if m.external_user_id != nil {
+		fields = append(fields, rewardtaskevent.FieldExternalUserID)
+	}
+	if m.amount != nil {
+		fields = append(fields, rewardtaskevent.FieldAmount)
+	}
+	if m.order_id != nil {
+		fields = append(fields, rewardtaskevent.FieldOrderID)
+	}
+	if m.result != nil {
+		fields = append(fields, rewardtaskevent.FieldResult)
+	}
+	if m.error_code != nil {
+		fields = append(fields, rewardtaskevent.FieldErrorCode)
+	}
+	if m.remote_ip != nil {
+		fields = append(fields, rewardtaskevent.FieldRemoteIP)
+	}
+	if m.payload != nil {
+		fields = append(fields, rewardtaskevent.FieldPayload)
+	}
+	if m.created_at != nil {
+		fields = append(fields, rewardtaskevent.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RewardTaskEventMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case rewardtaskevent.FieldPartnerID:
+		return m.PartnerID()
+	case rewardtaskevent.FieldEventID:
+		return m.EventID()
+	case rewardtaskevent.FieldEventType:
+		return m.EventType()
+	case rewardtaskevent.FieldTicket:
+		return m.Ticket()
+	case rewardtaskevent.FieldTaskID:
+		return m.TaskID()
+	case rewardtaskevent.FieldRecordID:
+		return m.RecordID()
+	case rewardtaskevent.FieldUserID:
+		return m.UserID()
+	case rewardtaskevent.FieldExternalUserID:
+		return m.ExternalUserID()
+	case rewardtaskevent.FieldAmount:
+		return m.Amount()
+	case rewardtaskevent.FieldOrderID:
+		return m.OrderID()
+	case rewardtaskevent.FieldResult:
+		return m.Result()
+	case rewardtaskevent.FieldErrorCode:
+		return m.ErrorCode()
+	case rewardtaskevent.FieldRemoteIP:
+		return m.RemoteIP()
+	case rewardtaskevent.FieldPayload:
+		return m.Payload()
+	case rewardtaskevent.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RewardTaskEventMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case rewardtaskevent.FieldPartnerID:
+		return m.OldPartnerID(ctx)
+	case rewardtaskevent.FieldEventID:
+		return m.OldEventID(ctx)
+	case rewardtaskevent.FieldEventType:
+		return m.OldEventType(ctx)
+	case rewardtaskevent.FieldTicket:
+		return m.OldTicket(ctx)
+	case rewardtaskevent.FieldTaskID:
+		return m.OldTaskID(ctx)
+	case rewardtaskevent.FieldRecordID:
+		return m.OldRecordID(ctx)
+	case rewardtaskevent.FieldUserID:
+		return m.OldUserID(ctx)
+	case rewardtaskevent.FieldExternalUserID:
+		return m.OldExternalUserID(ctx)
+	case rewardtaskevent.FieldAmount:
+		return m.OldAmount(ctx)
+	case rewardtaskevent.FieldOrderID:
+		return m.OldOrderID(ctx)
+	case rewardtaskevent.FieldResult:
+		return m.OldResult(ctx)
+	case rewardtaskevent.FieldErrorCode:
+		return m.OldErrorCode(ctx)
+	case rewardtaskevent.FieldRemoteIP:
+		return m.OldRemoteIP(ctx)
+	case rewardtaskevent.FieldPayload:
+		return m.OldPayload(ctx)
+	case rewardtaskevent.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown RewardTaskEvent field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RewardTaskEventMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case rewardtaskevent.FieldPartnerID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPartnerID(v)
+		return nil
+	case rewardtaskevent.FieldEventID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventID(v)
+		return nil
+	case rewardtaskevent.FieldEventType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventType(v)
+		return nil
+	case rewardtaskevent.FieldTicket:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTicket(v)
+		return nil
+	case rewardtaskevent.FieldTaskID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTaskID(v)
+		return nil
+	case rewardtaskevent.FieldRecordID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRecordID(v)
+		return nil
+	case rewardtaskevent.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case rewardtaskevent.FieldExternalUserID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalUserID(v)
+		return nil
+	case rewardtaskevent.FieldAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAmount(v)
+		return nil
+	case rewardtaskevent.FieldOrderID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrderID(v)
+		return nil
+	case rewardtaskevent.FieldResult:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResult(v)
+		return nil
+	case rewardtaskevent.FieldErrorCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorCode(v)
+		return nil
+	case rewardtaskevent.FieldRemoteIP:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRemoteIP(v)
+		return nil
+	case rewardtaskevent.FieldPayload:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayload(v)
+		return nil
+	case rewardtaskevent.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskEvent field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RewardTaskEventMutation) AddedFields() []string {
+	var fields []string
+	if m.addpartner_id != nil {
+		fields = append(fields, rewardtaskevent.FieldPartnerID)
+	}
+	if m.addtask_id != nil {
+		fields = append(fields, rewardtaskevent.FieldTaskID)
+	}
+	if m.addrecord_id != nil {
+		fields = append(fields, rewardtaskevent.FieldRecordID)
+	}
+	if m.adduser_id != nil {
+		fields = append(fields, rewardtaskevent.FieldUserID)
+	}
+	if m.addamount != nil {
+		fields = append(fields, rewardtaskevent.FieldAmount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RewardTaskEventMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case rewardtaskevent.FieldPartnerID:
+		return m.AddedPartnerID()
+	case rewardtaskevent.FieldTaskID:
+		return m.AddedTaskID()
+	case rewardtaskevent.FieldRecordID:
+		return m.AddedRecordID()
+	case rewardtaskevent.FieldUserID:
+		return m.AddedUserID()
+	case rewardtaskevent.FieldAmount:
+		return m.AddedAmount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RewardTaskEventMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case rewardtaskevent.FieldPartnerID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPartnerID(v)
+		return nil
+	case rewardtaskevent.FieldTaskID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTaskID(v)
+		return nil
+	case rewardtaskevent.FieldRecordID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRecordID(v)
+		return nil
+	case rewardtaskevent.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUserID(v)
+		return nil
+	case rewardtaskevent.FieldAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAmount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskEvent numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RewardTaskEventMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(rewardtaskevent.FieldTaskID) {
+		fields = append(fields, rewardtaskevent.FieldTaskID)
+	}
+	if m.FieldCleared(rewardtaskevent.FieldRecordID) {
+		fields = append(fields, rewardtaskevent.FieldRecordID)
+	}
+	if m.FieldCleared(rewardtaskevent.FieldUserID) {
+		fields = append(fields, rewardtaskevent.FieldUserID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RewardTaskEventMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RewardTaskEventMutation) ClearField(name string) error {
+	switch name {
+	case rewardtaskevent.FieldTaskID:
+		m.ClearTaskID()
+		return nil
+	case rewardtaskevent.FieldRecordID:
+		m.ClearRecordID()
+		return nil
+	case rewardtaskevent.FieldUserID:
+		m.ClearUserID()
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskEvent nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RewardTaskEventMutation) ResetField(name string) error {
+	switch name {
+	case rewardtaskevent.FieldPartnerID:
+		m.ResetPartnerID()
+		return nil
+	case rewardtaskevent.FieldEventID:
+		m.ResetEventID()
+		return nil
+	case rewardtaskevent.FieldEventType:
+		m.ResetEventType()
+		return nil
+	case rewardtaskevent.FieldTicket:
+		m.ResetTicket()
+		return nil
+	case rewardtaskevent.FieldTaskID:
+		m.ResetTaskID()
+		return nil
+	case rewardtaskevent.FieldRecordID:
+		m.ResetRecordID()
+		return nil
+	case rewardtaskevent.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case rewardtaskevent.FieldExternalUserID:
+		m.ResetExternalUserID()
+		return nil
+	case rewardtaskevent.FieldAmount:
+		m.ResetAmount()
+		return nil
+	case rewardtaskevent.FieldOrderID:
+		m.ResetOrderID()
+		return nil
+	case rewardtaskevent.FieldResult:
+		m.ResetResult()
+		return nil
+	case rewardtaskevent.FieldErrorCode:
+		m.ResetErrorCode()
+		return nil
+	case rewardtaskevent.FieldRemoteIP:
+		m.ResetRemoteIP()
+		return nil
+	case rewardtaskevent.FieldPayload:
+		m.ResetPayload()
+		return nil
+	case rewardtaskevent.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskEvent field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RewardTaskEventMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RewardTaskEventMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RewardTaskEventMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RewardTaskEventMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RewardTaskEventMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RewardTaskEventMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RewardTaskEventMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown RewardTaskEvent unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RewardTaskEventMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown RewardTaskEvent edge %s", name)
+}
+
+// RewardTaskPartnerMutation represents an operation that mutates the RewardTaskPartner nodes in the graph.
+type RewardTaskPartnerMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int64
+	created_at            *time.Time
+	updated_at            *time.Time
+	deleted_at            *time.Time
+	name                  *string
+	app_key               *string
+	app_secret_encrypted  *string
+	secret_hint           *string
+	allowed_domains       *[]string
+	appendallowed_domains []string
+	contact               *string
+	notes                 *string
+	enabled               *bool
+	last_event_at         *time.Time
+	clearedFields         map[string]struct{}
+	done                  bool
+	oldValue              func(context.Context) (*RewardTaskPartner, error)
+	predicates            []predicate.RewardTaskPartner
+}
+
+var _ ent.Mutation = (*RewardTaskPartnerMutation)(nil)
+
+// rewardtaskpartnerOption allows management of the mutation configuration using functional options.
+type rewardtaskpartnerOption func(*RewardTaskPartnerMutation)
+
+// newRewardTaskPartnerMutation creates new mutation for the RewardTaskPartner entity.
+func newRewardTaskPartnerMutation(c config, op Op, opts ...rewardtaskpartnerOption) *RewardTaskPartnerMutation {
+	m := &RewardTaskPartnerMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRewardTaskPartner,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRewardTaskPartnerID sets the ID field of the mutation.
+func withRewardTaskPartnerID(id int64) rewardtaskpartnerOption {
+	return func(m *RewardTaskPartnerMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RewardTaskPartner
+		)
+		m.oldValue = func(ctx context.Context) (*RewardTaskPartner, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RewardTaskPartner.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRewardTaskPartner sets the old RewardTaskPartner of the mutation.
+func withRewardTaskPartner(node *RewardTaskPartner) rewardtaskpartnerOption {
+	return func(m *RewardTaskPartnerMutation) {
+		m.oldValue = func(context.Context) (*RewardTaskPartner, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RewardTaskPartnerMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RewardTaskPartnerMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RewardTaskPartnerMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RewardTaskPartnerMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RewardTaskPartner.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RewardTaskPartnerMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RewardTaskPartnerMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RewardTaskPartnerMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RewardTaskPartnerMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RewardTaskPartnerMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RewardTaskPartnerMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *RewardTaskPartnerMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *RewardTaskPartnerMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *RewardTaskPartnerMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[rewardtaskpartner.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *RewardTaskPartnerMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[rewardtaskpartner.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *RewardTaskPartnerMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, rewardtaskpartner.FieldDeletedAt)
+}
+
+// SetName sets the "name" field.
+func (m *RewardTaskPartnerMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *RewardTaskPartnerMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *RewardTaskPartnerMutation) ResetName() {
+	m.name = nil
+}
+
+// SetAppKey sets the "app_key" field.
+func (m *RewardTaskPartnerMutation) SetAppKey(s string) {
+	m.app_key = &s
+}
+
+// AppKey returns the value of the "app_key" field in the mutation.
+func (m *RewardTaskPartnerMutation) AppKey() (r string, exists bool) {
+	v := m.app_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAppKey returns the old "app_key" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldAppKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAppKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAppKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAppKey: %w", err)
+	}
+	return oldValue.AppKey, nil
+}
+
+// ResetAppKey resets all changes to the "app_key" field.
+func (m *RewardTaskPartnerMutation) ResetAppKey() {
+	m.app_key = nil
+}
+
+// SetAppSecretEncrypted sets the "app_secret_encrypted" field.
+func (m *RewardTaskPartnerMutation) SetAppSecretEncrypted(s string) {
+	m.app_secret_encrypted = &s
+}
+
+// AppSecretEncrypted returns the value of the "app_secret_encrypted" field in the mutation.
+func (m *RewardTaskPartnerMutation) AppSecretEncrypted() (r string, exists bool) {
+	v := m.app_secret_encrypted
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAppSecretEncrypted returns the old "app_secret_encrypted" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldAppSecretEncrypted(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAppSecretEncrypted is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAppSecretEncrypted requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAppSecretEncrypted: %w", err)
+	}
+	return oldValue.AppSecretEncrypted, nil
+}
+
+// ResetAppSecretEncrypted resets all changes to the "app_secret_encrypted" field.
+func (m *RewardTaskPartnerMutation) ResetAppSecretEncrypted() {
+	m.app_secret_encrypted = nil
+}
+
+// SetSecretHint sets the "secret_hint" field.
+func (m *RewardTaskPartnerMutation) SetSecretHint(s string) {
+	m.secret_hint = &s
+}
+
+// SecretHint returns the value of the "secret_hint" field in the mutation.
+func (m *RewardTaskPartnerMutation) SecretHint() (r string, exists bool) {
+	v := m.secret_hint
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecretHint returns the old "secret_hint" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldSecretHint(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecretHint is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecretHint requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecretHint: %w", err)
+	}
+	return oldValue.SecretHint, nil
+}
+
+// ResetSecretHint resets all changes to the "secret_hint" field.
+func (m *RewardTaskPartnerMutation) ResetSecretHint() {
+	m.secret_hint = nil
+}
+
+// SetAllowedDomains sets the "allowed_domains" field.
+func (m *RewardTaskPartnerMutation) SetAllowedDomains(s []string) {
+	m.allowed_domains = &s
+	m.appendallowed_domains = nil
+}
+
+// AllowedDomains returns the value of the "allowed_domains" field in the mutation.
+func (m *RewardTaskPartnerMutation) AllowedDomains() (r []string, exists bool) {
+	v := m.allowed_domains
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAllowedDomains returns the old "allowed_domains" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldAllowedDomains(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAllowedDomains is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAllowedDomains requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAllowedDomains: %w", err)
+	}
+	return oldValue.AllowedDomains, nil
+}
+
+// AppendAllowedDomains adds s to the "allowed_domains" field.
+func (m *RewardTaskPartnerMutation) AppendAllowedDomains(s []string) {
+	m.appendallowed_domains = append(m.appendallowed_domains, s...)
+}
+
+// AppendedAllowedDomains returns the list of values that were appended to the "allowed_domains" field in this mutation.
+func (m *RewardTaskPartnerMutation) AppendedAllowedDomains() ([]string, bool) {
+	if len(m.appendallowed_domains) == 0 {
+		return nil, false
+	}
+	return m.appendallowed_domains, true
+}
+
+// ResetAllowedDomains resets all changes to the "allowed_domains" field.
+func (m *RewardTaskPartnerMutation) ResetAllowedDomains() {
+	m.allowed_domains = nil
+	m.appendallowed_domains = nil
+}
+
+// SetContact sets the "contact" field.
+func (m *RewardTaskPartnerMutation) SetContact(s string) {
+	m.contact = &s
+}
+
+// Contact returns the value of the "contact" field in the mutation.
+func (m *RewardTaskPartnerMutation) Contact() (r string, exists bool) {
+	v := m.contact
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContact returns the old "contact" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldContact(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContact is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContact requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContact: %w", err)
+	}
+	return oldValue.Contact, nil
+}
+
+// ResetContact resets all changes to the "contact" field.
+func (m *RewardTaskPartnerMutation) ResetContact() {
+	m.contact = nil
+}
+
+// SetNotes sets the "notes" field.
+func (m *RewardTaskPartnerMutation) SetNotes(s string) {
+	m.notes = &s
+}
+
+// Notes returns the value of the "notes" field in the mutation.
+func (m *RewardTaskPartnerMutation) Notes() (r string, exists bool) {
+	v := m.notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNotes returns the old "notes" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldNotes(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotes: %w", err)
+	}
+	return oldValue.Notes, nil
+}
+
+// ResetNotes resets all changes to the "notes" field.
+func (m *RewardTaskPartnerMutation) ResetNotes() {
+	m.notes = nil
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *RewardTaskPartnerMutation) SetEnabled(b bool) {
+	m.enabled = &b
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *RewardTaskPartnerMutation) Enabled() (r bool, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *RewardTaskPartnerMutation) ResetEnabled() {
+	m.enabled = nil
+}
+
+// SetLastEventAt sets the "last_event_at" field.
+func (m *RewardTaskPartnerMutation) SetLastEventAt(t time.Time) {
+	m.last_event_at = &t
+}
+
+// LastEventAt returns the value of the "last_event_at" field in the mutation.
+func (m *RewardTaskPartnerMutation) LastEventAt() (r time.Time, exists bool) {
+	v := m.last_event_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastEventAt returns the old "last_event_at" field's value of the RewardTaskPartner entity.
+// If the RewardTaskPartner object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskPartnerMutation) OldLastEventAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastEventAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastEventAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastEventAt: %w", err)
+	}
+	return oldValue.LastEventAt, nil
+}
+
+// ClearLastEventAt clears the value of the "last_event_at" field.
+func (m *RewardTaskPartnerMutation) ClearLastEventAt() {
+	m.last_event_at = nil
+	m.clearedFields[rewardtaskpartner.FieldLastEventAt] = struct{}{}
+}
+
+// LastEventAtCleared returns if the "last_event_at" field was cleared in this mutation.
+func (m *RewardTaskPartnerMutation) LastEventAtCleared() bool {
+	_, ok := m.clearedFields[rewardtaskpartner.FieldLastEventAt]
+	return ok
+}
+
+// ResetLastEventAt resets all changes to the "last_event_at" field.
+func (m *RewardTaskPartnerMutation) ResetLastEventAt() {
+	m.last_event_at = nil
+	delete(m.clearedFields, rewardtaskpartner.FieldLastEventAt)
+}
+
+// Where appends a list predicates to the RewardTaskPartnerMutation builder.
+func (m *RewardTaskPartnerMutation) Where(ps ...predicate.RewardTaskPartner) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RewardTaskPartnerMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RewardTaskPartnerMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RewardTaskPartner, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RewardTaskPartnerMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RewardTaskPartnerMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RewardTaskPartner).
+func (m *RewardTaskPartnerMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RewardTaskPartnerMutation) Fields() []string {
+	fields := make([]string, 0, 12)
+	if m.created_at != nil {
+		fields = append(fields, rewardtaskpartner.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, rewardtaskpartner.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, rewardtaskpartner.FieldDeletedAt)
+	}
+	if m.name != nil {
+		fields = append(fields, rewardtaskpartner.FieldName)
+	}
+	if m.app_key != nil {
+		fields = append(fields, rewardtaskpartner.FieldAppKey)
+	}
+	if m.app_secret_encrypted != nil {
+		fields = append(fields, rewardtaskpartner.FieldAppSecretEncrypted)
+	}
+	if m.secret_hint != nil {
+		fields = append(fields, rewardtaskpartner.FieldSecretHint)
+	}
+	if m.allowed_domains != nil {
+		fields = append(fields, rewardtaskpartner.FieldAllowedDomains)
+	}
+	if m.contact != nil {
+		fields = append(fields, rewardtaskpartner.FieldContact)
+	}
+	if m.notes != nil {
+		fields = append(fields, rewardtaskpartner.FieldNotes)
+	}
+	if m.enabled != nil {
+		fields = append(fields, rewardtaskpartner.FieldEnabled)
+	}
+	if m.last_event_at != nil {
+		fields = append(fields, rewardtaskpartner.FieldLastEventAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RewardTaskPartnerMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case rewardtaskpartner.FieldCreatedAt:
+		return m.CreatedAt()
+	case rewardtaskpartner.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case rewardtaskpartner.FieldDeletedAt:
+		return m.DeletedAt()
+	case rewardtaskpartner.FieldName:
+		return m.Name()
+	case rewardtaskpartner.FieldAppKey:
+		return m.AppKey()
+	case rewardtaskpartner.FieldAppSecretEncrypted:
+		return m.AppSecretEncrypted()
+	case rewardtaskpartner.FieldSecretHint:
+		return m.SecretHint()
+	case rewardtaskpartner.FieldAllowedDomains:
+		return m.AllowedDomains()
+	case rewardtaskpartner.FieldContact:
+		return m.Contact()
+	case rewardtaskpartner.FieldNotes:
+		return m.Notes()
+	case rewardtaskpartner.FieldEnabled:
+		return m.Enabled()
+	case rewardtaskpartner.FieldLastEventAt:
+		return m.LastEventAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RewardTaskPartnerMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case rewardtaskpartner.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case rewardtaskpartner.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case rewardtaskpartner.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case rewardtaskpartner.FieldName:
+		return m.OldName(ctx)
+	case rewardtaskpartner.FieldAppKey:
+		return m.OldAppKey(ctx)
+	case rewardtaskpartner.FieldAppSecretEncrypted:
+		return m.OldAppSecretEncrypted(ctx)
+	case rewardtaskpartner.FieldSecretHint:
+		return m.OldSecretHint(ctx)
+	case rewardtaskpartner.FieldAllowedDomains:
+		return m.OldAllowedDomains(ctx)
+	case rewardtaskpartner.FieldContact:
+		return m.OldContact(ctx)
+	case rewardtaskpartner.FieldNotes:
+		return m.OldNotes(ctx)
+	case rewardtaskpartner.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case rewardtaskpartner.FieldLastEventAt:
+		return m.OldLastEventAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown RewardTaskPartner field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RewardTaskPartnerMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case rewardtaskpartner.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case rewardtaskpartner.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case rewardtaskpartner.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case rewardtaskpartner.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case rewardtaskpartner.FieldAppKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAppKey(v)
+		return nil
+	case rewardtaskpartner.FieldAppSecretEncrypted:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAppSecretEncrypted(v)
+		return nil
+	case rewardtaskpartner.FieldSecretHint:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecretHint(v)
+		return nil
+	case rewardtaskpartner.FieldAllowedDomains:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAllowedDomains(v)
+		return nil
+	case rewardtaskpartner.FieldContact:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContact(v)
+		return nil
+	case rewardtaskpartner.FieldNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNotes(v)
+		return nil
+	case rewardtaskpartner.FieldEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case rewardtaskpartner.FieldLastEventAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastEventAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskPartner field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RewardTaskPartnerMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RewardTaskPartnerMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RewardTaskPartnerMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown RewardTaskPartner numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RewardTaskPartnerMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(rewardtaskpartner.FieldDeletedAt) {
+		fields = append(fields, rewardtaskpartner.FieldDeletedAt)
+	}
+	if m.FieldCleared(rewardtaskpartner.FieldLastEventAt) {
+		fields = append(fields, rewardtaskpartner.FieldLastEventAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RewardTaskPartnerMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RewardTaskPartnerMutation) ClearField(name string) error {
+	switch name {
+	case rewardtaskpartner.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	case rewardtaskpartner.FieldLastEventAt:
+		m.ClearLastEventAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskPartner nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RewardTaskPartnerMutation) ResetField(name string) error {
+	switch name {
+	case rewardtaskpartner.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case rewardtaskpartner.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case rewardtaskpartner.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case rewardtaskpartner.FieldName:
+		m.ResetName()
+		return nil
+	case rewardtaskpartner.FieldAppKey:
+		m.ResetAppKey()
+		return nil
+	case rewardtaskpartner.FieldAppSecretEncrypted:
+		m.ResetAppSecretEncrypted()
+		return nil
+	case rewardtaskpartner.FieldSecretHint:
+		m.ResetSecretHint()
+		return nil
+	case rewardtaskpartner.FieldAllowedDomains:
+		m.ResetAllowedDomains()
+		return nil
+	case rewardtaskpartner.FieldContact:
+		m.ResetContact()
+		return nil
+	case rewardtaskpartner.FieldNotes:
+		m.ResetNotes()
+		return nil
+	case rewardtaskpartner.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case rewardtaskpartner.FieldLastEventAt:
+		m.ResetLastEventAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskPartner field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RewardTaskPartnerMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RewardTaskPartnerMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RewardTaskPartnerMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RewardTaskPartnerMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RewardTaskPartnerMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RewardTaskPartnerMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RewardTaskPartnerMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown RewardTaskPartner unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RewardTaskPartnerMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown RewardTaskPartner edge %s", name)
+}
+
+// RewardTaskRecordMutation represents an operation that mutates the RewardTaskRecord nodes in the graph.
+type RewardTaskRecordMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int64
+	created_at        *time.Time
+	updated_at        *time.Time
+	task_id           *int64
+	addtask_id        *int64
+	user_id           *int64
+	adduser_id        *int64
+	period_key        *string
+	ticket            *string
+	status            *string
+	progress_ms       *int64
+	addprogress_ms    *int64
+	recharge_total    *float64
+	addrecharge_total *float64
+	external_user_id  *string
+	started_at        *time.Time
+	last_heartbeat_at *time.Time
+	ticket_expires_at *time.Time
+	completed_at      *time.Time
+	reward_amount     *float64
+	addreward_amount  *float64
+	task_title        *string
+	clearedFields     map[string]struct{}
+	done              bool
+	oldValue          func(context.Context) (*RewardTaskRecord, error)
+	predicates        []predicate.RewardTaskRecord
+}
+
+var _ ent.Mutation = (*RewardTaskRecordMutation)(nil)
+
+// rewardtaskrecordOption allows management of the mutation configuration using functional options.
+type rewardtaskrecordOption func(*RewardTaskRecordMutation)
+
+// newRewardTaskRecordMutation creates new mutation for the RewardTaskRecord entity.
+func newRewardTaskRecordMutation(c config, op Op, opts ...rewardtaskrecordOption) *RewardTaskRecordMutation {
+	m := &RewardTaskRecordMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRewardTaskRecord,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRewardTaskRecordID sets the ID field of the mutation.
+func withRewardTaskRecordID(id int64) rewardtaskrecordOption {
+	return func(m *RewardTaskRecordMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RewardTaskRecord
+		)
+		m.oldValue = func(ctx context.Context) (*RewardTaskRecord, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RewardTaskRecord.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRewardTaskRecord sets the old RewardTaskRecord of the mutation.
+func withRewardTaskRecord(node *RewardTaskRecord) rewardtaskrecordOption {
+	return func(m *RewardTaskRecordMutation) {
+		m.oldValue = func(context.Context) (*RewardTaskRecord, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RewardTaskRecordMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RewardTaskRecordMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RewardTaskRecordMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RewardTaskRecordMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RewardTaskRecord.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RewardTaskRecordMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RewardTaskRecordMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RewardTaskRecordMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RewardTaskRecordMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RewardTaskRecordMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RewardTaskRecordMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetTaskID sets the "task_id" field.
+func (m *RewardTaskRecordMutation) SetTaskID(i int64) {
+	m.task_id = &i
+	m.addtask_id = nil
+}
+
+// TaskID returns the value of the "task_id" field in the mutation.
+func (m *RewardTaskRecordMutation) TaskID() (r int64, exists bool) {
+	v := m.task_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTaskID returns the old "task_id" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldTaskID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTaskID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTaskID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTaskID: %w", err)
+	}
+	return oldValue.TaskID, nil
+}
+
+// AddTaskID adds i to the "task_id" field.
+func (m *RewardTaskRecordMutation) AddTaskID(i int64) {
+	if m.addtask_id != nil {
+		*m.addtask_id += i
+	} else {
+		m.addtask_id = &i
+	}
+}
+
+// AddedTaskID returns the value that was added to the "task_id" field in this mutation.
+func (m *RewardTaskRecordMutation) AddedTaskID() (r int64, exists bool) {
+	v := m.addtask_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTaskID resets all changes to the "task_id" field.
+func (m *RewardTaskRecordMutation) ResetTaskID() {
+	m.task_id = nil
+	m.addtask_id = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *RewardTaskRecordMutation) SetUserID(i int64) {
+	m.user_id = &i
+	m.adduser_id = nil
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *RewardTaskRecordMutation) UserID() (r int64, exists bool) {
+	v := m.user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldUserID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// AddUserID adds i to the "user_id" field.
+func (m *RewardTaskRecordMutation) AddUserID(i int64) {
+	if m.adduser_id != nil {
+		*m.adduser_id += i
+	} else {
+		m.adduser_id = &i
+	}
+}
+
+// AddedUserID returns the value that was added to the "user_id" field in this mutation.
+func (m *RewardTaskRecordMutation) AddedUserID() (r int64, exists bool) {
+	v := m.adduser_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *RewardTaskRecordMutation) ResetUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+}
+
+// SetPeriodKey sets the "period_key" field.
+func (m *RewardTaskRecordMutation) SetPeriodKey(s string) {
+	m.period_key = &s
+}
+
+// PeriodKey returns the value of the "period_key" field in the mutation.
+func (m *RewardTaskRecordMutation) PeriodKey() (r string, exists bool) {
+	v := m.period_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPeriodKey returns the old "period_key" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldPeriodKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPeriodKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPeriodKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPeriodKey: %w", err)
+	}
+	return oldValue.PeriodKey, nil
+}
+
+// ResetPeriodKey resets all changes to the "period_key" field.
+func (m *RewardTaskRecordMutation) ResetPeriodKey() {
+	m.period_key = nil
+}
+
+// SetTicket sets the "ticket" field.
+func (m *RewardTaskRecordMutation) SetTicket(s string) {
+	m.ticket = &s
+}
+
+// Ticket returns the value of the "ticket" field in the mutation.
+func (m *RewardTaskRecordMutation) Ticket() (r string, exists bool) {
+	v := m.ticket
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTicket returns the old "ticket" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldTicket(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTicket is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTicket requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTicket: %w", err)
+	}
+	return oldValue.Ticket, nil
+}
+
+// ResetTicket resets all changes to the "ticket" field.
+func (m *RewardTaskRecordMutation) ResetTicket() {
+	m.ticket = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *RewardTaskRecordMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *RewardTaskRecordMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *RewardTaskRecordMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetProgressMs sets the "progress_ms" field.
+func (m *RewardTaskRecordMutation) SetProgressMs(i int64) {
+	m.progress_ms = &i
+	m.addprogress_ms = nil
+}
+
+// ProgressMs returns the value of the "progress_ms" field in the mutation.
+func (m *RewardTaskRecordMutation) ProgressMs() (r int64, exists bool) {
+	v := m.progress_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProgressMs returns the old "progress_ms" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldProgressMs(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProgressMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProgressMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProgressMs: %w", err)
+	}
+	return oldValue.ProgressMs, nil
+}
+
+// AddProgressMs adds i to the "progress_ms" field.
+func (m *RewardTaskRecordMutation) AddProgressMs(i int64) {
+	if m.addprogress_ms != nil {
+		*m.addprogress_ms += i
+	} else {
+		m.addprogress_ms = &i
+	}
+}
+
+// AddedProgressMs returns the value that was added to the "progress_ms" field in this mutation.
+func (m *RewardTaskRecordMutation) AddedProgressMs() (r int64, exists bool) {
+	v := m.addprogress_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetProgressMs resets all changes to the "progress_ms" field.
+func (m *RewardTaskRecordMutation) ResetProgressMs() {
+	m.progress_ms = nil
+	m.addprogress_ms = nil
+}
+
+// SetRechargeTotal sets the "recharge_total" field.
+func (m *RewardTaskRecordMutation) SetRechargeTotal(f float64) {
+	m.recharge_total = &f
+	m.addrecharge_total = nil
+}
+
+// RechargeTotal returns the value of the "recharge_total" field in the mutation.
+func (m *RewardTaskRecordMutation) RechargeTotal() (r float64, exists bool) {
+	v := m.recharge_total
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRechargeTotal returns the old "recharge_total" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldRechargeTotal(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRechargeTotal is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRechargeTotal requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRechargeTotal: %w", err)
+	}
+	return oldValue.RechargeTotal, nil
+}
+
+// AddRechargeTotal adds f to the "recharge_total" field.
+func (m *RewardTaskRecordMutation) AddRechargeTotal(f float64) {
+	if m.addrecharge_total != nil {
+		*m.addrecharge_total += f
+	} else {
+		m.addrecharge_total = &f
+	}
+}
+
+// AddedRechargeTotal returns the value that was added to the "recharge_total" field in this mutation.
+func (m *RewardTaskRecordMutation) AddedRechargeTotal() (r float64, exists bool) {
+	v := m.addrecharge_total
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRechargeTotal resets all changes to the "recharge_total" field.
+func (m *RewardTaskRecordMutation) ResetRechargeTotal() {
+	m.recharge_total = nil
+	m.addrecharge_total = nil
+}
+
+// SetExternalUserID sets the "external_user_id" field.
+func (m *RewardTaskRecordMutation) SetExternalUserID(s string) {
+	m.external_user_id = &s
+}
+
+// ExternalUserID returns the value of the "external_user_id" field in the mutation.
+func (m *RewardTaskRecordMutation) ExternalUserID() (r string, exists bool) {
+	v := m.external_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalUserID returns the old "external_user_id" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldExternalUserID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalUserID: %w", err)
+	}
+	return oldValue.ExternalUserID, nil
+}
+
+// ResetExternalUserID resets all changes to the "external_user_id" field.
+func (m *RewardTaskRecordMutation) ResetExternalUserID() {
+	m.external_user_id = nil
+}
+
+// SetStartedAt sets the "started_at" field.
+func (m *RewardTaskRecordMutation) SetStartedAt(t time.Time) {
+	m.started_at = &t
+}
+
+// StartedAt returns the value of the "started_at" field in the mutation.
+func (m *RewardTaskRecordMutation) StartedAt() (r time.Time, exists bool) {
+	v := m.started_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartedAt returns the old "started_at" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldStartedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartedAt: %w", err)
+	}
+	return oldValue.StartedAt, nil
+}
+
+// ResetStartedAt resets all changes to the "started_at" field.
+func (m *RewardTaskRecordMutation) ResetStartedAt() {
+	m.started_at = nil
+}
+
+// SetLastHeartbeatAt sets the "last_heartbeat_at" field.
+func (m *RewardTaskRecordMutation) SetLastHeartbeatAt(t time.Time) {
+	m.last_heartbeat_at = &t
+}
+
+// LastHeartbeatAt returns the value of the "last_heartbeat_at" field in the mutation.
+func (m *RewardTaskRecordMutation) LastHeartbeatAt() (r time.Time, exists bool) {
+	v := m.last_heartbeat_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastHeartbeatAt returns the old "last_heartbeat_at" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldLastHeartbeatAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastHeartbeatAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastHeartbeatAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastHeartbeatAt: %w", err)
+	}
+	return oldValue.LastHeartbeatAt, nil
+}
+
+// ClearLastHeartbeatAt clears the value of the "last_heartbeat_at" field.
+func (m *RewardTaskRecordMutation) ClearLastHeartbeatAt() {
+	m.last_heartbeat_at = nil
+	m.clearedFields[rewardtaskrecord.FieldLastHeartbeatAt] = struct{}{}
+}
+
+// LastHeartbeatAtCleared returns if the "last_heartbeat_at" field was cleared in this mutation.
+func (m *RewardTaskRecordMutation) LastHeartbeatAtCleared() bool {
+	_, ok := m.clearedFields[rewardtaskrecord.FieldLastHeartbeatAt]
+	return ok
+}
+
+// ResetLastHeartbeatAt resets all changes to the "last_heartbeat_at" field.
+func (m *RewardTaskRecordMutation) ResetLastHeartbeatAt() {
+	m.last_heartbeat_at = nil
+	delete(m.clearedFields, rewardtaskrecord.FieldLastHeartbeatAt)
+}
+
+// SetTicketExpiresAt sets the "ticket_expires_at" field.
+func (m *RewardTaskRecordMutation) SetTicketExpiresAt(t time.Time) {
+	m.ticket_expires_at = &t
+}
+
+// TicketExpiresAt returns the value of the "ticket_expires_at" field in the mutation.
+func (m *RewardTaskRecordMutation) TicketExpiresAt() (r time.Time, exists bool) {
+	v := m.ticket_expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTicketExpiresAt returns the old "ticket_expires_at" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldTicketExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTicketExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTicketExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTicketExpiresAt: %w", err)
+	}
+	return oldValue.TicketExpiresAt, nil
+}
+
+// ResetTicketExpiresAt resets all changes to the "ticket_expires_at" field.
+func (m *RewardTaskRecordMutation) ResetTicketExpiresAt() {
+	m.ticket_expires_at = nil
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (m *RewardTaskRecordMutation) SetCompletedAt(t time.Time) {
+	m.completed_at = &t
+}
+
+// CompletedAt returns the value of the "completed_at" field in the mutation.
+func (m *RewardTaskRecordMutation) CompletedAt() (r time.Time, exists bool) {
+	v := m.completed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompletedAt returns the old "completed_at" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldCompletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompletedAt: %w", err)
+	}
+	return oldValue.CompletedAt, nil
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (m *RewardTaskRecordMutation) ClearCompletedAt() {
+	m.completed_at = nil
+	m.clearedFields[rewardtaskrecord.FieldCompletedAt] = struct{}{}
+}
+
+// CompletedAtCleared returns if the "completed_at" field was cleared in this mutation.
+func (m *RewardTaskRecordMutation) CompletedAtCleared() bool {
+	_, ok := m.clearedFields[rewardtaskrecord.FieldCompletedAt]
+	return ok
+}
+
+// ResetCompletedAt resets all changes to the "completed_at" field.
+func (m *RewardTaskRecordMutation) ResetCompletedAt() {
+	m.completed_at = nil
+	delete(m.clearedFields, rewardtaskrecord.FieldCompletedAt)
+}
+
+// SetRewardAmount sets the "reward_amount" field.
+func (m *RewardTaskRecordMutation) SetRewardAmount(f float64) {
+	m.reward_amount = &f
+	m.addreward_amount = nil
+}
+
+// RewardAmount returns the value of the "reward_amount" field in the mutation.
+func (m *RewardTaskRecordMutation) RewardAmount() (r float64, exists bool) {
+	v := m.reward_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRewardAmount returns the old "reward_amount" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldRewardAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRewardAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRewardAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRewardAmount: %w", err)
+	}
+	return oldValue.RewardAmount, nil
+}
+
+// AddRewardAmount adds f to the "reward_amount" field.
+func (m *RewardTaskRecordMutation) AddRewardAmount(f float64) {
+	if m.addreward_amount != nil {
+		*m.addreward_amount += f
+	} else {
+		m.addreward_amount = &f
+	}
+}
+
+// AddedRewardAmount returns the value that was added to the "reward_amount" field in this mutation.
+func (m *RewardTaskRecordMutation) AddedRewardAmount() (r float64, exists bool) {
+	v := m.addreward_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRewardAmount resets all changes to the "reward_amount" field.
+func (m *RewardTaskRecordMutation) ResetRewardAmount() {
+	m.reward_amount = nil
+	m.addreward_amount = nil
+}
+
+// SetTaskTitle sets the "task_title" field.
+func (m *RewardTaskRecordMutation) SetTaskTitle(s string) {
+	m.task_title = &s
+}
+
+// TaskTitle returns the value of the "task_title" field in the mutation.
+func (m *RewardTaskRecordMutation) TaskTitle() (r string, exists bool) {
+	v := m.task_title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTaskTitle returns the old "task_title" field's value of the RewardTaskRecord entity.
+// If the RewardTaskRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RewardTaskRecordMutation) OldTaskTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTaskTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTaskTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTaskTitle: %w", err)
+	}
+	return oldValue.TaskTitle, nil
+}
+
+// ResetTaskTitle resets all changes to the "task_title" field.
+func (m *RewardTaskRecordMutation) ResetTaskTitle() {
+	m.task_title = nil
+}
+
+// Where appends a list predicates to the RewardTaskRecordMutation builder.
+func (m *RewardTaskRecordMutation) Where(ps ...predicate.RewardTaskRecord) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RewardTaskRecordMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RewardTaskRecordMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RewardTaskRecord, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RewardTaskRecordMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RewardTaskRecordMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RewardTaskRecord).
+func (m *RewardTaskRecordMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RewardTaskRecordMutation) Fields() []string {
+	fields := make([]string, 0, 16)
+	if m.created_at != nil {
+		fields = append(fields, rewardtaskrecord.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, rewardtaskrecord.FieldUpdatedAt)
+	}
+	if m.task_id != nil {
+		fields = append(fields, rewardtaskrecord.FieldTaskID)
+	}
+	if m.user_id != nil {
+		fields = append(fields, rewardtaskrecord.FieldUserID)
+	}
+	if m.period_key != nil {
+		fields = append(fields, rewardtaskrecord.FieldPeriodKey)
+	}
+	if m.ticket != nil {
+		fields = append(fields, rewardtaskrecord.FieldTicket)
+	}
+	if m.status != nil {
+		fields = append(fields, rewardtaskrecord.FieldStatus)
+	}
+	if m.progress_ms != nil {
+		fields = append(fields, rewardtaskrecord.FieldProgressMs)
+	}
+	if m.recharge_total != nil {
+		fields = append(fields, rewardtaskrecord.FieldRechargeTotal)
+	}
+	if m.external_user_id != nil {
+		fields = append(fields, rewardtaskrecord.FieldExternalUserID)
+	}
+	if m.started_at != nil {
+		fields = append(fields, rewardtaskrecord.FieldStartedAt)
+	}
+	if m.last_heartbeat_at != nil {
+		fields = append(fields, rewardtaskrecord.FieldLastHeartbeatAt)
+	}
+	if m.ticket_expires_at != nil {
+		fields = append(fields, rewardtaskrecord.FieldTicketExpiresAt)
+	}
+	if m.completed_at != nil {
+		fields = append(fields, rewardtaskrecord.FieldCompletedAt)
+	}
+	if m.reward_amount != nil {
+		fields = append(fields, rewardtaskrecord.FieldRewardAmount)
+	}
+	if m.task_title != nil {
+		fields = append(fields, rewardtaskrecord.FieldTaskTitle)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RewardTaskRecordMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case rewardtaskrecord.FieldCreatedAt:
+		return m.CreatedAt()
+	case rewardtaskrecord.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case rewardtaskrecord.FieldTaskID:
+		return m.TaskID()
+	case rewardtaskrecord.FieldUserID:
+		return m.UserID()
+	case rewardtaskrecord.FieldPeriodKey:
+		return m.PeriodKey()
+	case rewardtaskrecord.FieldTicket:
+		return m.Ticket()
+	case rewardtaskrecord.FieldStatus:
+		return m.Status()
+	case rewardtaskrecord.FieldProgressMs:
+		return m.ProgressMs()
+	case rewardtaskrecord.FieldRechargeTotal:
+		return m.RechargeTotal()
+	case rewardtaskrecord.FieldExternalUserID:
+		return m.ExternalUserID()
+	case rewardtaskrecord.FieldStartedAt:
+		return m.StartedAt()
+	case rewardtaskrecord.FieldLastHeartbeatAt:
+		return m.LastHeartbeatAt()
+	case rewardtaskrecord.FieldTicketExpiresAt:
+		return m.TicketExpiresAt()
+	case rewardtaskrecord.FieldCompletedAt:
+		return m.CompletedAt()
+	case rewardtaskrecord.FieldRewardAmount:
+		return m.RewardAmount()
+	case rewardtaskrecord.FieldTaskTitle:
+		return m.TaskTitle()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RewardTaskRecordMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case rewardtaskrecord.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case rewardtaskrecord.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case rewardtaskrecord.FieldTaskID:
+		return m.OldTaskID(ctx)
+	case rewardtaskrecord.FieldUserID:
+		return m.OldUserID(ctx)
+	case rewardtaskrecord.FieldPeriodKey:
+		return m.OldPeriodKey(ctx)
+	case rewardtaskrecord.FieldTicket:
+		return m.OldTicket(ctx)
+	case rewardtaskrecord.FieldStatus:
+		return m.OldStatus(ctx)
+	case rewardtaskrecord.FieldProgressMs:
+		return m.OldProgressMs(ctx)
+	case rewardtaskrecord.FieldRechargeTotal:
+		return m.OldRechargeTotal(ctx)
+	case rewardtaskrecord.FieldExternalUserID:
+		return m.OldExternalUserID(ctx)
+	case rewardtaskrecord.FieldStartedAt:
+		return m.OldStartedAt(ctx)
+	case rewardtaskrecord.FieldLastHeartbeatAt:
+		return m.OldLastHeartbeatAt(ctx)
+	case rewardtaskrecord.FieldTicketExpiresAt:
+		return m.OldTicketExpiresAt(ctx)
+	case rewardtaskrecord.FieldCompletedAt:
+		return m.OldCompletedAt(ctx)
+	case rewardtaskrecord.FieldRewardAmount:
+		return m.OldRewardAmount(ctx)
+	case rewardtaskrecord.FieldTaskTitle:
+		return m.OldTaskTitle(ctx)
+	}
+	return nil, fmt.Errorf("unknown RewardTaskRecord field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RewardTaskRecordMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case rewardtaskrecord.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case rewardtaskrecord.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case rewardtaskrecord.FieldTaskID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTaskID(v)
+		return nil
+	case rewardtaskrecord.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case rewardtaskrecord.FieldPeriodKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPeriodKey(v)
+		return nil
+	case rewardtaskrecord.FieldTicket:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTicket(v)
+		return nil
+	case rewardtaskrecord.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case rewardtaskrecord.FieldProgressMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProgressMs(v)
+		return nil
+	case rewardtaskrecord.FieldRechargeTotal:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRechargeTotal(v)
+		return nil
+	case rewardtaskrecord.FieldExternalUserID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalUserID(v)
+		return nil
+	case rewardtaskrecord.FieldStartedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartedAt(v)
+		return nil
+	case rewardtaskrecord.FieldLastHeartbeatAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastHeartbeatAt(v)
+		return nil
+	case rewardtaskrecord.FieldTicketExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTicketExpiresAt(v)
+		return nil
+	case rewardtaskrecord.FieldCompletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompletedAt(v)
+		return nil
+	case rewardtaskrecord.FieldRewardAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRewardAmount(v)
+		return nil
+	case rewardtaskrecord.FieldTaskTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTaskTitle(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskRecord field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RewardTaskRecordMutation) AddedFields() []string {
+	var fields []string
+	if m.addtask_id != nil {
+		fields = append(fields, rewardtaskrecord.FieldTaskID)
+	}
+	if m.adduser_id != nil {
+		fields = append(fields, rewardtaskrecord.FieldUserID)
+	}
+	if m.addprogress_ms != nil {
+		fields = append(fields, rewardtaskrecord.FieldProgressMs)
+	}
+	if m.addrecharge_total != nil {
+		fields = append(fields, rewardtaskrecord.FieldRechargeTotal)
+	}
+	if m.addreward_amount != nil {
+		fields = append(fields, rewardtaskrecord.FieldRewardAmount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RewardTaskRecordMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case rewardtaskrecord.FieldTaskID:
+		return m.AddedTaskID()
+	case rewardtaskrecord.FieldUserID:
+		return m.AddedUserID()
+	case rewardtaskrecord.FieldProgressMs:
+		return m.AddedProgressMs()
+	case rewardtaskrecord.FieldRechargeTotal:
+		return m.AddedRechargeTotal()
+	case rewardtaskrecord.FieldRewardAmount:
+		return m.AddedRewardAmount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RewardTaskRecordMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case rewardtaskrecord.FieldTaskID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTaskID(v)
+		return nil
+	case rewardtaskrecord.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUserID(v)
+		return nil
+	case rewardtaskrecord.FieldProgressMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProgressMs(v)
+		return nil
+	case rewardtaskrecord.FieldRechargeTotal:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRechargeTotal(v)
+		return nil
+	case rewardtaskrecord.FieldRewardAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRewardAmount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskRecord numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RewardTaskRecordMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(rewardtaskrecord.FieldLastHeartbeatAt) {
+		fields = append(fields, rewardtaskrecord.FieldLastHeartbeatAt)
+	}
+	if m.FieldCleared(rewardtaskrecord.FieldCompletedAt) {
+		fields = append(fields, rewardtaskrecord.FieldCompletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RewardTaskRecordMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RewardTaskRecordMutation) ClearField(name string) error {
+	switch name {
+	case rewardtaskrecord.FieldLastHeartbeatAt:
+		m.ClearLastHeartbeatAt()
+		return nil
+	case rewardtaskrecord.FieldCompletedAt:
+		m.ClearCompletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskRecord nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RewardTaskRecordMutation) ResetField(name string) error {
+	switch name {
+	case rewardtaskrecord.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case rewardtaskrecord.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case rewardtaskrecord.FieldTaskID:
+		m.ResetTaskID()
+		return nil
+	case rewardtaskrecord.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case rewardtaskrecord.FieldPeriodKey:
+		m.ResetPeriodKey()
+		return nil
+	case rewardtaskrecord.FieldTicket:
+		m.ResetTicket()
+		return nil
+	case rewardtaskrecord.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case rewardtaskrecord.FieldProgressMs:
+		m.ResetProgressMs()
+		return nil
+	case rewardtaskrecord.FieldRechargeTotal:
+		m.ResetRechargeTotal()
+		return nil
+	case rewardtaskrecord.FieldExternalUserID:
+		m.ResetExternalUserID()
+		return nil
+	case rewardtaskrecord.FieldStartedAt:
+		m.ResetStartedAt()
+		return nil
+	case rewardtaskrecord.FieldLastHeartbeatAt:
+		m.ResetLastHeartbeatAt()
+		return nil
+	case rewardtaskrecord.FieldTicketExpiresAt:
+		m.ResetTicketExpiresAt()
+		return nil
+	case rewardtaskrecord.FieldCompletedAt:
+		m.ResetCompletedAt()
+		return nil
+	case rewardtaskrecord.FieldRewardAmount:
+		m.ResetRewardAmount()
+		return nil
+	case rewardtaskrecord.FieldTaskTitle:
+		m.ResetTaskTitle()
+		return nil
+	}
+	return fmt.Errorf("unknown RewardTaskRecord field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RewardTaskRecordMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RewardTaskRecordMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RewardTaskRecordMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RewardTaskRecordMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RewardTaskRecordMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RewardTaskRecordMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RewardTaskRecordMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown RewardTaskRecord unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RewardTaskRecordMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown RewardTaskRecord edge %s", name)
 }
 
 // SecuritySecretMutation represents an operation that mutates the SecuritySecret nodes in the graph.

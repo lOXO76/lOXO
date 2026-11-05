@@ -38,6 +38,10 @@ func RegisterUserRoutes(
 		{
 			user.GET("/profile", h.User.GetProfile)
 			user.GET("/creation/catalog", h.Creation.GetCatalog)
+			user.GET("/reward-tasks", h.RewardTasks.List)
+			user.GET("/reward-tasks/records", h.RewardTasks.Records)
+			user.POST("/reward-tasks/:id/start", panelRateLimiter.Heavy(), h.RewardTasks.Start)
+			user.POST("/reward-tasks/:id/claim", panelRateLimiter.Heavy(), h.RewardTasks.Claim)
 			user.GET("/check-in", h.CheckIn.GetStatus)
 			user.GET("/check-in/calendar", h.CheckIn.GetCalendar)
 			user.POST("/check-in", panelRateLimiter.Heavy(), h.CheckIn.PerformCheckIn)

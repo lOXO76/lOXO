@@ -142,6 +142,7 @@ func RegisterAdminRoutes(
 
 		// 每日签到统计与明细
 		registerCheckInRoutes(admin, h)
+		registerRewardTaskRoutes(admin, h)
 		registerDegradationRoutes(admin, h)
 
 		// 操作审计日志
@@ -968,4 +969,23 @@ func channelMonitorModeV2Guard(settingService *service.SettingService) gin.Handl
 		}
 		c.Next()
 	}
+}
+
+func registerRewardTaskRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	tasks := admin.Group("/reward-tasks")
+	tasks.GET("", h.Admin.RewardTasks.ListTasks)
+	tasks.POST("", h.Admin.RewardTasks.CreateTask)
+	tasks.PUT("/:id", h.Admin.RewardTasks.UpdateTask)
+	tasks.DELETE("/:id", h.Admin.RewardTasks.DeleteTask)
+	admin.GET("/reward-task-stats", h.Admin.RewardTasks.GetStats)
+	admin.GET("/reward-task-settings", h.Admin.RewardTaskSettings.GetSettings)
+	admin.PUT("/reward-task-settings", h.Admin.RewardTaskSettings.UpdateSettings)
+	partners := admin.Group("/reward-task-partners")
+	partners.GET("", h.Admin.RewardTasks.ListPartners)
+	partners.POST("", h.Admin.RewardTasks.CreatePartner)
+	partners.PUT("/:id", h.Admin.RewardTasks.UpdatePartner)
+	partners.POST("/:id/reset-secret", h.Admin.RewardTasks.ResetPartnerSecret)
+	partners.DELETE("/:id", h.Admin.RewardTasks.DeletePartner)
+	admin.GET("/reward-task-records", h.Admin.RewardTasks.ListRecords)
+	admin.GET("/reward-task-events", h.Admin.RewardTasks.ListEvents)
 }

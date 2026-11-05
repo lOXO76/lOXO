@@ -49,6 +49,7 @@ type SystemSettings struct {
 	RegistrationEmailDomainQuotaEnabled bool                     `json:"registration_email_domain_quota_enabled"`
 	PromoCodeEnabled                    bool                     `json:"promo_code_enabled"`
 	CheckInEnabled                      bool                     `json:"check_in_enabled"`
+	RewardTasksEnabled                  bool                     `json:"reward_tasks_enabled"`
 	CheckInCaptchaEnabled               bool                     `json:"check_in_captcha_enabled"`
 	CheckInTiers                        []CheckInTier            `json:"check_in_tiers"`
 	PasswordResetEnabled                bool                     `json:"password_reset_enabled"`
@@ -397,6 +398,7 @@ type PublicSettings struct {
 	RegistrationEmailDomainQuotaEnabled bool                     `json:"registration_email_domain_quota_enabled"`
 	PromoCodeEnabled                    bool                     `json:"promo_code_enabled"`
 	CheckInEnabled                      bool                     `json:"check_in_enabled"`
+	RewardTasksEnabled                  bool                     `json:"reward_tasks_enabled"`
 	PasswordResetEnabled                bool                     `json:"password_reset_enabled"`
 	InvitationCodeEnabled               bool                     `json:"invitation_code_enabled"`
 	TotpEnabled                         bool                     `json:"totp_enabled"` // TOTP 双因素认证

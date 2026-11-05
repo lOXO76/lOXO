@@ -163,6 +163,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyRegistrationEmailDomainQuotaEnabled,
 		SettingKeyPromoCodeEnabled,
 		SettingKeyCheckInEnabled,
+		SettingKeyRewardTasksEnabled,
 		SettingKeyPasswordResetEnabled,
 		SettingKeyInvitationCodeEnabled,
 		SettingKeyTotpEnabled,
@@ -312,6 +313,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		RegistrationEmailDomainQuotaEnabled: settings[SettingKeyRegistrationEmailDomainQuotaEnabled] == "true",
 		PromoCodeEnabled:                    settings[SettingKeyPromoCodeEnabled] != "false", // 默认启用
 		CheckInEnabled:                      settings[SettingKeyCheckInEnabled] == "true",
+		RewardTasksEnabled:                  settings[SettingKeyRewardTasksEnabled] == "true",
 		PasswordResetEnabled:                passwordResetEnabled,
 		InvitationCodeEnabled:               settings[SettingKeyInvitationCodeEnabled] == "true",
 		TotpEnabled:                         settings[SettingKeyTotpEnabled] == "true",
@@ -606,6 +608,7 @@ type PublicSettingsInjectionPayload struct {
 	RegistrationEmailDomainQuotaEnabled bool                     `json:"registration_email_domain_quota_enabled"`
 	PromoCodeEnabled                    bool                     `json:"promo_code_enabled"`
 	CheckInEnabled                      bool                     `json:"check_in_enabled"`
+	RewardTasksEnabled                  bool                     `json:"reward_tasks_enabled"`
 	PasswordResetEnabled                bool                     `json:"password_reset_enabled"`
 	InvitationCodeEnabled               bool                     `json:"invitation_code_enabled"`
 	TotpEnabled                         bool                     `json:"totp_enabled"`
@@ -705,6 +708,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		RegistrationEmailDomainQuotaEnabled: settings.RegistrationEmailDomainQuotaEnabled,
 		PromoCodeEnabled:                    settings.PromoCodeEnabled,
 		CheckInEnabled:                      settings.CheckInEnabled,
+		RewardTasksEnabled:                  settings.RewardTasksEnabled,
 		PasswordResetEnabled:                settings.PasswordResetEnabled,
 		InvitationCodeEnabled:               settings.InvitationCodeEnabled,
 		TotpEnabled:                         settings.TotpEnabled,

@@ -51,6 +51,22 @@ func TestPublicSettingsInjectionPayload_HeaderLinksIsAlwaysPresent(t *testing.T)
 	}
 }
 
+func TestPublicSettingsInjectionPayload_RewardTasksEnabledIsAlwaysPresent(t *testing.T) {
+	for _, payload := range []any{service.PublicSettingsInjectionPayload{}, PublicSettings{}, SystemSettings{}} {
+		encoded, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(encoded, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if string(fields["reward_tasks_enabled"]) != "false" {
+			t.Errorf("%T must include reward_tasks_enabled=false, got %s", payload, fields["reward_tasks_enabled"])
+		}
+	}
+}
+
 // TestPublicSettingsInjectionPayload_SchemaDoesNotDrift guarantees the SSR
 // injection struct exposes every JSON field consumed by the frontend.
 //

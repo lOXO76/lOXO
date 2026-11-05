@@ -188,6 +188,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
 
+  {
+    path: '/docs/reward-integration',
+    name: 'RewardIntegrationDocs',
+    component: () => import('@/views/public/RewardIntegrationDocsView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Reward Task Integration',
+      titleKey: 'rewardIntegration.title'
+    }
+  },
+
   // ==================== User Routes ====================
   {
     path: '/async-tasks',
@@ -309,6 +320,19 @@ const routes: RouteRecordRaw[] = [
       title: 'Daily Check-in',
       titleKey: 'checkIn.title',
       descriptionKey: 'checkIn.description'
+    }
+  },
+  {
+    path: '/tasks',
+    name: 'RewardTasks',
+    component: () => import('@/views/user/RewardTasksView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresPersonalWallet: true,
+      requiresAdmin: false,
+      title: 'Task Center',
+      titleKey: 'rewardTasks.title',
+      descriptionKey: 'rewardTasks.description'
     }
   },
   {
@@ -685,6 +709,18 @@ const routes: RouteRecordRaw[] = [
       title: 'Check-in Stats',
       titleKey: 'admin.checkIns.title',
       descriptionKey: 'admin.checkIns.description'
+    }
+  },
+  {
+    path: '/admin/reward-tasks',
+    name: 'AdminRewardTasks',
+    component: () => import('@/views/admin/RewardTasksView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Reward Tasks',
+      titleKey: 'admin.rewardTasks.title',
+      descriptionKey: 'admin.rewardTasks.description'
     }
   },
   {
