@@ -9,6 +9,7 @@ import audit from './audit'
 import promptAudit from './promptAudit'
 import plugins from './plugins'
 import checkIns from './checkIns'
+import rewardTasks from './rewardTasks'
 
 export default {
   ...overview,
@@ -22,4 +23,5 @@ export default {
   ...promptAudit,
   ...plugins,
   ...checkIns,
+  ...rewardTasks,
 }

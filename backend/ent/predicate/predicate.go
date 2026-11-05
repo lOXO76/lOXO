@@ -123,6 +123,18 @@ type Proxy func(*sql.Selector)
 // RedeemCode is the predicate function for redeemcode builders.
 type RedeemCode func(*sql.Selector)
 
+// RewardTask is the predicate function for rewardtask builders.
+type RewardTask func(*sql.Selector)
+
+// RewardTaskEvent is the predicate function for rewardtaskevent builders.
+type RewardTaskEvent func(*sql.Selector)
+
+// RewardTaskPartner is the predicate function for rewardtaskpartner builders.
+type RewardTaskPartner func(*sql.Selector)
+
+// RewardTaskRecord is the predicate function for rewardtaskrecord builders.
+type RewardTaskRecord func(*sql.Selector)
+
 // SecuritySecret is the predicate function for securitysecret builders.
 type SecuritySecret func(*sql.Selector)
 

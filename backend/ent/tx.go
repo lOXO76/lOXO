@@ -92,6 +92,14 @@ type Tx struct {
 	Proxy *ProxyClient
 	// RedeemCode is the client for interacting with the RedeemCode builders.
 	RedeemCode *RedeemCodeClient
+	// RewardTask is the client for interacting with the RewardTask builders.
+	RewardTask *RewardTaskClient
+	// RewardTaskEvent is the client for interacting with the RewardTaskEvent builders.
+	RewardTaskEvent *RewardTaskEventClient
+	// RewardTaskPartner is the client for interacting with the RewardTaskPartner builders.
+	RewardTaskPartner *RewardTaskPartnerClient
+	// RewardTaskRecord is the client for interacting with the RewardTaskRecord builders.
+	RewardTaskRecord *RewardTaskRecordClient
 	// SecuritySecret is the client for interacting with the SecuritySecret builders.
 	SecuritySecret *SecuritySecretClient
 	// Setting is the client for interacting with the Setting builders.
@@ -288,6 +296,10 @@ func (tx *Tx) init() {
 	tx.PromoCodeUsage = NewPromoCodeUsageClient(tx.config)
 	tx.Proxy = NewProxyClient(tx.config)
 	tx.RedeemCode = NewRedeemCodeClient(tx.config)
+	tx.RewardTask = NewRewardTaskClient(tx.config)
+	tx.RewardTaskEvent = NewRewardTaskEventClient(tx.config)
+	tx.RewardTaskPartner = NewRewardTaskPartnerClient(tx.config)
+	tx.RewardTaskRecord = NewRewardTaskRecordClient(tx.config)
 	tx.SecuritySecret = NewSecuritySecretClient(tx.config)
 	tx.Setting = NewSettingClient(tx.config)
 	tx.SubscriptionPlan = NewSubscriptionPlanClient(tx.config)

@@ -112,9 +112,9 @@
                 <p class="text-sm font-medium text-gray-900 dark:text-white">
                   {{ getItemTitle(item) }}
                 </p>
-                <!-- Notes (admin adjustment reason) -->
+                <!-- Notes (admin adjustment reason)；任务奖励的 notes 即任务标题，改由下方来源行展示，避免重复 -->
                 <p
-                  v-if="item.notes"
+                  v-if="item.notes && !isTaskRewardType(item.type)"
                   class="mt-0.5 text-xs text-gray-500 dark:text-dark-400"
                   :title="item.notes"
                 >
@@ -141,6 +141,15 @@
                 class="text-xs text-gray-400 dark:text-dark-500"
               >
                 {{ t('redeem.checkInSource', { date: checkInDate(item) }) }}
+              </p>
+              <p
+                v-else-if="isTaskRewardType(item.type)"
+                class="text-xs text-gray-400 dark:text-dark-500"
+                :title="item.notes"
+              >
+                {{ item.notes
+                  ? t('admin.rewardTasks.balanceHistory.source', { task: item.notes })
+                  : t('admin.rewardTasks.balanceHistory.sourceFallback') }}
               </p>
               <p
                 v-else
@@ -210,6 +219,7 @@ const typeOptions = computed(() => [
   { value: 'balance', label: t('admin.users.typeBalance') },
   { value: 'affiliate_balance', label: t('admin.users.typeAffiliateBalance') },
   { value: 'check_in', label: t('admin.users.typeCheckIn') },
+  { value: 'task_reward', label: t('admin.rewardTasks.balanceHistory.typeTaskReward') },
   { value: 'admin_balance', label: t('admin.users.typeAdminBalance') },
   { value: 'concurrency', label: t('admin.users.typeConcurrency') },
   { value: 'admin_concurrency', label: t('admin.users.typeAdminConcurrency') },
@@ -254,10 +264,17 @@ const isAdminType = (type: string) => type === 'admin_balance' || type === 'admi
 
 // Helper: check if balance type (includes admin_balance)
 const isBalanceType = (type: string) =>
-  type === 'balance' || type === 'admin_balance' || type === 'affiliate_balance' || type === 'check_in'
+  type === 'balance' ||
+  type === 'admin_balance' ||
+  type === 'affiliate_balance' ||
+  type === 'check_in' ||
+  type === 'task_reward'
 
 // 签到额度：签到奖励发放到余额的记录，不是真实充值，需与充值类记录明确区分
 const isCheckInType = (type: string) => type === 'check_in'
+
+// 任务奖励：完成任务发放到余额的记录，同样不是真实充值，与签到用不同图标与颜色区分
+const isTaskRewardType = (type: string) => type === 'task_reward'
 
 // 签到流水的 code 形如 CHECKIN-2026-10-27，日期为服务器时区的签到自然日
 const checkInDate = (item: BalanceHistoryItem) => item.code.replace(/^CHECKIN-/, '')
@@ -268,6 +285,7 @@ const isSubscriptionType = (type: string) => type === 'subscription'
 // Icon name based on type
 const getIconName = (item: BalanceHistoryItem) => {
   if (isCheckInType(item.type)) return 'calendar'
+  if (isTaskRewardType(item.type)) return 'trophy'
   if (isBalanceType(item.type)) return 'dollar'
   if (isSubscriptionType(item.type)) return 'badge'
   return 'bolt' // concurrency
@@ -276,6 +294,7 @@ const getIconName = (item: BalanceHistoryItem) => {
 // Icon background color
 const getIconBg = (item: BalanceHistoryItem) => {
   if (isCheckInType(item.type)) return 'bg-amber-100 dark:bg-amber-900/30'
+  if (isTaskRewardType(item.type)) return 'bg-sky-100 dark:bg-sky-900/30'
   if (isBalanceType(item.type)) {
     return item.value >= 0
       ? 'bg-emerald-100 dark:bg-emerald-900/30'
@@ -290,6 +309,7 @@ const getIconBg = (item: BalanceHistoryItem) => {
 // Icon text color
 const getIconColor = (item: BalanceHistoryItem) => {
   if (isCheckInType(item.type)) return 'text-amber-600 dark:text-amber-400'
+  if (isTaskRewardType(item.type)) return 'text-sky-600 dark:text-sky-400'
   if (isBalanceType(item.type)) {
     return item.value >= 0
       ? 'text-emerald-600 dark:text-emerald-400'
@@ -304,6 +324,7 @@ const getIconColor = (item: BalanceHistoryItem) => {
 // Value text color
 const getValueColor = (item: BalanceHistoryItem) => {
   if (isCheckInType(item.type)) return 'text-amber-600 dark:text-amber-400'
+  if (isTaskRewardType(item.type)) return 'text-sky-600 dark:text-sky-400'
   if (isBalanceType(item.type)) {
     return item.value >= 0
       ? 'text-emerald-600 dark:text-emerald-400'
@@ -324,6 +345,8 @@ const getItemTitle = (item: BalanceHistoryItem) => {
       return t('redeem.balanceAddedAffiliate')
     case 'check_in':
       return t('redeem.balanceAddedCheckIn')
+    case 'task_reward':
+      return t('admin.rewardTasks.balanceHistory.title')
     case 'admin_balance':
       return item.value >= 0 ? t('redeem.balanceAddedAdmin') : t('redeem.balanceDeductedAdmin')
     case 'concurrency':
@@ -337,15 +360,17 @@ const getItemTitle = (item: BalanceHistoryItem) => {
   }
 }
 
-// 签到奖励多为小额：不足 $1 时最多保留 4 位小数（至少 2 位），与实际入账金额一致
-const formatCheckInAmount = (value: number) =>
+// 签到与任务奖励多为小额：不足 $1 时最多保留 4 位小数（至少 2 位），与实际入账金额一致
+const formatRewardAmount = (value: number) =>
   Math.abs(value) >= 1 ? value.toFixed(2) : value.toFixed(4).replace(/(\.\d{2}\d*?)0+$/, '$1')
 
 // Format display value
 const formatValue = (item: BalanceHistoryItem) => {
   if (isBalanceType(item.type)) {
     const sign = item.value >= 0 ? '+' : ''
-    const amount = isCheckInType(item.type) ? formatCheckInAmount(item.value) : item.value.toFixed(2)
+    const amount = isCheckInType(item.type) || isTaskRewardType(item.type)
+      ? formatRewardAmount(item.value)
+      : item.value.toFixed(2)
     return `${sign}$${amount}`
   }
   if (isSubscriptionType(item.type)) {

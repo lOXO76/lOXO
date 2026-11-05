@@ -43,6 +43,8 @@ type AdminHandlers struct {
 	Payment                *admin.PaymentHandler
 	Affiliate              *admin.AffiliateHandler
 	CheckIn                *admin.CheckInHandler
+	RewardTasks            *admin.RewardTaskHandler
+	RewardTaskSettings     *admin.RewardTaskSettingsHandler
 	Degradation            *admin.DegradationHandler
 	Compliance             *admin.ComplianceHandler
 	AuditLog               *admin.AuditLogHandler
@@ -73,6 +75,8 @@ type Handlers struct {
 	AsyncImage              *AsyncImageHandler
 	BatchImage              *BatchImageHandler
 	CheckIn                 *CheckInHandler
+	RewardTasks             *RewardTaskHandler
+	RewardTaskOpen          *RewardTaskOpenHandler
 	Degradation             *DegradationUserHandler
 	DegradationVisualRender *DegradationVisualRenderHandler
 }

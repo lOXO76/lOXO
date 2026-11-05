@@ -477,6 +477,54 @@ func (f RedeemCodeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RedeemCodeMutation", m)
 }
 
+// The RewardTaskFunc type is an adapter to allow the use of ordinary
+// function as RewardTask mutator.
+type RewardTaskFunc func(context.Context, *ent.RewardTaskMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RewardTaskFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RewardTaskMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RewardTaskMutation", m)
+}
+
+// The RewardTaskEventFunc type is an adapter to allow the use of ordinary
+// function as RewardTaskEvent mutator.
+type RewardTaskEventFunc func(context.Context, *ent.RewardTaskEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RewardTaskEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RewardTaskEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RewardTaskEventMutation", m)
+}
+
+// The RewardTaskPartnerFunc type is an adapter to allow the use of ordinary
+// function as RewardTaskPartner mutator.
+type RewardTaskPartnerFunc func(context.Context, *ent.RewardTaskPartnerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RewardTaskPartnerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RewardTaskPartnerMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RewardTaskPartnerMutation", m)
+}
+
+// The RewardTaskRecordFunc type is an adapter to allow the use of ordinary
+// function as RewardTaskRecord mutator.
+type RewardTaskRecordFunc func(context.Context, *ent.RewardTaskRecordMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RewardTaskRecordFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RewardTaskRecordMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RewardTaskRecordMutation", m)
+}
+
 // The SecuritySecretFunc type is an adapter to allow the use of ordinary
 // function as SecuritySecret mutator.
 type SecuritySecretFunc func(context.Context, *ent.SecuritySecretMutation) (ent.Value, error)

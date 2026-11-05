@@ -139,6 +139,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		RegistrationEmailDomainQuotaEnabled:                    settings.RegistrationEmailDomainQuotaEnabled,
 		PromoCodeEnabled:                                       settings.PromoCodeEnabled,
 		CheckInEnabled:                                         settings.CheckInEnabled,
+		RewardTasksEnabled:                                     settings.RewardTasksEnabled,
 		CheckInCaptchaEnabled:                                  settings.CheckInCaptchaEnabled,
 		CheckInTiers:                                           settings.CheckInTiers,
 		PasswordResetEnabled:                                   settings.PasswordResetEnabled,

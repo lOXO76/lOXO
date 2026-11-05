@@ -54,6 +54,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtask"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskevent"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskpartner"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskrecord"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
@@ -154,6 +158,14 @@ type Client struct {
 	Proxy *ProxyClient
 	// RedeemCode is the client for interacting with the RedeemCode builders.
 	RedeemCode *RedeemCodeClient
+	// RewardTask is the client for interacting with the RewardTask builders.
+	RewardTask *RewardTaskClient
+	// RewardTaskEvent is the client for interacting with the RewardTaskEvent builders.
+	RewardTaskEvent *RewardTaskEventClient
+	// RewardTaskPartner is the client for interacting with the RewardTaskPartner builders.
+	RewardTaskPartner *RewardTaskPartnerClient
+	// RewardTaskRecord is the client for interacting with the RewardTaskRecord builders.
+	RewardTaskRecord *RewardTaskRecordClient
 	// SecuritySecret is the client for interacting with the SecuritySecret builders.
 	SecuritySecret *SecuritySecretClient
 	// Setting is the client for interacting with the Setting builders.
@@ -230,6 +242,10 @@ func (c *Client) init() {
 	c.PromoCodeUsage = NewPromoCodeUsageClient(c.config)
 	c.Proxy = NewProxyClient(c.config)
 	c.RedeemCode = NewRedeemCodeClient(c.config)
+	c.RewardTask = NewRewardTaskClient(c.config)
+	c.RewardTaskEvent = NewRewardTaskEventClient(c.config)
+	c.RewardTaskPartner = NewRewardTaskPartnerClient(c.config)
+	c.RewardTaskRecord = NewRewardTaskRecordClient(c.config)
 	c.SecuritySecret = NewSecuritySecretClient(c.config)
 	c.Setting = NewSettingClient(c.config)
 	c.SubscriptionPlan = NewSubscriptionPlanClient(c.config)
@@ -374,6 +390,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		PromoCodeUsage:                NewPromoCodeUsageClient(cfg),
 		Proxy:                         NewProxyClient(cfg),
 		RedeemCode:                    NewRedeemCodeClient(cfg),
+		RewardTask:                    NewRewardTaskClient(cfg),
+		RewardTaskEvent:               NewRewardTaskEventClient(cfg),
+		RewardTaskPartner:             NewRewardTaskPartnerClient(cfg),
+		RewardTaskRecord:              NewRewardTaskRecordClient(cfg),
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
@@ -445,6 +465,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		PromoCodeUsage:                NewPromoCodeUsageClient(cfg),
 		Proxy:                         NewProxyClient(cfg),
 		RedeemCode:                    NewRedeemCodeClient(cfg),
+		RewardTask:                    NewRewardTaskClient(cfg),
+		RewardTaskEvent:               NewRewardTaskEventClient(cfg),
+		RewardTaskPartner:             NewRewardTaskPartnerClient(cfg),
+		RewardTaskRecord:              NewRewardTaskRecordClient(cfg),
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
@@ -498,7 +522,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.EnterpriseMember, c.EnterpriseQuota, c.ErrorPassthroughRule, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
+		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RewardTask, c.RewardTaskEvent,
+		c.RewardTaskPartner, c.RewardTaskRecord, c.SecuritySecret, c.Setting,
 		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
 		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserCheckIn, c.UserPlatformQuota, c.UserSubscription,
@@ -522,7 +547,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.EnterpriseMember, c.EnterpriseQuota, c.ErrorPassthroughRule, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
+		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RewardTask, c.RewardTaskEvent,
+		c.RewardTaskPartner, c.RewardTaskRecord, c.SecuritySecret, c.Setting,
 		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
 		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserCheckIn, c.UserPlatformQuota, c.UserSubscription,
@@ -612,6 +638,14 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Proxy.mutate(ctx, m)
 	case *RedeemCodeMutation:
 		return c.RedeemCode.mutate(ctx, m)
+	case *RewardTaskMutation:
+		return c.RewardTask.mutate(ctx, m)
+	case *RewardTaskEventMutation:
+		return c.RewardTaskEvent.mutate(ctx, m)
+	case *RewardTaskPartnerMutation:
+		return c.RewardTaskPartner.mutate(ctx, m)
+	case *RewardTaskRecordMutation:
+		return c.RewardTaskRecord.mutate(ctx, m)
 	case *SecuritySecretMutation:
 		return c.SecuritySecret.mutate(ctx, m)
 	case *SettingMutation:
@@ -6698,6 +6732,542 @@ func (c *RedeemCodeClient) mutate(ctx context.Context, m *RedeemCodeMutation) (V
 	}
 }
 
+// RewardTaskClient is a client for the RewardTask schema.
+type RewardTaskClient struct {
+	config
+}
+
+// NewRewardTaskClient returns a client for the RewardTask from the given config.
+func NewRewardTaskClient(c config) *RewardTaskClient {
+	return &RewardTaskClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rewardtask.Hooks(f(g(h())))`.
+func (c *RewardTaskClient) Use(hooks ...Hook) {
+	c.hooks.RewardTask = append(c.hooks.RewardTask, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rewardtask.Intercept(f(g(h())))`.
+func (c *RewardTaskClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RewardTask = append(c.inters.RewardTask, interceptors...)
+}
+
+// Create returns a builder for creating a RewardTask entity.
+func (c *RewardTaskClient) Create() *RewardTaskCreate {
+	mutation := newRewardTaskMutation(c.config, OpCreate)
+	return &RewardTaskCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RewardTask entities.
+func (c *RewardTaskClient) CreateBulk(builders ...*RewardTaskCreate) *RewardTaskCreateBulk {
+	return &RewardTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RewardTaskClient) MapCreateBulk(slice any, setFunc func(*RewardTaskCreate, int)) *RewardTaskCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RewardTaskCreateBulk{err: fmt.Errorf("calling to RewardTaskClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RewardTaskCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RewardTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RewardTask.
+func (c *RewardTaskClient) Update() *RewardTaskUpdate {
+	mutation := newRewardTaskMutation(c.config, OpUpdate)
+	return &RewardTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RewardTaskClient) UpdateOne(_m *RewardTask) *RewardTaskUpdateOne {
+	mutation := newRewardTaskMutation(c.config, OpUpdateOne, withRewardTask(_m))
+	return &RewardTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RewardTaskClient) UpdateOneID(id int64) *RewardTaskUpdateOne {
+	mutation := newRewardTaskMutation(c.config, OpUpdateOne, withRewardTaskID(id))
+	return &RewardTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RewardTask.
+func (c *RewardTaskClient) Delete() *RewardTaskDelete {
+	mutation := newRewardTaskMutation(c.config, OpDelete)
+	return &RewardTaskDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RewardTaskClient) DeleteOne(_m *RewardTask) *RewardTaskDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RewardTaskClient) DeleteOneID(id int64) *RewardTaskDeleteOne {
+	builder := c.Delete().Where(rewardtask.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RewardTaskDeleteOne{builder}
+}
+
+// Query returns a query builder for RewardTask.
+func (c *RewardTaskClient) Query() *RewardTaskQuery {
+	return &RewardTaskQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRewardTask},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RewardTask entity by its id.
+func (c *RewardTaskClient) Get(ctx context.Context, id int64) (*RewardTask, error) {
+	return c.Query().Where(rewardtask.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RewardTaskClient) GetX(ctx context.Context, id int64) *RewardTask {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *RewardTaskClient) Hooks() []Hook {
+	hooks := c.hooks.RewardTask
+	return append(hooks[:len(hooks):len(hooks)], rewardtask.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RewardTaskClient) Interceptors() []Interceptor {
+	inters := c.inters.RewardTask
+	return append(inters[:len(inters):len(inters)], rewardtask.Interceptors[:]...)
+}
+
+func (c *RewardTaskClient) mutate(ctx context.Context, m *RewardTaskMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RewardTaskCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RewardTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RewardTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RewardTaskDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RewardTask mutation op: %q", m.Op())
+	}
+}
+
+// RewardTaskEventClient is a client for the RewardTaskEvent schema.
+type RewardTaskEventClient struct {
+	config
+}
+
+// NewRewardTaskEventClient returns a client for the RewardTaskEvent from the given config.
+func NewRewardTaskEventClient(c config) *RewardTaskEventClient {
+	return &RewardTaskEventClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rewardtaskevent.Hooks(f(g(h())))`.
+func (c *RewardTaskEventClient) Use(hooks ...Hook) {
+	c.hooks.RewardTaskEvent = append(c.hooks.RewardTaskEvent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rewardtaskevent.Intercept(f(g(h())))`.
+func (c *RewardTaskEventClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RewardTaskEvent = append(c.inters.RewardTaskEvent, interceptors...)
+}
+
+// Create returns a builder for creating a RewardTaskEvent entity.
+func (c *RewardTaskEventClient) Create() *RewardTaskEventCreate {
+	mutation := newRewardTaskEventMutation(c.config, OpCreate)
+	return &RewardTaskEventCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RewardTaskEvent entities.
+func (c *RewardTaskEventClient) CreateBulk(builders ...*RewardTaskEventCreate) *RewardTaskEventCreateBulk {
+	return &RewardTaskEventCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RewardTaskEventClient) MapCreateBulk(slice any, setFunc func(*RewardTaskEventCreate, int)) *RewardTaskEventCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RewardTaskEventCreateBulk{err: fmt.Errorf("calling to RewardTaskEventClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RewardTaskEventCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RewardTaskEventCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RewardTaskEvent.
+func (c *RewardTaskEventClient) Update() *RewardTaskEventUpdate {
+	mutation := newRewardTaskEventMutation(c.config, OpUpdate)
+	return &RewardTaskEventUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RewardTaskEventClient) UpdateOne(_m *RewardTaskEvent) *RewardTaskEventUpdateOne {
+	mutation := newRewardTaskEventMutation(c.config, OpUpdateOne, withRewardTaskEvent(_m))
+	return &RewardTaskEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RewardTaskEventClient) UpdateOneID(id int64) *RewardTaskEventUpdateOne {
+	mutation := newRewardTaskEventMutation(c.config, OpUpdateOne, withRewardTaskEventID(id))
+	return &RewardTaskEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RewardTaskEvent.
+func (c *RewardTaskEventClient) Delete() *RewardTaskEventDelete {
+	mutation := newRewardTaskEventMutation(c.config, OpDelete)
+	return &RewardTaskEventDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RewardTaskEventClient) DeleteOne(_m *RewardTaskEvent) *RewardTaskEventDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RewardTaskEventClient) DeleteOneID(id int64) *RewardTaskEventDeleteOne {
+	builder := c.Delete().Where(rewardtaskevent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RewardTaskEventDeleteOne{builder}
+}
+
+// Query returns a query builder for RewardTaskEvent.
+func (c *RewardTaskEventClient) Query() *RewardTaskEventQuery {
+	return &RewardTaskEventQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRewardTaskEvent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RewardTaskEvent entity by its id.
+func (c *RewardTaskEventClient) Get(ctx context.Context, id int64) (*RewardTaskEvent, error) {
+	return c.Query().Where(rewardtaskevent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RewardTaskEventClient) GetX(ctx context.Context, id int64) *RewardTaskEvent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *RewardTaskEventClient) Hooks() []Hook {
+	return c.hooks.RewardTaskEvent
+}
+
+// Interceptors returns the client interceptors.
+func (c *RewardTaskEventClient) Interceptors() []Interceptor {
+	return c.inters.RewardTaskEvent
+}
+
+func (c *RewardTaskEventClient) mutate(ctx context.Context, m *RewardTaskEventMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RewardTaskEventCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RewardTaskEventUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RewardTaskEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RewardTaskEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RewardTaskEvent mutation op: %q", m.Op())
+	}
+}
+
+// RewardTaskPartnerClient is a client for the RewardTaskPartner schema.
+type RewardTaskPartnerClient struct {
+	config
+}
+
+// NewRewardTaskPartnerClient returns a client for the RewardTaskPartner from the given config.
+func NewRewardTaskPartnerClient(c config) *RewardTaskPartnerClient {
+	return &RewardTaskPartnerClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rewardtaskpartner.Hooks(f(g(h())))`.
+func (c *RewardTaskPartnerClient) Use(hooks ...Hook) {
+	c.hooks.RewardTaskPartner = append(c.hooks.RewardTaskPartner, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rewardtaskpartner.Intercept(f(g(h())))`.
+func (c *RewardTaskPartnerClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RewardTaskPartner = append(c.inters.RewardTaskPartner, interceptors...)
+}
+
+// Create returns a builder for creating a RewardTaskPartner entity.
+func (c *RewardTaskPartnerClient) Create() *RewardTaskPartnerCreate {
+	mutation := newRewardTaskPartnerMutation(c.config, OpCreate)
+	return &RewardTaskPartnerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RewardTaskPartner entities.
+func (c *RewardTaskPartnerClient) CreateBulk(builders ...*RewardTaskPartnerCreate) *RewardTaskPartnerCreateBulk {
+	return &RewardTaskPartnerCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RewardTaskPartnerClient) MapCreateBulk(slice any, setFunc func(*RewardTaskPartnerCreate, int)) *RewardTaskPartnerCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RewardTaskPartnerCreateBulk{err: fmt.Errorf("calling to RewardTaskPartnerClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RewardTaskPartnerCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RewardTaskPartnerCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RewardTaskPartner.
+func (c *RewardTaskPartnerClient) Update() *RewardTaskPartnerUpdate {
+	mutation := newRewardTaskPartnerMutation(c.config, OpUpdate)
+	return &RewardTaskPartnerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RewardTaskPartnerClient) UpdateOne(_m *RewardTaskPartner) *RewardTaskPartnerUpdateOne {
+	mutation := newRewardTaskPartnerMutation(c.config, OpUpdateOne, withRewardTaskPartner(_m))
+	return &RewardTaskPartnerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RewardTaskPartnerClient) UpdateOneID(id int64) *RewardTaskPartnerUpdateOne {
+	mutation := newRewardTaskPartnerMutation(c.config, OpUpdateOne, withRewardTaskPartnerID(id))
+	return &RewardTaskPartnerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RewardTaskPartner.
+func (c *RewardTaskPartnerClient) Delete() *RewardTaskPartnerDelete {
+	mutation := newRewardTaskPartnerMutation(c.config, OpDelete)
+	return &RewardTaskPartnerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RewardTaskPartnerClient) DeleteOne(_m *RewardTaskPartner) *RewardTaskPartnerDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RewardTaskPartnerClient) DeleteOneID(id int64) *RewardTaskPartnerDeleteOne {
+	builder := c.Delete().Where(rewardtaskpartner.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RewardTaskPartnerDeleteOne{builder}
+}
+
+// Query returns a query builder for RewardTaskPartner.
+func (c *RewardTaskPartnerClient) Query() *RewardTaskPartnerQuery {
+	return &RewardTaskPartnerQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRewardTaskPartner},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RewardTaskPartner entity by its id.
+func (c *RewardTaskPartnerClient) Get(ctx context.Context, id int64) (*RewardTaskPartner, error) {
+	return c.Query().Where(rewardtaskpartner.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RewardTaskPartnerClient) GetX(ctx context.Context, id int64) *RewardTaskPartner {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *RewardTaskPartnerClient) Hooks() []Hook {
+	hooks := c.hooks.RewardTaskPartner
+	return append(hooks[:len(hooks):len(hooks)], rewardtaskpartner.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RewardTaskPartnerClient) Interceptors() []Interceptor {
+	inters := c.inters.RewardTaskPartner
+	return append(inters[:len(inters):len(inters)], rewardtaskpartner.Interceptors[:]...)
+}
+
+func (c *RewardTaskPartnerClient) mutate(ctx context.Context, m *RewardTaskPartnerMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RewardTaskPartnerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RewardTaskPartnerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RewardTaskPartnerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RewardTaskPartnerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RewardTaskPartner mutation op: %q", m.Op())
+	}
+}
+
+// RewardTaskRecordClient is a client for the RewardTaskRecord schema.
+type RewardTaskRecordClient struct {
+	config
+}
+
+// NewRewardTaskRecordClient returns a client for the RewardTaskRecord from the given config.
+func NewRewardTaskRecordClient(c config) *RewardTaskRecordClient {
+	return &RewardTaskRecordClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rewardtaskrecord.Hooks(f(g(h())))`.
+func (c *RewardTaskRecordClient) Use(hooks ...Hook) {
+	c.hooks.RewardTaskRecord = append(c.hooks.RewardTaskRecord, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rewardtaskrecord.Intercept(f(g(h())))`.
+func (c *RewardTaskRecordClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RewardTaskRecord = append(c.inters.RewardTaskRecord, interceptors...)
+}
+
+// Create returns a builder for creating a RewardTaskRecord entity.
+func (c *RewardTaskRecordClient) Create() *RewardTaskRecordCreate {
+	mutation := newRewardTaskRecordMutation(c.config, OpCreate)
+	return &RewardTaskRecordCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RewardTaskRecord entities.
+func (c *RewardTaskRecordClient) CreateBulk(builders ...*RewardTaskRecordCreate) *RewardTaskRecordCreateBulk {
+	return &RewardTaskRecordCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RewardTaskRecordClient) MapCreateBulk(slice any, setFunc func(*RewardTaskRecordCreate, int)) *RewardTaskRecordCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RewardTaskRecordCreateBulk{err: fmt.Errorf("calling to RewardTaskRecordClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RewardTaskRecordCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RewardTaskRecordCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RewardTaskRecord.
+func (c *RewardTaskRecordClient) Update() *RewardTaskRecordUpdate {
+	mutation := newRewardTaskRecordMutation(c.config, OpUpdate)
+	return &RewardTaskRecordUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RewardTaskRecordClient) UpdateOne(_m *RewardTaskRecord) *RewardTaskRecordUpdateOne {
+	mutation := newRewardTaskRecordMutation(c.config, OpUpdateOne, withRewardTaskRecord(_m))
+	return &RewardTaskRecordUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RewardTaskRecordClient) UpdateOneID(id int64) *RewardTaskRecordUpdateOne {
+	mutation := newRewardTaskRecordMutation(c.config, OpUpdateOne, withRewardTaskRecordID(id))
+	return &RewardTaskRecordUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RewardTaskRecord.
+func (c *RewardTaskRecordClient) Delete() *RewardTaskRecordDelete {
+	mutation := newRewardTaskRecordMutation(c.config, OpDelete)
+	return &RewardTaskRecordDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RewardTaskRecordClient) DeleteOne(_m *RewardTaskRecord) *RewardTaskRecordDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RewardTaskRecordClient) DeleteOneID(id int64) *RewardTaskRecordDeleteOne {
+	builder := c.Delete().Where(rewardtaskrecord.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RewardTaskRecordDeleteOne{builder}
+}
+
+// Query returns a query builder for RewardTaskRecord.
+func (c *RewardTaskRecordClient) Query() *RewardTaskRecordQuery {
+	return &RewardTaskRecordQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRewardTaskRecord},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RewardTaskRecord entity by its id.
+func (c *RewardTaskRecordClient) Get(ctx context.Context, id int64) (*RewardTaskRecord, error) {
+	return c.Query().Where(rewardtaskrecord.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RewardTaskRecordClient) GetX(ctx context.Context, id int64) *RewardTaskRecord {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *RewardTaskRecordClient) Hooks() []Hook {
+	return c.hooks.RewardTaskRecord
+}
+
+// Interceptors returns the client interceptors.
+func (c *RewardTaskRecordClient) Interceptors() []Interceptor {
+	return c.inters.RewardTaskRecord
+}
+
+func (c *RewardTaskRecordClient) mutate(ctx context.Context, m *RewardTaskRecordMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RewardTaskRecordCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RewardTaskRecordUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RewardTaskRecordUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RewardTaskRecordDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RewardTaskRecord mutation op: %q", m.Op())
+	}
+}
+
 // SecuritySecretClient is a client for the SecuritySecret schema.
 type SecuritySecretClient struct {
 	config
@@ -8863,7 +9433,8 @@ type (
 		EnterpriseQuota, ErrorPassthroughRule, Group, IdempotencyRecord,
 		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
-		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		RedeemCode, RewardTask, RewardTaskEvent, RewardTaskPartner, RewardTaskRecord,
+		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
 		UserAttributeValue, UserCheckIn, UserPlatformQuota, UserSubscription []ent.Hook
 	}
@@ -8878,7 +9449,8 @@ type (
 		EnterpriseQuota, ErrorPassthroughRule, Group, IdempotencyRecord,
 		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
-		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		RedeemCode, RewardTask, RewardTaskEvent, RewardTaskPartner, RewardTaskRecord,
+		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
 		UserAttributeValue, UserCheckIn, UserPlatformQuota,
 		UserSubscription []ent.Interceptor

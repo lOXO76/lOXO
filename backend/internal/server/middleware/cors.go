@@ -66,6 +66,22 @@ func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		origin := strings.TrimSpace(c.GetHeader("Origin"))
+		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/reward-open/sdk/") {
+			// SDK endpoints validate the origin against the partner's own allowlist.
+			c.Writer.Header().Add("Vary", "Origin")
+			if origin != "" {
+				c.Header("Access-Control-Allow-Origin", origin)
+			}
+			c.Writer.Header().Del("Access-Control-Allow-Credentials")
+			c.Header("Access-Control-Allow-Methods", "POST, OPTIONS")
+			c.Header("Access-Control-Allow-Headers", "Content-Type")
+			if c.Request.Method == http.MethodOptions {
+				c.AbortWithStatus(http.StatusNoContent)
+				return
+			}
+			c.Next()
+			return
+		}
 		originAllowed := allowAll
 		if origin != "" && !allowAll {
 			_, originAllowed = allowedSet[origin]

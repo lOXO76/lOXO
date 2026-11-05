@@ -262,13 +262,14 @@ import { sanitizeUrl } from '@/utils/url'
 import { customMenuNewTabUrl } from '@/utils/navigationLinks'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
 import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
-import { Building2, CalendarCheck2, MonitorDown, Sparkles } from '@lucide/vue'
+import { Building2, CalendarCheck2, ListChecks, MonitorDown, Sparkles } from '@lucide/vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { canAccessEnterprise, enterpriseSectionPath } from '@/features/enterprise/navigation'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
 
 const BuildingIcon = { render: () => h(Building2, { strokeWidth: 1.5 }) }
 const CheckInIcon = { render: () => h(CalendarCheck2, { strokeWidth: 1.5 }) }
+const RewardTaskIcon = { render: () => h(ListChecks, { strokeWidth: 1.5 }) }
 const ImportClientIcon = { render: () => h(MonitorDown, { strokeWidth: 1.5 }) }
 const CreationIcon = { render: () => h(Sparkles, { strokeWidth: 1.5 }) }
 
@@ -798,6 +799,7 @@ const purchaseNavLabel = computed(() => {
 })
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const flagCheckIn = makeSidebarFlag(FeatureFlags.checkIn)
+const flagRewardTasks = makeSidebarFlag(FeatureFlags.rewardTasks)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagPluginManagement = makeSidebarFlag(FeatureFlags.pluginManagement)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
@@ -846,6 +848,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/orders', label: t('nav.myOrders'), icon: OrderListIcon, hideInSimpleMode: true, featureFlag: flagPersonalPayment },
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true, featureFlag: flagPersonalWallet },
     { path: '/check-in', label: t('nav.checkIn'), icon: CheckInIcon, hideInSimpleMode: true, featureFlag: flagCheckIn },
+    { path: '/tasks', label: t('nav.rewardTasks'), icon: RewardTaskIcon, hideInSimpleMode: true, featureFlag: flagRewardTasks },
     { path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({
@@ -927,6 +930,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/redeem', label: t('nav.redeemCodes'), icon: TicketIcon, hideInSimpleMode: true },
     { path: '/admin/promo-codes', label: t('nav.promoCodes'), icon: GiftIcon, hideInSimpleMode: true },
     { path: '/admin/check-ins', label: t('nav.checkInStats'), icon: CheckInIcon, hideInSimpleMode: true },
+    { path: '/admin/reward-tasks', label: t('nav.rewardTasksAdmin'), icon: RewardTaskIcon, hideInSimpleMode: true },
     {
       path: '/admin/affiliates',
       label: t('nav.affiliateManagement'),

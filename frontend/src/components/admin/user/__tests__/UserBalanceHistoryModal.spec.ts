@@ -121,3 +121,61 @@ describe('UserBalanceHistoryModal check-in credit', () => {
     expect(mocks.getUserBalanceHistory).toHaveBeenLastCalledWith(1, 1, expect.any(Number), 'check_in')
   })
 })
+
+describe('UserBalanceHistoryModal task reward credit', () => {
+  const taskReward = {
+    id: -42,
+    type: 'task_reward',
+    code: 'TASK-42',
+    value: 0.5,
+    notes: '浏览 XX 官网 30 秒',
+    used_at: '2026-11-05T10:00:30Z',
+    created_at: '2026-11-05T10:00:30Z',
+  }
+  const checkIn = { id: -5, type: 'check_in', code: 'CHECKIN-2026-11-05', value: 0.2783, notes: '', used_at: '2026-11-05T00:31:05Z', created_at: '2026-11-05T00:31:05Z' }
+
+  it('labels task rewards distinctly from recharges and check-ins', async () => {
+    mocks.getUserBalanceHistory.mockResolvedValueOnce({ items: [taskReward, checkIn], total: 2, total_recharged: 0 })
+    const wrapper = await openDialog()
+    await flushPromises()
+
+    // 任务奖励与签到都使用负数 ID，两条都要渲染
+    expect(wrapper.text()).toContain('admin.rewardTasks.balanceHistory.title')
+    expect(wrapper.text()).toContain('redeem.balanceAddedCheckIn')
+    // 来源显示任务标题（notes），且不在上方 notes 行重复展示（整页只出现一次）
+    expect(wrapper.text()).toContain('admin.rewardTasks.balanceHistory.source(浏览 XX 官网 30 秒)')
+    expect(wrapper.text().split('浏览 XX 官网 30 秒')).toHaveLength(2)
+    // 小额奖励最多保留 4 位小数
+    expect(wrapper.text()).toContain('+$0.50')
+    // 任务奖励使用奖杯图标与天蓝色，和签到的日历图标 + 琥珀色区分
+    const icons = wrapper.findAllComponents({ name: 'Icon' })
+    expect(icons.map((icon) => icon.attributes('name'))).toEqual(expect.arrayContaining(['trophy', 'calendar']))
+    expect(wrapper.find('p.text-sky-600').text()).toBe('+$0.50')
+    expect(wrapper.find('p.text-amber-600').text()).toBe('+$0.2783')
+  })
+
+  it('falls back to a plain source label when the task title snapshot is empty', async () => {
+    mocks.getUserBalanceHistory.mockResolvedValueOnce({
+      items: [{ ...taskReward, notes: '' }],
+      total: 1,
+      total_recharged: 0,
+    })
+    const wrapper = await openDialog()
+    await flushPromises()
+    expect(wrapper.text()).toContain('admin.rewardTasks.balanceHistory.sourceFallback')
+  })
+
+  it('offers task reward as its own type filter', async () => {
+    mocks.getUserBalanceHistory.mockResolvedValue({ items: [], total: 0, total_recharged: 0 })
+    const wrapper = await openDialog()
+    await flushPromises()
+    const options = wrapper.findComponent({ name: 'Select' }).props('options') as Array<{ value: string; label: string }>
+    expect(options).toContainEqual({ value: 'task_reward', label: 'admin.rewardTasks.balanceHistory.typeTaskReward' })
+
+    const select = wrapper.findComponent({ name: 'Select' })
+    select.vm.$emit('update:modelValue', 'task_reward')
+    select.vm.$emit('change', 'task_reward')
+    await flushPromises()
+    expect(mocks.getUserBalanceHistory).toHaveBeenLastCalledWith(1, 1, expect.any(Number), 'task_reward')
+  })
+})

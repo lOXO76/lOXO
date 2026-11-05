@@ -44,6 +44,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtask"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskevent"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskpartner"
+	"github.com/Wei-Shaw/sub2api/ent/rewardtaskrecord"
 	"github.com/Wei-Shaw/sub2api/ent/schema"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
@@ -2312,6 +2316,239 @@ func init() {
 	redeemcodeDescValidityDays := redeemcodeFields[10].Descriptor()
 	// redeemcode.DefaultValidityDays holds the default value on creation for the validity_days field.
 	redeemcode.DefaultValidityDays = redeemcodeDescValidityDays.Default.(int)
+	rewardtaskMixin := schema.RewardTask{}.Mixin()
+	rewardtaskMixinHooks1 := rewardtaskMixin[1].Hooks()
+	rewardtask.Hooks[0] = rewardtaskMixinHooks1[0]
+	rewardtaskMixinInters1 := rewardtaskMixin[1].Interceptors()
+	rewardtask.Interceptors[0] = rewardtaskMixinInters1[0]
+	rewardtaskMixinFields0 := rewardtaskMixin[0].Fields()
+	_ = rewardtaskMixinFields0
+	rewardtaskFields := schema.RewardTask{}.Fields()
+	_ = rewardtaskFields
+	// rewardtaskDescCreatedAt is the schema descriptor for created_at field.
+	rewardtaskDescCreatedAt := rewardtaskMixinFields0[0].Descriptor()
+	// rewardtask.DefaultCreatedAt holds the default value on creation for the created_at field.
+	rewardtask.DefaultCreatedAt = rewardtaskDescCreatedAt.Default.(func() time.Time)
+	// rewardtaskDescUpdatedAt is the schema descriptor for updated_at field.
+	rewardtaskDescUpdatedAt := rewardtaskMixinFields0[1].Descriptor()
+	// rewardtask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	rewardtask.DefaultUpdatedAt = rewardtaskDescUpdatedAt.Default.(func() time.Time)
+	// rewardtask.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	rewardtask.UpdateDefaultUpdatedAt = rewardtaskDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// rewardtaskDescTitle is the schema descriptor for title field.
+	rewardtaskDescTitle := rewardtaskFields[0].Descriptor()
+	// rewardtask.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	rewardtask.TitleValidator = rewardtaskDescTitle.Validators[0].(func(string) error)
+	// rewardtaskDescDescription is the schema descriptor for description field.
+	rewardtaskDescDescription := rewardtaskFields[1].Descriptor()
+	// rewardtask.DefaultDescription holds the default value on creation for the description field.
+	rewardtask.DefaultDescription = rewardtaskDescDescription.Default.(string)
+	// rewardtaskDescTaskType is the schema descriptor for task_type field.
+	rewardtaskDescTaskType := rewardtaskFields[2].Descriptor()
+	// rewardtask.TaskTypeValidator is a validator for the "task_type" field. It is called by the builders before save.
+	rewardtask.TaskTypeValidator = rewardtaskDescTaskType.Validators[0].(func(string) error)
+	// rewardtaskDescVerifyMode is the schema descriptor for verify_mode field.
+	rewardtaskDescVerifyMode := rewardtaskFields[3].Descriptor()
+	// rewardtask.VerifyModeValidator is a validator for the "verify_mode" field. It is called by the builders before save.
+	rewardtask.VerifyModeValidator = rewardtaskDescVerifyMode.Validators[0].(func(string) error)
+	// rewardtaskDescIconURL is the schema descriptor for icon_url field.
+	rewardtaskDescIconURL := rewardtaskFields[6].Descriptor()
+	// rewardtask.DefaultIconURL holds the default value on creation for the icon_url field.
+	rewardtask.DefaultIconURL = rewardtaskDescIconURL.Default.(string)
+	// rewardtaskDescPeriod is the schema descriptor for period field.
+	rewardtaskDescPeriod := rewardtaskFields[8].Descriptor()
+	// rewardtask.DefaultPeriod holds the default value on creation for the period field.
+	rewardtask.DefaultPeriod = rewardtaskDescPeriod.Default.(string)
+	// rewardtask.PeriodValidator is a validator for the "period" field. It is called by the builders before save.
+	rewardtask.PeriodValidator = rewardtaskDescPeriod.Validators[0].(func(string) error)
+	// rewardtaskDescBrowseSeconds is the schema descriptor for browse_seconds field.
+	rewardtaskDescBrowseSeconds := rewardtaskFields[9].Descriptor()
+	// rewardtask.DefaultBrowseSeconds holds the default value on creation for the browse_seconds field.
+	rewardtask.DefaultBrowseSeconds = rewardtaskDescBrowseSeconds.Default.(int)
+	// rewardtaskDescIdleTimeoutSeconds is the schema descriptor for idle_timeout_seconds field.
+	rewardtaskDescIdleTimeoutSeconds := rewardtaskFields[10].Descriptor()
+	// rewardtask.DefaultIdleTimeoutSeconds holds the default value on creation for the idle_timeout_seconds field.
+	rewardtask.DefaultIdleTimeoutSeconds = rewardtaskDescIdleTimeoutSeconds.Default.(int)
+	// rewardtaskDescMinRechargeAmount is the schema descriptor for min_recharge_amount field.
+	rewardtaskDescMinRechargeAmount := rewardtaskFields[11].Descriptor()
+	// rewardtask.DefaultMinRechargeAmount holds the default value on creation for the min_recharge_amount field.
+	rewardtask.DefaultMinRechargeAmount = rewardtaskDescMinRechargeAmount.Default.(float64)
+	// rewardtaskDescMaxCompletions is the schema descriptor for max_completions field.
+	rewardtaskDescMaxCompletions := rewardtaskFields[12].Descriptor()
+	// rewardtask.DefaultMaxCompletions holds the default value on creation for the max_completions field.
+	rewardtask.DefaultMaxCompletions = rewardtaskDescMaxCompletions.Default.(int)
+	// rewardtaskDescCompletedCount is the schema descriptor for completed_count field.
+	rewardtaskDescCompletedCount := rewardtaskFields[13].Descriptor()
+	// rewardtask.DefaultCompletedCount holds the default value on creation for the completed_count field.
+	rewardtask.DefaultCompletedCount = rewardtaskDescCompletedCount.Default.(int)
+	// rewardtaskDescEnabled is the schema descriptor for enabled field.
+	rewardtaskDescEnabled := rewardtaskFields[16].Descriptor()
+	// rewardtask.DefaultEnabled holds the default value on creation for the enabled field.
+	rewardtask.DefaultEnabled = rewardtaskDescEnabled.Default.(bool)
+	// rewardtaskDescSortOrder is the schema descriptor for sort_order field.
+	rewardtaskDescSortOrder := rewardtaskFields[17].Descriptor()
+	// rewardtask.DefaultSortOrder holds the default value on creation for the sort_order field.
+	rewardtask.DefaultSortOrder = rewardtaskDescSortOrder.Default.(int)
+	rewardtaskeventFields := schema.RewardTaskEvent{}.Fields()
+	_ = rewardtaskeventFields
+	// rewardtaskeventDescEventID is the schema descriptor for event_id field.
+	rewardtaskeventDescEventID := rewardtaskeventFields[1].Descriptor()
+	// rewardtaskevent.EventIDValidator is a validator for the "event_id" field. It is called by the builders before save.
+	rewardtaskevent.EventIDValidator = rewardtaskeventDescEventID.Validators[0].(func(string) error)
+	// rewardtaskeventDescEventType is the schema descriptor for event_type field.
+	rewardtaskeventDescEventType := rewardtaskeventFields[2].Descriptor()
+	// rewardtaskevent.DefaultEventType holds the default value on creation for the event_type field.
+	rewardtaskevent.DefaultEventType = rewardtaskeventDescEventType.Default.(string)
+	// rewardtaskevent.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	rewardtaskevent.EventTypeValidator = rewardtaskeventDescEventType.Validators[0].(func(string) error)
+	// rewardtaskeventDescTicket is the schema descriptor for ticket field.
+	rewardtaskeventDescTicket := rewardtaskeventFields[3].Descriptor()
+	// rewardtaskevent.DefaultTicket holds the default value on creation for the ticket field.
+	rewardtaskevent.DefaultTicket = rewardtaskeventDescTicket.Default.(string)
+	// rewardtaskevent.TicketValidator is a validator for the "ticket" field. It is called by the builders before save.
+	rewardtaskevent.TicketValidator = rewardtaskeventDescTicket.Validators[0].(func(string) error)
+	// rewardtaskeventDescExternalUserID is the schema descriptor for external_user_id field.
+	rewardtaskeventDescExternalUserID := rewardtaskeventFields[7].Descriptor()
+	// rewardtaskevent.DefaultExternalUserID holds the default value on creation for the external_user_id field.
+	rewardtaskevent.DefaultExternalUserID = rewardtaskeventDescExternalUserID.Default.(string)
+	// rewardtaskevent.ExternalUserIDValidator is a validator for the "external_user_id" field. It is called by the builders before save.
+	rewardtaskevent.ExternalUserIDValidator = rewardtaskeventDescExternalUserID.Validators[0].(func(string) error)
+	// rewardtaskeventDescAmount is the schema descriptor for amount field.
+	rewardtaskeventDescAmount := rewardtaskeventFields[8].Descriptor()
+	// rewardtaskevent.DefaultAmount holds the default value on creation for the amount field.
+	rewardtaskevent.DefaultAmount = rewardtaskeventDescAmount.Default.(float64)
+	// rewardtaskeventDescOrderID is the schema descriptor for order_id field.
+	rewardtaskeventDescOrderID := rewardtaskeventFields[9].Descriptor()
+	// rewardtaskevent.DefaultOrderID holds the default value on creation for the order_id field.
+	rewardtaskevent.DefaultOrderID = rewardtaskeventDescOrderID.Default.(string)
+	// rewardtaskevent.OrderIDValidator is a validator for the "order_id" field. It is called by the builders before save.
+	rewardtaskevent.OrderIDValidator = rewardtaskeventDescOrderID.Validators[0].(func(string) error)
+	// rewardtaskeventDescResult is the schema descriptor for result field.
+	rewardtaskeventDescResult := rewardtaskeventFields[10].Descriptor()
+	// rewardtaskevent.ResultValidator is a validator for the "result" field. It is called by the builders before save.
+	rewardtaskevent.ResultValidator = rewardtaskeventDescResult.Validators[0].(func(string) error)
+	// rewardtaskeventDescErrorCode is the schema descriptor for error_code field.
+	rewardtaskeventDescErrorCode := rewardtaskeventFields[11].Descriptor()
+	// rewardtaskevent.DefaultErrorCode holds the default value on creation for the error_code field.
+	rewardtaskevent.DefaultErrorCode = rewardtaskeventDescErrorCode.Default.(string)
+	// rewardtaskevent.ErrorCodeValidator is a validator for the "error_code" field. It is called by the builders before save.
+	rewardtaskevent.ErrorCodeValidator = rewardtaskeventDescErrorCode.Validators[0].(func(string) error)
+	// rewardtaskeventDescRemoteIP is the schema descriptor for remote_ip field.
+	rewardtaskeventDescRemoteIP := rewardtaskeventFields[12].Descriptor()
+	// rewardtaskevent.DefaultRemoteIP holds the default value on creation for the remote_ip field.
+	rewardtaskevent.DefaultRemoteIP = rewardtaskeventDescRemoteIP.Default.(string)
+	// rewardtaskevent.RemoteIPValidator is a validator for the "remote_ip" field. It is called by the builders before save.
+	rewardtaskevent.RemoteIPValidator = rewardtaskeventDescRemoteIP.Validators[0].(func(string) error)
+	// rewardtaskeventDescPayload is the schema descriptor for payload field.
+	rewardtaskeventDescPayload := rewardtaskeventFields[13].Descriptor()
+	// rewardtaskevent.DefaultPayload holds the default value on creation for the payload field.
+	rewardtaskevent.DefaultPayload = rewardtaskeventDescPayload.Default.(map[string]interface{})
+	// rewardtaskeventDescCreatedAt is the schema descriptor for created_at field.
+	rewardtaskeventDescCreatedAt := rewardtaskeventFields[14].Descriptor()
+	// rewardtaskevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	rewardtaskevent.DefaultCreatedAt = rewardtaskeventDescCreatedAt.Default.(func() time.Time)
+	rewardtaskpartnerMixin := schema.RewardTaskPartner{}.Mixin()
+	rewardtaskpartnerMixinHooks1 := rewardtaskpartnerMixin[1].Hooks()
+	rewardtaskpartner.Hooks[0] = rewardtaskpartnerMixinHooks1[0]
+	rewardtaskpartnerMixinInters1 := rewardtaskpartnerMixin[1].Interceptors()
+	rewardtaskpartner.Interceptors[0] = rewardtaskpartnerMixinInters1[0]
+	rewardtaskpartnerMixinFields0 := rewardtaskpartnerMixin[0].Fields()
+	_ = rewardtaskpartnerMixinFields0
+	rewardtaskpartnerFields := schema.RewardTaskPartner{}.Fields()
+	_ = rewardtaskpartnerFields
+	// rewardtaskpartnerDescCreatedAt is the schema descriptor for created_at field.
+	rewardtaskpartnerDescCreatedAt := rewardtaskpartnerMixinFields0[0].Descriptor()
+	// rewardtaskpartner.DefaultCreatedAt holds the default value on creation for the created_at field.
+	rewardtaskpartner.DefaultCreatedAt = rewardtaskpartnerDescCreatedAt.Default.(func() time.Time)
+	// rewardtaskpartnerDescUpdatedAt is the schema descriptor for updated_at field.
+	rewardtaskpartnerDescUpdatedAt := rewardtaskpartnerMixinFields0[1].Descriptor()
+	// rewardtaskpartner.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	rewardtaskpartner.DefaultUpdatedAt = rewardtaskpartnerDescUpdatedAt.Default.(func() time.Time)
+	// rewardtaskpartner.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	rewardtaskpartner.UpdateDefaultUpdatedAt = rewardtaskpartnerDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// rewardtaskpartnerDescName is the schema descriptor for name field.
+	rewardtaskpartnerDescName := rewardtaskpartnerFields[0].Descriptor()
+	// rewardtaskpartner.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	rewardtaskpartner.NameValidator = rewardtaskpartnerDescName.Validators[0].(func(string) error)
+	// rewardtaskpartnerDescAppKey is the schema descriptor for app_key field.
+	rewardtaskpartnerDescAppKey := rewardtaskpartnerFields[1].Descriptor()
+	// rewardtaskpartner.AppKeyValidator is a validator for the "app_key" field. It is called by the builders before save.
+	rewardtaskpartner.AppKeyValidator = rewardtaskpartnerDescAppKey.Validators[0].(func(string) error)
+	// rewardtaskpartnerDescSecretHint is the schema descriptor for secret_hint field.
+	rewardtaskpartnerDescSecretHint := rewardtaskpartnerFields[3].Descriptor()
+	// rewardtaskpartner.DefaultSecretHint holds the default value on creation for the secret_hint field.
+	rewardtaskpartner.DefaultSecretHint = rewardtaskpartnerDescSecretHint.Default.(string)
+	// rewardtaskpartner.SecretHintValidator is a validator for the "secret_hint" field. It is called by the builders before save.
+	rewardtaskpartner.SecretHintValidator = rewardtaskpartnerDescSecretHint.Validators[0].(func(string) error)
+	// rewardtaskpartnerDescAllowedDomains is the schema descriptor for allowed_domains field.
+	rewardtaskpartnerDescAllowedDomains := rewardtaskpartnerFields[4].Descriptor()
+	// rewardtaskpartner.DefaultAllowedDomains holds the default value on creation for the allowed_domains field.
+	rewardtaskpartner.DefaultAllowedDomains = rewardtaskpartnerDescAllowedDomains.Default.([]string)
+	// rewardtaskpartnerDescContact is the schema descriptor for contact field.
+	rewardtaskpartnerDescContact := rewardtaskpartnerFields[5].Descriptor()
+	// rewardtaskpartner.DefaultContact holds the default value on creation for the contact field.
+	rewardtaskpartner.DefaultContact = rewardtaskpartnerDescContact.Default.(string)
+	// rewardtaskpartner.ContactValidator is a validator for the "contact" field. It is called by the builders before save.
+	rewardtaskpartner.ContactValidator = rewardtaskpartnerDescContact.Validators[0].(func(string) error)
+	// rewardtaskpartnerDescNotes is the schema descriptor for notes field.
+	rewardtaskpartnerDescNotes := rewardtaskpartnerFields[6].Descriptor()
+	// rewardtaskpartner.DefaultNotes holds the default value on creation for the notes field.
+	rewardtaskpartner.DefaultNotes = rewardtaskpartnerDescNotes.Default.(string)
+	// rewardtaskpartnerDescEnabled is the schema descriptor for enabled field.
+	rewardtaskpartnerDescEnabled := rewardtaskpartnerFields[7].Descriptor()
+	// rewardtaskpartner.DefaultEnabled holds the default value on creation for the enabled field.
+	rewardtaskpartner.DefaultEnabled = rewardtaskpartnerDescEnabled.Default.(bool)
+	rewardtaskrecordMixin := schema.RewardTaskRecord{}.Mixin()
+	rewardtaskrecordMixinFields0 := rewardtaskrecordMixin[0].Fields()
+	_ = rewardtaskrecordMixinFields0
+	rewardtaskrecordFields := schema.RewardTaskRecord{}.Fields()
+	_ = rewardtaskrecordFields
+	// rewardtaskrecordDescCreatedAt is the schema descriptor for created_at field.
+	rewardtaskrecordDescCreatedAt := rewardtaskrecordMixinFields0[0].Descriptor()
+	// rewardtaskrecord.DefaultCreatedAt holds the default value on creation for the created_at field.
+	rewardtaskrecord.DefaultCreatedAt = rewardtaskrecordDescCreatedAt.Default.(func() time.Time)
+	// rewardtaskrecordDescUpdatedAt is the schema descriptor for updated_at field.
+	rewardtaskrecordDescUpdatedAt := rewardtaskrecordMixinFields0[1].Descriptor()
+	// rewardtaskrecord.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	rewardtaskrecord.DefaultUpdatedAt = rewardtaskrecordDescUpdatedAt.Default.(func() time.Time)
+	// rewardtaskrecord.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	rewardtaskrecord.UpdateDefaultUpdatedAt = rewardtaskrecordDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// rewardtaskrecordDescPeriodKey is the schema descriptor for period_key field.
+	rewardtaskrecordDescPeriodKey := rewardtaskrecordFields[2].Descriptor()
+	// rewardtaskrecord.PeriodKeyValidator is a validator for the "period_key" field. It is called by the builders before save.
+	rewardtaskrecord.PeriodKeyValidator = rewardtaskrecordDescPeriodKey.Validators[0].(func(string) error)
+	// rewardtaskrecordDescTicket is the schema descriptor for ticket field.
+	rewardtaskrecordDescTicket := rewardtaskrecordFields[3].Descriptor()
+	// rewardtaskrecord.TicketValidator is a validator for the "ticket" field. It is called by the builders before save.
+	rewardtaskrecord.TicketValidator = rewardtaskrecordDescTicket.Validators[0].(func(string) error)
+	// rewardtaskrecordDescStatus is the schema descriptor for status field.
+	rewardtaskrecordDescStatus := rewardtaskrecordFields[4].Descriptor()
+	// rewardtaskrecord.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	rewardtaskrecord.StatusValidator = rewardtaskrecordDescStatus.Validators[0].(func(string) error)
+	// rewardtaskrecordDescProgressMs is the schema descriptor for progress_ms field.
+	rewardtaskrecordDescProgressMs := rewardtaskrecordFields[5].Descriptor()
+	// rewardtaskrecord.DefaultProgressMs holds the default value on creation for the progress_ms field.
+	rewardtaskrecord.DefaultProgressMs = rewardtaskrecordDescProgressMs.Default.(int64)
+	// rewardtaskrecordDescRechargeTotal is the schema descriptor for recharge_total field.
+	rewardtaskrecordDescRechargeTotal := rewardtaskrecordFields[6].Descriptor()
+	// rewardtaskrecord.DefaultRechargeTotal holds the default value on creation for the recharge_total field.
+	rewardtaskrecord.DefaultRechargeTotal = rewardtaskrecordDescRechargeTotal.Default.(float64)
+	// rewardtaskrecordDescExternalUserID is the schema descriptor for external_user_id field.
+	rewardtaskrecordDescExternalUserID := rewardtaskrecordFields[7].Descriptor()
+	// rewardtaskrecord.DefaultExternalUserID holds the default value on creation for the external_user_id field.
+	rewardtaskrecord.DefaultExternalUserID = rewardtaskrecordDescExternalUserID.Default.(string)
+	// rewardtaskrecord.ExternalUserIDValidator is a validator for the "external_user_id" field. It is called by the builders before save.
+	rewardtaskrecord.ExternalUserIDValidator = rewardtaskrecordDescExternalUserID.Validators[0].(func(string) error)
+	// rewardtaskrecordDescRewardAmount is the schema descriptor for reward_amount field.
+	rewardtaskrecordDescRewardAmount := rewardtaskrecordFields[12].Descriptor()
+	// rewardtaskrecord.DefaultRewardAmount holds the default value on creation for the reward_amount field.
+	rewardtaskrecord.DefaultRewardAmount = rewardtaskrecordDescRewardAmount.Default.(float64)
+	// rewardtaskrecordDescTaskTitle is the schema descriptor for task_title field.
+	rewardtaskrecordDescTaskTitle := rewardtaskrecordFields[13].Descriptor()
+	// rewardtaskrecord.DefaultTaskTitle holds the default value on creation for the task_title field.
+	rewardtaskrecord.DefaultTaskTitle = rewardtaskrecordDescTaskTitle.Default.(string)
+	// rewardtaskrecord.TaskTitleValidator is a validator for the "task_title" field. It is called by the builders before save.
+	rewardtaskrecord.TaskTitleValidator = rewardtaskrecordDescTaskTitle.Validators[0].(func(string) error)
 	securitysecretMixin := schema.SecuritySecret{}.Mixin()
 	securitysecretMixinFields0 := securitysecretMixin[0].Fields()
 	_ = securitysecretMixinFields0

@@ -31,6 +31,7 @@ type UpdateSettingsRequest struct {
 	RegistrationEmailDomainQuotaEnabled *bool                        `json:"registration_email_domain_quota_enabled"` // 非白名单域名限量注册开关（省略=保持现值）
 	PromoCodeEnabled                    bool                         `json:"promo_code_enabled"`
 	CheckInEnabled                      bool                         `json:"check_in_enabled"`
+	RewardTasksEnabled                  bool                         `json:"reward_tasks_enabled"`
 	CheckInCaptchaEnabled               bool                         `json:"check_in_captcha_enabled"`
 	CheckInTiers                        []dto.CheckInTier            `json:"check_in_tiers"`
 	PasswordResetEnabled                bool                         `json:"password_reset_enabled"`
@@ -1610,6 +1611,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		response.BadRequest(c, "cyber_session_block_ttl_seconds must be > 0")
 		return
 	}
+	rewardTasksEnabled := req.RewardTasksEnabled
+	if _, sent := sentFields["reward_tasks_enabled"]; !sent {
+		rewardTasksEnabled = previousSettings.RewardTasksEnabled
+	}
 	checkInEnabled := req.CheckInEnabled
 	if _, sent := sentFields["check_in_enabled"]; !sent {
 		checkInEnabled = previousSettings.CheckInEnabled
@@ -1634,6 +1639,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		RegistrationEmailDomainQuotaEnabled: registrationEmailDomainQuotaEnabled,
 		PromoCodeEnabled:                    req.PromoCodeEnabled,
 		CheckInEnabled:                      checkInEnabled,
+		RewardTasksEnabled:                  rewardTasksEnabled,
 		CheckInCaptchaEnabled:               checkInCaptchaEnabled,
 		CheckInTiers:                        checkInTiers,
 		PasswordResetEnabled:                req.PasswordResetEnabled,
@@ -2318,6 +2324,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		RegistrationEmailDomainQuotaEnabled:                    updatedSettings.RegistrationEmailDomainQuotaEnabled,
 		PromoCodeEnabled:                                       updatedSettings.PromoCodeEnabled,
 		CheckInEnabled:                                         updatedSettings.CheckInEnabled,
+		RewardTasksEnabled:                                     updatedSettings.RewardTasksEnabled,
 		CheckInCaptchaEnabled:                                  updatedSettings.CheckInCaptchaEnabled,
 		CheckInTiers:                                           updatedSettings.CheckInTiers,
 		PasswordResetEnabled:                                   updatedSettings.PasswordResetEnabled,

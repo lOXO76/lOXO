@@ -609,6 +609,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.CheckInEnabled != after.CheckInEnabled {
 		changed = append(changed, "check_in_enabled")
 	}
+	if before.RewardTasksEnabled != after.RewardTasksEnabled {
+		changed = append(changed, service.SettingKeyRewardTasksEnabled)
+	}
 	if before.CheckInCaptchaEnabled != after.CheckInCaptchaEnabled {
 		changed = append(changed, "check_in_captcha_enabled")
 	}

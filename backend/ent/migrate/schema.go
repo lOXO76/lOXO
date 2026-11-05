@@ -1994,6 +1994,189 @@ var (
 			},
 		},
 	}
+	// RewardTasksColumns holds the columns for the "reward_tasks" table.
+	RewardTasksColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "title", Type: field.TypeString, Size: 100, SchemaType: map[string]string{"postgres": "varchar(100)"}},
+		{Name: "description", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "task_type", Type: field.TypeString, Size: 20, SchemaType: map[string]string{"postgres": "varchar(20)"}},
+		{Name: "verify_mode", Type: field.TypeString, Size: 20, SchemaType: map[string]string{"postgres": "varchar(20)"}},
+		{Name: "partner_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "target_url", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "icon_url", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "reward_amount", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "period", Type: field.TypeString, Size: 20, Default: "once", SchemaType: map[string]string{"postgres": "varchar(20)"}},
+		{Name: "browse_seconds", Type: field.TypeInt, Default: 0},
+		{Name: "idle_timeout_seconds", Type: field.TypeInt, Default: 15},
+		{Name: "min_recharge_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,2)"}},
+		{Name: "max_completions", Type: field.TypeInt, Default: 0},
+		{Name: "completed_count", Type: field.TypeInt, Default: 0},
+		{Name: "starts_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "ends_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "enabled", Type: field.TypeBool, Default: true},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+	}
+	// RewardTasksTable holds the schema information for the "reward_tasks" table.
+	RewardTasksTable = &schema.Table{
+		Name:       "reward_tasks",
+		Columns:    RewardTasksColumns,
+		PrimaryKey: []*schema.Column{RewardTasksColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rewardtask_enabled_deleted_at_sort_order",
+				Unique:  false,
+				Columns: []*schema.Column{RewardTasksColumns[20], RewardTasksColumns[3], RewardTasksColumns[21]},
+			},
+		},
+	}
+	// RewardTaskEventsColumns holds the columns for the "reward_task_events" table.
+	RewardTaskEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "partner_id", Type: field.TypeInt64},
+		{Name: "event_id", Type: field.TypeString, Size: 128, SchemaType: map[string]string{"postgres": "varchar(128)"}},
+		{Name: "event_type", Type: field.TypeString, Size: 20, Default: "", SchemaType: map[string]string{"postgres": "varchar(20)"}},
+		{Name: "ticket", Type: field.TypeString, Size: 64, Default: "", SchemaType: map[string]string{"postgres": "varchar(64)"}},
+		{Name: "task_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "record_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "external_user_id", Type: field.TypeString, Size: 128, Default: "", SchemaType: map[string]string{"postgres": "varchar(128)"}},
+		{Name: "amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,2)"}},
+		{Name: "order_id", Type: field.TypeString, Size: 128, Default: "", SchemaType: map[string]string{"postgres": "varchar(128)"}},
+		{Name: "result", Type: field.TypeString, Size: 20, SchemaType: map[string]string{"postgres": "varchar(20)"}},
+		{Name: "error_code", Type: field.TypeString, Size: 64, Default: "", SchemaType: map[string]string{"postgres": "varchar(64)"}},
+		{Name: "remote_ip", Type: field.TypeString, Size: 64, Default: "", SchemaType: map[string]string{"postgres": "varchar(64)"}},
+		{Name: "payload", Type: field.TypeJSON, SchemaType: map[string]string{"postgres": "jsonb"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// RewardTaskEventsTable holds the schema information for the "reward_task_events" table.
+	RewardTaskEventsTable = &schema.Table{
+		Name:       "reward_task_events",
+		Columns:    RewardTaskEventsColumns,
+		PrimaryKey: []*schema.Column{RewardTaskEventsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rewardtaskevent_partner_id_event_id",
+				Unique:  true,
+				Columns: []*schema.Column{RewardTaskEventsColumns[1], RewardTaskEventsColumns[2]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "result <> 'rejected'",
+				},
+			},
+			{
+				Name:    "rewardtaskevent_partner_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{RewardTaskEventsColumns[1], RewardTaskEventsColumns[15]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						RewardTaskEventsColumns[15].Name: true,
+					},
+				},
+			},
+			{
+				Name:    "rewardtaskevent_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{RewardTaskEventsColumns[15]},
+			},
+		},
+	}
+	// RewardTaskPartnersColumns holds the columns for the "reward_task_partners" table.
+	RewardTaskPartnersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "name", Type: field.TypeString, Size: 100, SchemaType: map[string]string{"postgres": "varchar(100)"}},
+		{Name: "app_key", Type: field.TypeString, Size: 64, SchemaType: map[string]string{"postgres": "varchar(64)"}},
+		{Name: "app_secret_encrypted", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "secret_hint", Type: field.TypeString, Size: 8, Default: "", SchemaType: map[string]string{"postgres": "varchar(8)"}},
+		{Name: "allowed_domains", Type: field.TypeJSON, SchemaType: map[string]string{"postgres": "jsonb"}},
+		{Name: "contact", Type: field.TypeString, Size: 200, Default: "", SchemaType: map[string]string{"postgres": "varchar(200)"}},
+		{Name: "notes", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "enabled", Type: field.TypeBool, Default: true},
+		{Name: "last_event_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// RewardTaskPartnersTable holds the schema information for the "reward_task_partners" table.
+	RewardTaskPartnersTable = &schema.Table{
+		Name:       "reward_task_partners",
+		Columns:    RewardTaskPartnersColumns,
+		PrimaryKey: []*schema.Column{RewardTaskPartnersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rewardtaskpartner_app_key",
+				Unique:  true,
+				Columns: []*schema.Column{RewardTaskPartnersColumns[5]},
+			},
+		},
+	}
+	// RewardTaskRecordsColumns holds the columns for the "reward_task_records" table.
+	RewardTaskRecordsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "task_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+		{Name: "period_key", Type: field.TypeString, Size: 20, SchemaType: map[string]string{"postgres": "varchar(20)"}},
+		{Name: "ticket", Type: field.TypeString, Size: 64, SchemaType: map[string]string{"postgres": "varchar(64)"}},
+		{Name: "status", Type: field.TypeString, Size: 20, SchemaType: map[string]string{"postgres": "varchar(20)"}},
+		{Name: "progress_ms", Type: field.TypeInt64, Default: 0},
+		{Name: "recharge_total", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,2)"}},
+		{Name: "external_user_id", Type: field.TypeString, Size: 128, Default: "", SchemaType: map[string]string{"postgres": "varchar(128)"}},
+		{Name: "started_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "last_heartbeat_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "ticket_expires_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "reward_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "task_title", Type: field.TypeString, Size: 100, Default: "", SchemaType: map[string]string{"postgres": "varchar(100)"}},
+	}
+	// RewardTaskRecordsTable holds the schema information for the "reward_task_records" table.
+	RewardTaskRecordsTable = &schema.Table{
+		Name:       "reward_task_records",
+		Columns:    RewardTaskRecordsColumns,
+		PrimaryKey: []*schema.Column{RewardTaskRecordsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rewardtaskrecord_user_id_task_id_period_key",
+				Unique:  true,
+				Columns: []*schema.Column{RewardTaskRecordsColumns[4], RewardTaskRecordsColumns[3], RewardTaskRecordsColumns[5]},
+			},
+			{
+				Name:    "rewardtaskrecord_ticket",
+				Unique:  true,
+				Columns: []*schema.Column{RewardTaskRecordsColumns[6]},
+			},
+			{
+				Name:    "rewardtaskrecord_task_id_period_key_external_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{RewardTaskRecordsColumns[3], RewardTaskRecordsColumns[5], RewardTaskRecordsColumns[10]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "external_user_id <> ''",
+				},
+			},
+			{
+				Name:    "rewardtaskrecord_task_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{RewardTaskRecordsColumns[3], RewardTaskRecordsColumns[7]},
+			},
+			{
+				Name:    "rewardtaskrecord_user_id_completed_at",
+				Unique:  false,
+				Columns: []*schema.Column{RewardTaskRecordsColumns[4], RewardTaskRecordsColumns[14]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						RewardTaskRecordsColumns[14].Name: true,
+					},
+				},
+			},
+			{
+				Name:    "rewardtaskrecord_completed_at",
+				Unique:  false,
+				Columns: []*schema.Column{RewardTaskRecordsColumns[14]},
+			},
+		},
+	}
 	// SecuritySecretsColumns holds the columns for the "security_secrets" table.
 	SecuritySecretsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -2654,6 +2837,10 @@ var (
 		PromoCodeUsagesTable,
 		ProxiesTable,
 		RedeemCodesTable,
+		RewardTasksTable,
+		RewardTaskEventsTable,
+		RewardTaskPartnersTable,
+		RewardTaskRecordsTable,
 		SecuritySecretsTable,
 		SettingsTable,
 		SubscriptionPlansTable,
@@ -2818,6 +3005,18 @@ func init() {
 	RedeemCodesTable.ForeignKeys[1].RefTable = UsersTable
 	RedeemCodesTable.Annotation = &entsql.Annotation{
 		Table: "redeem_codes",
+	}
+	RewardTasksTable.Annotation = &entsql.Annotation{
+		Table: "reward_tasks",
+	}
+	RewardTaskEventsTable.Annotation = &entsql.Annotation{
+		Table: "reward_task_events",
+	}
+	RewardTaskPartnersTable.Annotation = &entsql.Annotation{
+		Table: "reward_task_partners",
+	}
+	RewardTaskRecordsTable.Annotation = &entsql.Annotation{
+		Table: "reward_task_records",
 	}
 	SecuritySecretsTable.Annotation = &entsql.Annotation{
 		Table: "security_secrets",
