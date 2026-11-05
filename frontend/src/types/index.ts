@@ -1851,6 +1851,11 @@ export interface UsageLog {
   image_output_tokens: number
   image_output_cost: number
 
+  // 视频生成字段（按秒计费时用于还原每秒单价）
+  video_count?: number
+  video_resolution?: string | null
+  video_duration_seconds?: number | null
+
   // User-Agent
   user_agent: string | null
   ip_address?: string | null

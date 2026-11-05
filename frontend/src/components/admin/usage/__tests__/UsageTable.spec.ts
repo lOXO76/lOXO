@@ -70,6 +70,12 @@ const messages: Record<string, string> = {
   'usage.imageSizeUnknown': 'unknown',
   'usage.imageUnitPrice': 'Per-image price',
   'usage.imageTotalPrice': 'Image total price',
+  'usage.videoUnitPrice': 'Per-second price',
+  'usage.videoTotalPrice': 'Video total price',
+  'usage.videoCount': 'Video count',
+  'usage.videoResolution': 'Resolution',
+  'usage.videoDuration': 'Duration each',
+  'usage.secondUnit': 's',
   'usage.stream': 'Stream',
   'usage.sync': 'Sync',
   'usage.nativeCompactionV2': 'Compaction',
@@ -364,6 +370,73 @@ describe('admin UsageTable tooltip', () => {
     ]))
     if (billingMode === 'image') expect(amounts).toContain('$0.00000011')
     wrapper.unmount()
+  })
+
+  it('shows per-second video pricing instead of treating the total as a unit price', async () => {
+    // 768p @ $0.15/s × 6s = $0.90
+    const row = {
+      ...baseImageRow,
+      model: 'MiniMax-H3',
+      billing_mode: 'video',
+      image_count: 0,
+      video_count: 1,
+      video_resolution: '768p',
+      video_duration_seconds: 6,
+      total_cost: 0.9,
+      actual_cost: 0.9,
+    }
+    const wrapper = mount(UsageTable, {
+      props: { data: [row], loading: false, columns: [] },
+      global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
+    })
+    const triggers = wrapper.findAll('.group.relative')
+    await triggers[triggers.length - 1].trigger('mouseenter')
+    const text = wrapper.get('.fixed').text()
+    expect(text).toContain('Per-second price')
+    expect(text).toContain('$0.15000000')
+    expect(text).toContain('Video total price')
+    expect(text).toContain('$0.90000000')
+    expect(text).toContain('768p')
+    expect(text).toContain('6s')
+    // 按秒计费不应再出现“单次价格”
+    expect(text).not.toContain('Per-request price')
+    wrapper.unmount()
+  })
+
+  it('scales the per-second price by video count and falls back when duration is missing', async () => {
+    const row = {
+      ...baseImageRow,
+      billing_mode: 'video',
+      image_count: 0,
+      video_count: 2,
+      video_resolution: '480p',
+      video_duration_seconds: 5,
+      total_cost: 1.5,
+      actual_cost: 1.5,
+    }
+    const wrapper = mount(UsageTable, {
+      props: { data: [row], loading: false, columns: [] },
+      global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
+    })
+    const triggers = wrapper.findAll('.group.relative')
+    await triggers[triggers.length - 1].trigger('mouseenter')
+    // 1.5 / (2 × 5) = 0.15
+    expect(wrapper.get('.fixed').text()).toContain('$0.15000000')
+    wrapper.unmount()
+
+    const legacy = { ...row, video_duration_seconds: null, video_count: 0, total_cost: 0.9 }
+    const legacyWrapper = mount(UsageTable, {
+      props: { data: [legacy], loading: false, columns: [] },
+      global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
+    })
+    const legacyTriggers = legacyWrapper.findAll('.group.relative')
+    await legacyTriggers[legacyTriggers.length - 1].trigger('mouseenter')
+    const legacyText = legacyWrapper.get('.fixed').text()
+    // 缺失时长时不解出每秒单价，只展示总价
+    expect(legacyText).toContain('Video total price')
+    expect(legacyText).not.toContain('Per-second price')
+    expect(legacyText).toContain('$0.90000000')
+    legacyWrapper.unmount()
   })
 
   it('uses eight decimal places for missing cost values', async () => {
