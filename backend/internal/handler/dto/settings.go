@@ -50,6 +50,7 @@ type SystemSettings struct {
 	PromoCodeEnabled                    bool                     `json:"promo_code_enabled"`
 	CheckInEnabled                      bool                     `json:"check_in_enabled"`
 	RewardTasksEnabled                  bool                     `json:"reward_tasks_enabled"`
+	TicketSystemEnabled                 bool                     `json:"ticket_system_enabled"`
 	CheckInCaptchaEnabled               bool                     `json:"check_in_captcha_enabled"`
 	CheckInTiers                        []CheckInTier            `json:"check_in_tiers"`
 	PasswordResetEnabled                bool                     `json:"password_reset_enabled"`
@@ -399,6 +400,7 @@ type PublicSettings struct {
 	PromoCodeEnabled                    bool                     `json:"promo_code_enabled"`
 	CheckInEnabled                      bool                     `json:"check_in_enabled"`
 	RewardTasksEnabled                  bool                     `json:"reward_tasks_enabled"`
+	TicketSystemEnabled                 bool                     `json:"ticket_system_enabled"`
 	PasswordResetEnabled                bool                     `json:"password_reset_enabled"`
 	InvitationCodeEnabled               bool                     `json:"invitation_code_enabled"`
 	TotpEnabled                         bool                     `json:"totp_enabled"` // TOTP 双因素认证

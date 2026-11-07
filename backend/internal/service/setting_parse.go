@@ -62,6 +62,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyPromoCodeEnabled:                          "true", // 默认启用优惠码功能
 		SettingKeyCheckInEnabled:                            "false",
 		SettingKeyRewardTasksEnabled:                        "false",
+		SettingKeyTicketSystemEnabled:                       "false",
 		SettingKeyCheckInCaptchaEnabled:                     "false",
 		SettingKeyCheckInTiers:                              "[]",
 		SettingKeyLoginAgreementEnabled:                     "false",
@@ -337,6 +338,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		PromoCodeEnabled:                       settings[SettingKeyPromoCodeEnabled] != "false", // 默认启用
 		CheckInEnabled:                         settings[SettingKeyCheckInEnabled] == "true",
 		RewardTasksEnabled:                     settings[SettingKeyRewardTasksEnabled] == "true",
+		TicketSystemEnabled:                    settings[SettingKeyTicketSystemEnabled] == "true",
 		CheckInCaptchaEnabled:                  settings[SettingKeyCheckInCaptchaEnabled] == "true",
 		CheckInTiers:                           parseCheckInTiers(settings[SettingKeyCheckInTiers]),
 		PasswordResetEnabled:                   emailVerifyEnabled && settings[SettingKeyPasswordResetEnabled] == "true",

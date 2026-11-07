@@ -175,6 +175,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyEmailVerifyEnabled] = strconv.FormatBool(settings.EmailVerifyEnabled)
 	updates[SettingKeyCheckInEnabled] = strconv.FormatBool(settings.CheckInEnabled)
 	updates[SettingKeyRewardTasksEnabled] = strconv.FormatBool(settings.RewardTasksEnabled)
+	updates[SettingKeyTicketSystemEnabled] = strconv.FormatBool(settings.TicketSystemEnabled)
 	updates[SettingKeyCheckInCaptchaEnabled] = strconv.FormatBool(settings.CheckInCaptchaEnabled)
 	updates[SettingKeyCheckInTiers] = checkInTiersValue
 	registrationEmailSuffixWhitelistJSON, err := json.Marshal(settings.RegistrationEmailSuffixWhitelist)

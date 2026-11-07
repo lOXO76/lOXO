@@ -36,6 +36,7 @@ func RegisterUserRoutes(
 		// 用户接口
 		user := authenticated.Group("/user")
 		{
+			registerUserTicketRoutes(user, h.Tickets)
 			user.GET("/profile", h.User.GetProfile)
 			user.GET("/creation/catalog", h.Creation.GetCatalog)
 			user.GET("/reward-tasks", h.RewardTasks.List)

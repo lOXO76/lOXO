@@ -226,6 +226,7 @@ func ProvideHandlers(
 	checkInHandler *CheckInHandler,
 	rewardTaskHandler *RewardTaskHandler,
 	rewardTaskOpenHandler *RewardTaskOpenHandler,
+	ticketHandler *TicketHandler,
 	degradationHandler *DegradationUserHandler,
 	degradationVisualRender *DegradationVisualRenderHandler,
 	_ *service.IdempotencyCoordinator,
@@ -262,6 +263,7 @@ func ProvideHandlers(
 		CheckIn:                 checkInHandler,
 		RewardTasks:             rewardTaskHandler,
 		RewardTaskOpen:          rewardTaskOpenHandler,
+		Tickets:                 ticketHandler,
 		Degradation:             degradationHandler,
 		DegradationVisualRender: degradationVisualRender,
 	}
@@ -295,6 +297,7 @@ var ProviderSet = wire.NewSet(
 	ProvideCheckInHandler,
 	NewRewardTaskHandler,
 	NewRewardTaskOpenHandler,
+	NewTicketHandler,
 	NewDegradationUserHandler,
 	NewDegradationVisualRenderHandler,
 

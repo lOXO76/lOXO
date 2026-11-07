@@ -159,6 +159,11 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Reward Tasks',
   }),
+  tickets: defineFlag({
+    key: 'ticket_system_enabled',
+    mode: 'opt-in',
+    label: 'Ticket System',
+  }),
 } as const
 
 export type RegisteredFeatureFlag = keyof typeof FeatureFlags
