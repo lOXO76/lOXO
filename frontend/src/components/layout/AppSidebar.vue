@@ -98,6 +98,15 @@
               <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
               <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
               <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
+              <span
+                v-if="item.path === '/admin/tickets' && ticketPendingAdmin > 0"
+                class="ml-auto inline-flex shrink-0 items-center justify-center rounded-full bg-amber-500 text-[11px] font-semibold leading-none text-white"
+                :class="sidebarCollapsed ? 'h-2 w-2' : 'h-5 min-w-[1.25rem] px-1'"
+                :aria-label="`${t('nav.ticketsAdmin')}: ${ticketPendingAdmin}`"
+                data-testid="sidebar-ticket-pending"
+              >
+                <span v-if="!sidebarCollapsed">{{ ticketPendingAdmin > 99 ? '99+' : ticketPendingAdmin }}</span>
+              </span>
             </component>
           </template>
         </div>
@@ -153,6 +162,15 @@
             <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
             <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
             <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
+            <span
+              v-if="item.path === '/tickets' && ticketUnread > 0"
+              class="ml-auto inline-flex shrink-0 items-center justify-center rounded-full bg-red-500 text-[11px] font-semibold leading-none text-white"
+              :class="sidebarCollapsed ? 'h-2 w-2' : 'h-5 min-w-[1.25rem] px-1'"
+              :aria-label="`${t('nav.tickets')}: ${ticketUnread}`"
+              data-testid="sidebar-ticket-unread"
+            >
+              <span v-if="!sidebarCollapsed">{{ ticketUnread > 99 ? '99+' : ticketUnread }}</span>
+            </span>
           </component>
           </template>
         </div>
@@ -204,6 +222,15 @@
             <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
             <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
             <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
+            <span
+              v-if="item.path === '/tickets' && ticketUnread > 0"
+              class="ml-auto inline-flex shrink-0 items-center justify-center rounded-full bg-red-500 text-[11px] font-semibold leading-none text-white"
+              :class="sidebarCollapsed ? 'h-2 w-2' : 'h-5 min-w-[1.25rem] px-1'"
+              :aria-label="`${t('nav.tickets')}: ${ticketUnread}`"
+              data-testid="sidebar-ticket-unread"
+            >
+              <span v-if="!sidebarCollapsed">{{ ticketUnread > 99 ? '99+' : ticketUnread }}</span>
+            </span>
           </component>
           </template>
         </div>
@@ -262,14 +289,17 @@ import { sanitizeUrl } from '@/utils/url'
 import { customMenuNewTabUrl } from '@/utils/navigationLinks'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
 import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
-import { Building2, CalendarCheck2, ListChecks, MonitorDown, Sparkles } from '@lucide/vue'
+import { Building2, CalendarCheck2, LifeBuoy, ListChecks, MonitorDown, Sparkles } from '@lucide/vue'
 import { useEnterpriseStore } from '@/stores/enterprise'
 import { canAccessEnterprise, enterpriseSectionPath } from '@/features/enterprise/navigation'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
+import { useTicketUnread } from '@/composables/useTicketUnread'
+import { useTicketAdminBadge } from '@/composables/useTicketAdminBadge'
 
 const BuildingIcon = { render: () => h(Building2, { strokeWidth: 1.5 }) }
 const CheckInIcon = { render: () => h(CalendarCheck2, { strokeWidth: 1.5 }) }
 const RewardTaskIcon = { render: () => h(ListChecks, { strokeWidth: 1.5 }) }
+const SupportTicketIcon = { render: () => h(LifeBuoy, { strokeWidth: 1.5 }) }
 const ImportClientIcon = { render: () => h(MonitorDown, { strokeWidth: 1.5 }) }
 const CreationIcon = { render: () => h(Sparkles, { strokeWidth: 1.5 }) }
 
@@ -800,6 +830,11 @@ const purchaseNavLabel = computed(() => {
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const flagCheckIn = makeSidebarFlag(FeatureFlags.checkIn)
 const flagRewardTasks = makeSidebarFlag(FeatureFlags.rewardTasks)
+const flagTickets = makeSidebarFlag(FeatureFlags.tickets)
+// 工单未读角标：每 60s 轮询一次，页面不可见时暂停（见 useTicketUnread）。
+const { unreadCount: ticketUnread } = useTicketUnread()
+// 管理端工单待处理角标（stats.pending_admin）：60s 轮询，页面隐藏时暂停。
+const ticketPendingAdmin = useTicketAdminBadge(() => authStore.isAdmin)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagPluginManagement = makeSidebarFlag(FeatureFlags.pluginManagement)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
@@ -849,6 +884,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true, featureFlag: flagPersonalWallet },
     { path: '/check-in', label: t('nav.checkIn'), icon: CheckInIcon, hideInSimpleMode: true, featureFlag: flagCheckIn },
     { path: '/tasks', label: t('nav.rewardTasks'), icon: RewardTaskIcon, hideInSimpleMode: true, featureFlag: flagRewardTasks },
+    { path: '/tickets', label: t('nav.tickets'), icon: SupportTicketIcon, hideInSimpleMode: true, featureFlag: flagTickets },
     { path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({
@@ -931,6 +967,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/promo-codes', label: t('nav.promoCodes'), icon: GiftIcon, hideInSimpleMode: true },
     { path: '/admin/check-ins', label: t('nav.checkInStats'), icon: CheckInIcon, hideInSimpleMode: true },
     { path: '/admin/reward-tasks', label: t('nav.rewardTasksAdmin'), icon: RewardTaskIcon, hideInSimpleMode: true },
+    { path: '/admin/tickets', label: t('nav.ticketsAdmin'), icon: SupportTicketIcon },
     {
       path: '/admin/affiliates',
       label: t('nav.affiliateManagement'),

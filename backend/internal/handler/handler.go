@@ -77,6 +77,7 @@ type Handlers struct {
 	CheckIn                 *CheckInHandler
 	RewardTasks             *RewardTaskHandler
 	RewardTaskOpen          *RewardTaskOpenHandler
+	Tickets                 *TicketHandler
 	Degradation             *DegradationUserHandler
 	DegradationVisualRender *DegradationVisualRenderHandler
 }

@@ -14,6 +14,8 @@ import degradation from './degradation'
 import creation from './creation'
 import rewardTasks from './rewardTasks'
 import rewardIntegration from './rewardIntegration'
+import ticketAgentDocs from './ticketAgentDocs'
+import tickets from './tickets'
 
 export default {
   ...landing,
@@ -31,6 +33,8 @@ export default {
   ...creation,
   ...rewardTasks,
   ...rewardIntegration,
+  ...ticketAgentDocs,
+  ...tickets,
   admin: { ...admin, ...degradation.admin },
-  nav: { ...common.nav, ...checkIn.nav, ...clientImport.nav, ...degradation.nav, ...creation.nav, ...rewardTasks.nav },
+  nav: { ...common.nav, ...checkIn.nav, ...clientImport.nav, ...degradation.nav, ...creation.nav, ...rewardTasks.nav, ...tickets.nav, ...ticketAgentDocs.nav },
 }

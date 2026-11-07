@@ -109,6 +109,8 @@ func provideCleanup(
 	batchImageWorker *service.BatchImageWorkerRuntime,
 	pricing *service.PricingService,
 	emailQueue *service.EmailQueueService,
+	ticketNotifications *service.TicketNotificationService,
+	ticketAgents *service.TicketAgentService,
 	billingCache *service.BillingCacheService,
 	usageRecordWorkerPool *service.UsageRecordWorkerPool,
 	subscriptionService *service.SubscriptionService,
@@ -134,6 +136,12 @@ func provideCleanup(
 	pluginManager *service.PluginManager,
 ) func() {
 	return func() {
+		if ticketNotifications != nil {
+			ticketNotifications.Stop()
+		}
+		if ticketAgents != nil {
+			ticketAgents.Stop()
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 

@@ -32,6 +32,7 @@ type UpdateSettingsRequest struct {
 	PromoCodeEnabled                    bool                         `json:"promo_code_enabled"`
 	CheckInEnabled                      bool                         `json:"check_in_enabled"`
 	RewardTasksEnabled                  bool                         `json:"reward_tasks_enabled"`
+	TicketSystemEnabled                 bool                         `json:"ticket_system_enabled"`
 	CheckInCaptchaEnabled               bool                         `json:"check_in_captcha_enabled"`
 	CheckInTiers                        []dto.CheckInTier            `json:"check_in_tiers"`
 	PasswordResetEnabled                bool                         `json:"password_reset_enabled"`
@@ -1611,6 +1612,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		response.BadRequest(c, "cyber_session_block_ttl_seconds must be > 0")
 		return
 	}
+	ticketSystemEnabled := req.TicketSystemEnabled
+	if _, sent := sentFields["ticket_system_enabled"]; !sent {
+		ticketSystemEnabled = previousSettings.TicketSystemEnabled
+	}
 	rewardTasksEnabled := req.RewardTasksEnabled
 	if _, sent := sentFields["reward_tasks_enabled"]; !sent {
 		rewardTasksEnabled = previousSettings.RewardTasksEnabled
@@ -1640,6 +1645,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PromoCodeEnabled:                    req.PromoCodeEnabled,
 		CheckInEnabled:                      checkInEnabled,
 		RewardTasksEnabled:                  rewardTasksEnabled,
+		TicketSystemEnabled:                 ticketSystemEnabled,
 		CheckInCaptchaEnabled:               checkInCaptchaEnabled,
 		CheckInTiers:                        checkInTiers,
 		PasswordResetEnabled:                req.PasswordResetEnabled,
@@ -2325,6 +2331,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PromoCodeEnabled:                                       updatedSettings.PromoCodeEnabled,
 		CheckInEnabled:                                         updatedSettings.CheckInEnabled,
 		RewardTasksEnabled:                                     updatedSettings.RewardTasksEnabled,
+		TicketSystemEnabled:                                    updatedSettings.TicketSystemEnabled,
 		CheckInCaptchaEnabled:                                  updatedSettings.CheckInCaptchaEnabled,
 		CheckInTiers:                                           updatedSettings.CheckInTiers,
 		PasswordResetEnabled:                                   updatedSettings.PasswordResetEnabled,

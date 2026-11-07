@@ -164,6 +164,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyPromoCodeEnabled,
 		SettingKeyCheckInEnabled,
 		SettingKeyRewardTasksEnabled,
+		SettingKeyTicketSystemEnabled,
 		SettingKeyPasswordResetEnabled,
 		SettingKeyInvitationCodeEnabled,
 		SettingKeyTotpEnabled,
@@ -314,6 +315,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		PromoCodeEnabled:                    settings[SettingKeyPromoCodeEnabled] != "false", // 默认启用
 		CheckInEnabled:                      settings[SettingKeyCheckInEnabled] == "true",
 		RewardTasksEnabled:                  settings[SettingKeyRewardTasksEnabled] == "true",
+		TicketSystemEnabled:                 settings[SettingKeyTicketSystemEnabled] == "true",
 		PasswordResetEnabled:                passwordResetEnabled,
 		InvitationCodeEnabled:               settings[SettingKeyInvitationCodeEnabled] == "true",
 		TotpEnabled:                         settings[SettingKeyTotpEnabled] == "true",
@@ -609,6 +611,7 @@ type PublicSettingsInjectionPayload struct {
 	PromoCodeEnabled                    bool                     `json:"promo_code_enabled"`
 	CheckInEnabled                      bool                     `json:"check_in_enabled"`
 	RewardTasksEnabled                  bool                     `json:"reward_tasks_enabled"`
+	TicketSystemEnabled                 bool                     `json:"ticket_system_enabled"`
 	PasswordResetEnabled                bool                     `json:"password_reset_enabled"`
 	InvitationCodeEnabled               bool                     `json:"invitation_code_enabled"`
 	TotpEnabled                         bool                     `json:"totp_enabled"`
@@ -709,6 +712,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PromoCodeEnabled:                    settings.PromoCodeEnabled,
 		CheckInEnabled:                      settings.CheckInEnabled,
 		RewardTasksEnabled:                  settings.RewardTasksEnabled,
+		TicketSystemEnabled:                 settings.TicketSystemEnabled,
 		PasswordResetEnabled:                settings.PasswordResetEnabled,
 		InvitationCodeEnabled:               settings.InvitationCodeEnabled,
 		TotpEnabled:                         settings.TotpEnabled,

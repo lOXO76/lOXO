@@ -10,6 +10,7 @@ import promptAudit from './promptAudit'
 import plugins from './plugins'
 import checkIns from './checkIns'
 import rewardTasks from './rewardTasks'
+import tickets from './tickets'
 
 export default {
   ...overview,
@@ -24,4 +25,5 @@ export default {
   ...plugins,
   ...checkIns,
   ...rewardTasks,
+  ...tickets,
 }

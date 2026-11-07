@@ -42,6 +42,7 @@ import auditAPI from './audit'
 import pluginsAPI from './plugins'
 import asyncTasksAPI from './asyncTasks'
 import adminVideoBillingReservationsAPI from './videoBillingReservations'
+import ticketsAdminAPI from './tickets'
 
 /**
  * Unified admin API object for convenient access
@@ -81,6 +82,7 @@ export const adminAPI = {
   affiliates: affiliatesAPI,
   checkIns: checkInsAPI,
   rewardTasks: rewardTasksAdminAPI,
+  tickets: ticketsAdminAPI,
   degradation: degradationAdminAPI,
   riskControl: riskControlAPI,
   compliance: adminComplianceAPI,
@@ -122,6 +124,7 @@ export {
   affiliatesAPI,
   checkInsAPI,
   rewardTasksAdminAPI,
+  ticketsAdminAPI,
   degradationAdminAPI,
   riskControlAPI,
   adminComplianceAPI,

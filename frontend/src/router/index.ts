@@ -199,6 +199,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
 
+  {
+    path: '/docs/ticket-agent',
+    name: 'TicketAgentDocs',
+    component: () => import('@/views/public/TicketAgentDocsView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Ticket Agent Integration',
+      titleKey: 'ticketAgentDocs.title'
+    }
+  },
+
   // ==================== User Routes ====================
   {
     path: '/async-tasks',
@@ -333,6 +344,30 @@ const routes: RouteRecordRaw[] = [
       title: 'Task Center',
       titleKey: 'rewardTasks.title',
       descriptionKey: 'rewardTasks.description'
+    }
+  },
+  {
+    path: '/tickets',
+    name: 'Tickets',
+    component: () => import('@/views/user/TicketsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Support Tickets',
+      titleKey: 'tickets.title',
+      descriptionKey: 'tickets.description'
+    }
+  },
+  {
+    path: '/tickets/:id',
+    name: 'TicketDetail',
+    component: () => import('@/views/user/TicketDetailView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Ticket Detail',
+      titleKey: 'tickets.title',
+      descriptionKey: 'tickets.description'
     }
   },
   {
@@ -721,6 +756,29 @@ const routes: RouteRecordRaw[] = [
       title: 'Reward Tasks',
       titleKey: 'admin.rewardTasks.title',
       descriptionKey: 'admin.rewardTasks.description'
+    }
+  },
+  {
+    path: '/admin/tickets',
+    name: 'AdminTickets',
+    component: () => import('@/views/admin/TicketsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Ticket Management',
+      titleKey: 'admin.tickets.title',
+      descriptionKey: 'admin.tickets.description'
+    }
+  },
+  {
+    path: '/admin/tickets/:id',
+    name: 'AdminTicketDetail',
+    component: () => import('@/views/admin/TicketDetailView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Ticket Detail',
+      titleKey: 'admin.tickets.title'
     }
   },
   {

@@ -156,6 +156,12 @@ var auditActionOverrides = map[string]string{
 // auditBodyOmittedRoutes 请求体几乎整体由凭证构成的路由（如整块粘贴 auth JSON 的导入接口）。
 // 这类 body 的凭证内嵌在普通字符串值里，键级脱敏无法覆盖，整体不入库。
 var auditBodyOmittedRoutes = map[string]struct{}{
+	// 工单正文和机器人 webhook 均属敏感输入，不进入审计请求体。
+	"POST /api/v1/user/tickets":                  {},
+	"POST /api/v1/user/tickets/:id/messages":     {},
+	"POST /api/v1/admin/tickets/:id/messages":    {},
+	"PUT /api/v1/user/ticket-notify-preferences": {},
+	"PUT /api/v1/admin/ticket-settings":          {},
 	"POST /api/v1/auth/passkey/login/finish":     {},
 	"POST /api/v1/user/passkeys/register/finish": {},
 	// 签到请求体只有人机验证凭据（tencent_ticket 等不在键名脱敏清单内），对追责无用，整体不入库。

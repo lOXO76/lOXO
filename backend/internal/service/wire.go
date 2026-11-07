@@ -8,6 +8,7 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
@@ -17,6 +18,10 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
+
+func ProvideTicketRateLimiter(redisClient *redis.Client) *middleware.RateLimiter {
+	return middleware.NewRateLimiter(redisClient)
+}
 
 func ProvideGrokOAuthService(proxyRepo ProxyRepository, oauthClient GrokOAuthClient, cfg *config.Config, redisClient *redis.Client) *GrokOAuthService {
 	svc := NewGrokOAuthService(proxyRepo, oauthClient, cfg)
@@ -1055,6 +1060,10 @@ var ProviderSet = wire.NewSet(
 	ProvideChannelMonitorV2Aggregator,
 	NewCheckInService,
 	NewRewardTaskService,
+	NewTicketService,
+	NewTicketAgentService,
+	NewTicketNotificationService,
+	ProvideTicketRateLimiter,
 	NewChannelMonitorRequestTemplateService,
 	ProvideUserPlatformQuotaUsageFlusher,
 )

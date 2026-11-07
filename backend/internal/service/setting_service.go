@@ -117,12 +117,14 @@ type WebSearchManagerBuilder func(cfg *WebSearchEmulationConfig, proxyURLs map[i
 
 // SettingService 系统设置服务
 type SettingService struct {
-	settingRepo                 SettingRepository
-	defaultSubGroupReader       DefaultSubscriptionGroupReader
-	proxyRepo                   ProxyRepository // for resolving websearch provider proxy URLs
-	cfg                         *config.Config
-	onUpdate                    func() // Callback when settings are updated (for cache invalidation)
-	version                     string // Application version
+	settingRepo           SettingRepository
+	defaultSubGroupReader DefaultSubscriptionGroupReader
+	proxyRepo             ProxyRepository // for resolving websearch provider proxy URLs
+	cfg                   *config.Config
+	onUpdate              func() // Callback when settings are updated (for cache invalidation)
+	version               string // Application version
+	// ticketSettingsEncryptor 加密保存工单通知 webhook 与签名密钥。
+	ticketSettingsEncryptor     SecretEncryptor
 	webSearchManagerBuilder     WebSearchManagerBuilder
 	antigravityUAVersionCache   atomic.Value // *cachedAntigravityUserAgentVersion
 	antigravityUAVersionSF      singleflight.Group
@@ -141,8 +143,10 @@ type SettingService struct {
 
 	// panelRateLimitCache 面板 API 限流配置进程内缓存（*cachedPanelRateLimitSettings）。
 	// 面板每个认证请求都会读取，禁止在热路径上直接访问 DB。
-	panelRateLimitCache atomic.Value
-	panelRateLimitSF    singleflight.Group
+	panelRateLimitCache    atomic.Value
+	panelRateLimitSF       singleflight.Group
+	ticketAgentIPRateCache atomic.Pointer[cachedTicketAgentIPRate]
+	ticketAgentIPRateSF    singleflight.Group
 
 	// openAIQuotaAutoPauseSettingsCache holds the most recently observed quota auto-pause
 	// settings. GetOpenAIQuotaAutoPauseSettings reads this atomic.Value on the request hot

@@ -229,6 +229,8 @@ export interface PublicSettings {
   check_in_enabled?: boolean
   /** 任务中心是否已开启（旧版公开设置可能未返回） */
   reward_tasks_enabled?: boolean
+  /** 工单系统是否已开启（旧版公开设置可能未返回） */
+  ticket_system_enabled?: boolean
   registration_enabled: boolean
   email_verify_enabled: boolean
   force_email_on_third_party_signup: boolean

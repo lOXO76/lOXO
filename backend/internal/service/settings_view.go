@@ -19,6 +19,7 @@ type SystemSettings struct {
 	PromoCodeEnabled                    bool
 	CheckInEnabled                      bool
 	RewardTasksEnabled                  bool
+	TicketSystemEnabled                 bool
 	CheckInCaptchaEnabled               bool
 	CheckInTiers                        []CheckInTier
 	PasswordResetEnabled                bool
@@ -346,6 +347,7 @@ type PublicSettings struct {
 	PromoCodeEnabled                    bool
 	CheckInEnabled                      bool
 	RewardTasksEnabled                  bool
+	TicketSystemEnabled                 bool
 	PasswordResetEnabled                bool
 	InvitationCodeEnabled               bool
 	TotpEnabled                         bool // TOTP 双因素认证

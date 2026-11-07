@@ -33,6 +33,8 @@ const (
 	NotificationEmailEventCyberPolicyNotice           = "content_moderation.cyber_policy_notice"
 	NotificationEmailEventOpsAlert                    = "ops.alert"
 	NotificationEmailEventOpsScheduledReport          = "ops.scheduled_report"
+	NotificationEmailEventTicketCreated               = "ticket.created"
+	NotificationEmailEventTicketNewMessage            = "ticket.new_message"
 
 	notificationEmailTemplateKeyPrefix    = "notification_email_template:"
 	notificationEmailPreferenceKeyPrefix  = "notification_email_preference:"
@@ -49,6 +51,7 @@ const (
 
 var (
 	notificationEmailPlaceholderPattern = regexp.MustCompile(`{{\s*([a-zA-Z][a-zA-Z0-9_]*)\s*}}`)
+	notificationEmailTicketLinkPattern  = regexp.MustCompile(`(?is)<a\b[^>]*\bhref\s*=\s*(?:"[^"]*\{\{\s*ticket_url\s*\}\}[^"]*"|'[^']*\{\{\s*ticket_url\s*\}\}[^']*'|[^\s>]*\{\{\s*ticket_url\s*\}\}[^\s>]*)[^>]*>.*?</a\s*>`)
 	notificationEmailLocales            = []string{notificationEmailDefaultLocale, notificationEmailLocaleChinese}
 	notificationEmailCommonPlaceholders = []string{"site_name", "recipient_name", "recipient_email"}
 	// Keep summary values separate so admins can rearrange or omit individual metrics in the template.
@@ -518,6 +521,18 @@ func (s *NotificationEmailService) sampleVariables(ctx context.Context, event, l
 		variables[key] = value
 	}
 	variables["site_name"] = s.siteName(ctx)
+	if event == NotificationEmailEventTicketCreated || event == NotificationEmailEventTicketNewMessage {
+		variables["ticket_no"] = "TK20261106A1B2C3"
+		variables["ticket_subject"] = "Support request"
+		variables["ticket_status"] = "pending_admin"
+		variables["message_excerpt"] = "A new support message has arrived."
+		variables["ticket_url"] = "https://example.com/tickets/1"
+		variables["actor_label"] = "Support"
+		if normalizeNotificationLocale(locale) == notificationEmailLocaleChinese {
+			variables["ticket_subject"] = "支持请求"
+			variables["message_excerpt"] = "工单收到一条新消息。"
+		}
+	}
 	if variables["unsubscribe_url"] == "" && info.Optional {
 		variables["unsubscribe_url"] = "https://example.com/unsubscribe"
 	}
@@ -713,6 +728,10 @@ func validateNotificationEmailTemplate(event, subject, htmlBody string) error {
 func renderNotificationEmail(event, subject, htmlBody string, variables map[string]string, rawHTMLVariables map[string]string) (NotificationEmailPreview, error) {
 	if err := validateNotificationEmailTemplate(event, subject, htmlBody); err != nil {
 		return NotificationEmailPreview{}, err
+	}
+	if (event == NotificationEmailEventTicketCreated || event == NotificationEmailEventTicketNewMessage) && !isAbsoluteTicketURL(strings.TrimSpace(variables["ticket_url"])) {
+		// 未配置前端地址时省略工单链接，避免发出空 href 或相对地址。
+		htmlBody = notificationEmailTicketLinkPattern.ReplaceAllString(htmlBody, "")
 	}
 	renderedSubject, err := renderNotificationEmailString(event, subject, variables, nil, false)
 	if err != nil {
@@ -1034,6 +1053,8 @@ var notificationEmailEventOrder = []string{
 	NotificationEmailEventCyberPolicyNotice,
 	NotificationEmailEventOpsAlert,
 	NotificationEmailEventOpsScheduledReport,
+	NotificationEmailEventTicketCreated,
+	NotificationEmailEventTicketNewMessage,
 }
 
 var notificationEmailEventDefinitions = map[string]NotificationEmailEventInfo{
@@ -1151,6 +1172,14 @@ var notificationEmailEventDefinitions = map[string]NotificationEmailEventInfo{
 			),
 			append(append([]string{}, notificationEmailOpsSummaryPlaceholders...), "report_detail_display", "report_html")...,
 		),
+	},
+	NotificationEmailEventTicketCreated: {
+		Event: NotificationEmailEventTicketCreated, Label: "Ticket created", Description: "Sent when a ticket is created.", Category: "ticket", Optional: false,
+		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...), "ticket_no", "ticket_subject", "ticket_status", "message_excerpt", "ticket_url", "actor_label"),
+	},
+	NotificationEmailEventTicketNewMessage: {
+		Event: NotificationEmailEventTicketNewMessage, Label: "Ticket new message", Description: "Sent when a ticket receives a new message.", Category: "ticket", Optional: false,
+		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...), "ticket_no", "ticket_subject", "ticket_status", "message_excerpt", "ticket_url", "actor_label"),
 	},
 }
 
@@ -1435,6 +1464,14 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 			Subject: "[运维报表] {{report_name}}",
 			HTML:    notificationEmailOpsScheduledReportTemplate(notificationEmailLocaleChinese),
 		},
+	},
+	NotificationEmailEventTicketCreated: {
+		notificationEmailDefaultLocale: {Subject: "[{{site_name}}] New ticket {{ticket_no}}", HTML: notificationEmailCard("#2563eb", "New support ticket", `<p>Hello {{recipient_name}},</p><p>A new ticket <strong>{{ticket_no}}</strong> was created: {{ticket_subject}}</p><p>{{message_excerpt}}</p><p><a href="{{ticket_url}}">View ticket</a></p>`)},
+		notificationEmailLocaleChinese: {Subject: "[{{site_name}}] 新工单 {{ticket_no}}", HTML: notificationEmailCard("#2563eb", "收到新工单", `<p>{{recipient_name}}，您好：</p><p>收到新工单 <strong>{{ticket_no}}</strong>：{{ticket_subject}}</p><p>{{message_excerpt}}</p><p><a href="{{ticket_url}}">查看工单</a></p>`)},
+	},
+	NotificationEmailEventTicketNewMessage: {
+		notificationEmailDefaultLocale: {Subject: "[{{site_name}}] New message on {{ticket_no}}", HTML: notificationEmailCard("#2563eb", "New ticket message", `<p>Hello {{recipient_name}},</p><p>There is a new message on <strong>{{ticket_no}}</strong>.</p><p>{{message_excerpt}}</p><p><a href="{{ticket_url}}">View ticket</a></p>`)},
+		notificationEmailLocaleChinese: {Subject: "[{{site_name}}] 工单 {{ticket_no}} 有新消息", HTML: notificationEmailCard("#2563eb", "工单有新消息", `<p>{{recipient_name}}，您好：</p><p>工单 <strong>{{ticket_no}}</strong> 有新消息。</p><p>{{message_excerpt}}</p><p><a href="{{ticket_url}}">查看工单</a></p>`)},
 	},
 }
 

@@ -143,6 +143,7 @@ func RegisterAdminRoutes(
 		// 每日签到统计与明细
 		registerCheckInRoutes(admin, h)
 		registerRewardTaskRoutes(admin, h)
+		registerAdminTicketRoutes(admin, h.Tickets)
 		registerDegradationRoutes(admin, h)
 
 		// 操作审计日志

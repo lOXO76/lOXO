@@ -52,6 +52,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/ticket"
+	"github.com/Wei-Shaw/sub2api/ent/ticketagentkey"
+	"github.com/Wei-Shaw/sub2api/ent/ticketmessage"
+	"github.com/Wei-Shaw/sub2api/ent/ticketnotifypreference"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
@@ -2717,6 +2721,160 @@ func init() {
 	tlsfingerprintprofileDescEnableGrease := tlsfingerprintprofileFields[2].Descriptor()
 	// tlsfingerprintprofile.DefaultEnableGrease holds the default value on creation for the enable_grease field.
 	tlsfingerprintprofile.DefaultEnableGrease = tlsfingerprintprofileDescEnableGrease.Default.(bool)
+	ticketMixin := schema.Ticket{}.Mixin()
+	ticketMixinFields0 := ticketMixin[0].Fields()
+	_ = ticketMixinFields0
+	ticketFields := schema.Ticket{}.Fields()
+	_ = ticketFields
+	// ticketDescCreatedAt is the schema descriptor for created_at field.
+	ticketDescCreatedAt := ticketMixinFields0[0].Descriptor()
+	// ticket.DefaultCreatedAt holds the default value on creation for the created_at field.
+	ticket.DefaultCreatedAt = ticketDescCreatedAt.Default.(func() time.Time)
+	// ticketDescUpdatedAt is the schema descriptor for updated_at field.
+	ticketDescUpdatedAt := ticketMixinFields0[1].Descriptor()
+	// ticket.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	ticket.DefaultUpdatedAt = ticketDescUpdatedAt.Default.(func() time.Time)
+	// ticket.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	ticket.UpdateDefaultUpdatedAt = ticketDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// ticketDescTicketNo is the schema descriptor for ticket_no field.
+	ticketDescTicketNo := ticketFields[0].Descriptor()
+	// ticket.TicketNoValidator is a validator for the "ticket_no" field. It is called by the builders before save.
+	ticket.TicketNoValidator = ticketDescTicketNo.Validators[0].(func(string) error)
+	// ticketDescCategory is the schema descriptor for category field.
+	ticketDescCategory := ticketFields[3].Descriptor()
+	// ticket.DefaultCategory holds the default value on creation for the category field.
+	ticket.DefaultCategory = ticketDescCategory.Default.(string)
+	// ticket.CategoryValidator is a validator for the "category" field. It is called by the builders before save.
+	ticket.CategoryValidator = ticketDescCategory.Validators[0].(func(string) error)
+	// ticketDescPriority is the schema descriptor for priority field.
+	ticketDescPriority := ticketFields[4].Descriptor()
+	// ticket.DefaultPriority holds the default value on creation for the priority field.
+	ticket.DefaultPriority = ticketDescPriority.Default.(string)
+	// ticket.PriorityValidator is a validator for the "priority" field. It is called by the builders before save.
+	ticket.PriorityValidator = ticketDescPriority.Validators[0].(func(string) error)
+	// ticketDescStatus is the schema descriptor for status field.
+	ticketDescStatus := ticketFields[5].Descriptor()
+	// ticket.DefaultStatus holds the default value on creation for the status field.
+	ticket.DefaultStatus = ticketDescStatus.Default.(string)
+	// ticket.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	ticket.StatusValidator = ticketDescStatus.Validators[0].(func(string) error)
+	// ticketDescUserUnread is the schema descriptor for user_unread field.
+	ticketDescUserUnread := ticketFields[7].Descriptor()
+	// ticket.DefaultUserUnread holds the default value on creation for the user_unread field.
+	ticket.DefaultUserUnread = ticketDescUserUnread.Default.(bool)
+	// ticketDescAdminUnread is the schema descriptor for admin_unread field.
+	ticketDescAdminUnread := ticketFields[8].Descriptor()
+	// ticket.DefaultAdminUnread holds the default value on creation for the admin_unread field.
+	ticket.DefaultAdminUnread = ticketDescAdminUnread.Default.(bool)
+	// ticketDescMessageCount is the schema descriptor for message_count field.
+	ticketDescMessageCount := ticketFields[9].Descriptor()
+	// ticket.DefaultMessageCount holds the default value on creation for the message_count field.
+	ticket.DefaultMessageCount = ticketDescMessageCount.Default.(int)
+	// ticketDescLastMessageAt is the schema descriptor for last_message_at field.
+	ticketDescLastMessageAt := ticketFields[10].Descriptor()
+	// ticket.DefaultLastMessageAt holds the default value on creation for the last_message_at field.
+	ticket.DefaultLastMessageAt = ticketDescLastMessageAt.Default.(func() time.Time)
+	// ticketDescLastMessageBy is the schema descriptor for last_message_by field.
+	ticketDescLastMessageBy := ticketFields[11].Descriptor()
+	// ticket.DefaultLastMessageBy holds the default value on creation for the last_message_by field.
+	ticket.DefaultLastMessageBy = ticketDescLastMessageBy.Default.(string)
+	// ticket.LastMessageByValidator is a validator for the "last_message_by" field. It is called by the builders before save.
+	ticket.LastMessageByValidator = ticketDescLastMessageBy.Validators[0].(func(string) error)
+	ticketagentkeyMixin := schema.TicketAgentKey{}.Mixin()
+	ticketagentkeyMixinHooks1 := ticketagentkeyMixin[1].Hooks()
+	ticketagentkey.Hooks[0] = ticketagentkeyMixinHooks1[0]
+	ticketagentkeyMixinInters1 := ticketagentkeyMixin[1].Interceptors()
+	ticketagentkey.Interceptors[0] = ticketagentkeyMixinInters1[0]
+	ticketagentkeyMixinFields0 := ticketagentkeyMixin[0].Fields()
+	_ = ticketagentkeyMixinFields0
+	ticketagentkeyFields := schema.TicketAgentKey{}.Fields()
+	_ = ticketagentkeyFields
+	// ticketagentkeyDescCreatedAt is the schema descriptor for created_at field.
+	ticketagentkeyDescCreatedAt := ticketagentkeyMixinFields0[0].Descriptor()
+	// ticketagentkey.DefaultCreatedAt holds the default value on creation for the created_at field.
+	ticketagentkey.DefaultCreatedAt = ticketagentkeyDescCreatedAt.Default.(func() time.Time)
+	// ticketagentkeyDescUpdatedAt is the schema descriptor for updated_at field.
+	ticketagentkeyDescUpdatedAt := ticketagentkeyMixinFields0[1].Descriptor()
+	// ticketagentkey.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	ticketagentkey.DefaultUpdatedAt = ticketagentkeyDescUpdatedAt.Default.(func() time.Time)
+	// ticketagentkey.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	ticketagentkey.UpdateDefaultUpdatedAt = ticketagentkeyDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// ticketagentkeyDescName is the schema descriptor for name field.
+	ticketagentkeyDescName := ticketagentkeyFields[1].Descriptor()
+	// ticketagentkey.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	ticketagentkey.NameValidator = ticketagentkeyDescName.Validators[0].(func(string) error)
+	// ticketagentkeyDescKeyPrefix is the schema descriptor for key_prefix field.
+	ticketagentkeyDescKeyPrefix := ticketagentkeyFields[2].Descriptor()
+	// ticketagentkey.KeyPrefixValidator is a validator for the "key_prefix" field. It is called by the builders before save.
+	ticketagentkey.KeyPrefixValidator = ticketagentkeyDescKeyPrefix.Validators[0].(func(string) error)
+	// ticketagentkeyDescKeyHash is the schema descriptor for key_hash field.
+	ticketagentkeyDescKeyHash := ticketagentkeyFields[3].Descriptor()
+	// ticketagentkey.KeyHashValidator is a validator for the "key_hash" field. It is called by the builders before save.
+	ticketagentkey.KeyHashValidator = ticketagentkeyDescKeyHash.Validators[0].(func(string) error)
+	// ticketagentkeyDescScope is the schema descriptor for scope field.
+	ticketagentkeyDescScope := ticketagentkeyFields[4].Descriptor()
+	// ticketagentkey.DefaultScope holds the default value on creation for the scope field.
+	ticketagentkey.DefaultScope = ticketagentkeyDescScope.Default.(string)
+	// ticketagentkey.ScopeValidator is a validator for the "scope" field. It is called by the builders before save.
+	ticketagentkey.ScopeValidator = ticketagentkeyDescScope.Validators[0].(func(string) error)
+	// ticketagentkeyDescQPSLimit is the schema descriptor for qps_limit field.
+	ticketagentkeyDescQPSLimit := ticketagentkeyFields[5].Descriptor()
+	// ticketagentkey.DefaultQPSLimit holds the default value on creation for the qps_limit field.
+	ticketagentkey.DefaultQPSLimit = ticketagentkeyDescQPSLimit.Default.(int)
+	// ticketagentkeyDescStatus is the schema descriptor for status field.
+	ticketagentkeyDescStatus := ticketagentkeyFields[6].Descriptor()
+	// ticketagentkey.DefaultStatus holds the default value on creation for the status field.
+	ticketagentkey.DefaultStatus = ticketagentkeyDescStatus.Default.(string)
+	// ticketagentkey.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	ticketagentkey.StatusValidator = ticketagentkeyDescStatus.Validators[0].(func(string) error)
+	// ticketagentkeyDescLastUsedIP is the schema descriptor for last_used_ip field.
+	ticketagentkeyDescLastUsedIP := ticketagentkeyFields[8].Descriptor()
+	// ticketagentkey.LastUsedIPValidator is a validator for the "last_used_ip" field. It is called by the builders before save.
+	ticketagentkey.LastUsedIPValidator = ticketagentkeyDescLastUsedIP.Validators[0].(func(string) error)
+	ticketmessageFields := schema.TicketMessage{}.Fields()
+	_ = ticketmessageFields
+	// ticketmessageDescAuthorType is the schema descriptor for author_type field.
+	ticketmessageDescAuthorType := ticketmessageFields[1].Descriptor()
+	// ticketmessage.AuthorTypeValidator is a validator for the "author_type" field. It is called by the builders before save.
+	ticketmessage.AuthorTypeValidator = ticketmessageDescAuthorType.Validators[0].(func(string) error)
+	// ticketmessageDescVia is the schema descriptor for via field.
+	ticketmessageDescVia := ticketmessageFields[3].Descriptor()
+	// ticketmessage.DefaultVia holds the default value on creation for the via field.
+	ticketmessage.DefaultVia = ticketmessageDescVia.Default.(string)
+	// ticketmessage.ViaValidator is a validator for the "via" field. It is called by the builders before save.
+	ticketmessage.ViaValidator = ticketmessageDescVia.Validators[0].(func(string) error)
+	// ticketmessageDescInternal is the schema descriptor for internal field.
+	ticketmessageDescInternal := ticketmessageFields[5].Descriptor()
+	// ticketmessage.DefaultInternal holds the default value on creation for the internal field.
+	ticketmessage.DefaultInternal = ticketmessageDescInternal.Default.(bool)
+	// ticketmessageDescCreatedAt is the schema descriptor for created_at field.
+	ticketmessageDescCreatedAt := ticketmessageFields[7].Descriptor()
+	// ticketmessage.DefaultCreatedAt holds the default value on creation for the created_at field.
+	ticketmessage.DefaultCreatedAt = ticketmessageDescCreatedAt.Default.(func() time.Time)
+	ticketnotifypreferenceFields := schema.TicketNotifyPreference{}.Fields()
+	_ = ticketnotifypreferenceFields
+	// ticketnotifypreferenceDescEmailEnabled is the schema descriptor for email_enabled field.
+	ticketnotifypreferenceDescEmailEnabled := ticketnotifypreferenceFields[1].Descriptor()
+	// ticketnotifypreference.DefaultEmailEnabled holds the default value on creation for the email_enabled field.
+	ticketnotifypreference.DefaultEmailEnabled = ticketnotifypreferenceDescEmailEnabled.Default.(bool)
+	// ticketnotifypreferenceDescFeishuEnabled is the schema descriptor for feishu_enabled field.
+	ticketnotifypreferenceDescFeishuEnabled := ticketnotifypreferenceFields[2].Descriptor()
+	// ticketnotifypreference.DefaultFeishuEnabled holds the default value on creation for the feishu_enabled field.
+	ticketnotifypreference.DefaultFeishuEnabled = ticketnotifypreferenceDescFeishuEnabled.Default.(bool)
+	// ticketnotifypreferenceDescFeishuWebhookURLEncrypted is the schema descriptor for feishu_webhook_url_encrypted field.
+	ticketnotifypreferenceDescFeishuWebhookURLEncrypted := ticketnotifypreferenceFields[3].Descriptor()
+	// ticketnotifypreference.DefaultFeishuWebhookURLEncrypted holds the default value on creation for the feishu_webhook_url_encrypted field.
+	ticketnotifypreference.DefaultFeishuWebhookURLEncrypted = ticketnotifypreferenceDescFeishuWebhookURLEncrypted.Default.(string)
+	// ticketnotifypreferenceDescFeishuSecretEncrypted is the schema descriptor for feishu_secret_encrypted field.
+	ticketnotifypreferenceDescFeishuSecretEncrypted := ticketnotifypreferenceFields[4].Descriptor()
+	// ticketnotifypreference.DefaultFeishuSecretEncrypted holds the default value on creation for the feishu_secret_encrypted field.
+	ticketnotifypreference.DefaultFeishuSecretEncrypted = ticketnotifypreferenceDescFeishuSecretEncrypted.Default.(string)
+	// ticketnotifypreferenceDescUpdatedAt is the schema descriptor for updated_at field.
+	ticketnotifypreferenceDescUpdatedAt := ticketnotifypreferenceFields[5].Descriptor()
+	// ticketnotifypreference.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	ticketnotifypreference.DefaultUpdatedAt = ticketnotifypreferenceDescUpdatedAt.Default.(func() time.Time)
+	// ticketnotifypreference.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	ticketnotifypreference.UpdateDefaultUpdatedAt = ticketnotifypreferenceDescUpdatedAt.UpdateDefault.(func() time.Time)
 	usagecleanuptaskMixin := schema.UsageCleanupTask{}.Mixin()
 	usagecleanuptaskMixinFields0 := usagecleanuptaskMixin[0].Fields()
 	_ = usagecleanuptaskMixinFields0

@@ -61,6 +61,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/ticket"
+	"github.com/Wei-Shaw/sub2api/ent/ticketagentkey"
+	"github.com/Wei-Shaw/sub2api/ent/ticketmessage"
+	"github.com/Wei-Shaw/sub2api/ent/ticketnotifypreference"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
@@ -174,6 +178,14 @@ type Client struct {
 	SubscriptionPlan *SubscriptionPlanClient
 	// TLSFingerprintProfile is the client for interacting with the TLSFingerprintProfile builders.
 	TLSFingerprintProfile *TLSFingerprintProfileClient
+	// Ticket is the client for interacting with the Ticket builders.
+	Ticket *TicketClient
+	// TicketAgentKey is the client for interacting with the TicketAgentKey builders.
+	TicketAgentKey *TicketAgentKeyClient
+	// TicketMessage is the client for interacting with the TicketMessage builders.
+	TicketMessage *TicketMessageClient
+	// TicketNotifyPreference is the client for interacting with the TicketNotifyPreference builders.
+	TicketNotifyPreference *TicketNotifyPreferenceClient
 	// UsageCleanupTask is the client for interacting with the UsageCleanupTask builders.
 	UsageCleanupTask *UsageCleanupTaskClient
 	// UsageLog is the client for interacting with the UsageLog builders.
@@ -250,6 +262,10 @@ func (c *Client) init() {
 	c.Setting = NewSettingClient(c.config)
 	c.SubscriptionPlan = NewSubscriptionPlanClient(c.config)
 	c.TLSFingerprintProfile = NewTLSFingerprintProfileClient(c.config)
+	c.Ticket = NewTicketClient(c.config)
+	c.TicketAgentKey = NewTicketAgentKeyClient(c.config)
+	c.TicketMessage = NewTicketMessageClient(c.config)
+	c.TicketNotifyPreference = NewTicketNotifyPreferenceClient(c.config)
 	c.UsageCleanupTask = NewUsageCleanupTaskClient(c.config)
 	c.UsageLog = NewUsageLogClient(c.config)
 	c.User = NewUserClient(c.config)
@@ -398,6 +414,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
 		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
+		Ticket:                        NewTicketClient(cfg),
+		TicketAgentKey:                NewTicketAgentKeyClient(cfg),
+		TicketMessage:                 NewTicketMessageClient(cfg),
+		TicketNotifyPreference:        NewTicketNotifyPreferenceClient(cfg),
 		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
 		UsageLog:                      NewUsageLogClient(cfg),
 		User:                          NewUserClient(cfg),
@@ -473,6 +493,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
 		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
+		Ticket:                        NewTicketClient(cfg),
+		TicketAgentKey:                NewTicketAgentKeyClient(cfg),
+		TicketMessage:                 NewTicketMessageClient(cfg),
+		TicketNotifyPreference:        NewTicketNotifyPreferenceClient(cfg),
 		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
 		UsageLog:                      NewUsageLogClient(cfg),
 		User:                          NewUserClient(cfg),
@@ -524,7 +548,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RewardTask, c.RewardTaskEvent,
 		c.RewardTaskPartner, c.RewardTaskRecord, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
+		c.SubscriptionPlan, c.TLSFingerprintProfile, c.Ticket, c.TicketAgentKey,
+		c.TicketMessage, c.TicketNotifyPreference, c.UsageCleanupTask, c.UsageLog,
 		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserCheckIn, c.UserPlatformQuota, c.UserSubscription,
 	} {
@@ -549,7 +574,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RewardTask, c.RewardTaskEvent,
 		c.RewardTaskPartner, c.RewardTaskRecord, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
+		c.SubscriptionPlan, c.TLSFingerprintProfile, c.Ticket, c.TicketAgentKey,
+		c.TicketMessage, c.TicketNotifyPreference, c.UsageCleanupTask, c.UsageLog,
 		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserCheckIn, c.UserPlatformQuota, c.UserSubscription,
 	} {
@@ -654,6 +680,14 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.SubscriptionPlan.mutate(ctx, m)
 	case *TLSFingerprintProfileMutation:
 		return c.TLSFingerprintProfile.mutate(ctx, m)
+	case *TicketMutation:
+		return c.Ticket.mutate(ctx, m)
+	case *TicketAgentKeyMutation:
+		return c.TicketAgentKey.mutate(ctx, m)
+	case *TicketMessageMutation:
+		return c.TicketMessage.mutate(ctx, m)
+	case *TicketNotifyPreferenceMutation:
+		return c.TicketNotifyPreference.mutate(ctx, m)
 	case *UsageCleanupTaskMutation:
 		return c.UsageCleanupTask.mutate(ctx, m)
 	case *UsageLogMutation:
@@ -7800,6 +7834,540 @@ func (c *TLSFingerprintProfileClient) mutate(ctx context.Context, m *TLSFingerpr
 	}
 }
 
+// TicketClient is a client for the Ticket schema.
+type TicketClient struct {
+	config
+}
+
+// NewTicketClient returns a client for the Ticket from the given config.
+func NewTicketClient(c config) *TicketClient {
+	return &TicketClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `ticket.Hooks(f(g(h())))`.
+func (c *TicketClient) Use(hooks ...Hook) {
+	c.hooks.Ticket = append(c.hooks.Ticket, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `ticket.Intercept(f(g(h())))`.
+func (c *TicketClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Ticket = append(c.inters.Ticket, interceptors...)
+}
+
+// Create returns a builder for creating a Ticket entity.
+func (c *TicketClient) Create() *TicketCreate {
+	mutation := newTicketMutation(c.config, OpCreate)
+	return &TicketCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Ticket entities.
+func (c *TicketClient) CreateBulk(builders ...*TicketCreate) *TicketCreateBulk {
+	return &TicketCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TicketClient) MapCreateBulk(slice any, setFunc func(*TicketCreate, int)) *TicketCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TicketCreateBulk{err: fmt.Errorf("calling to TicketClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TicketCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TicketCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Ticket.
+func (c *TicketClient) Update() *TicketUpdate {
+	mutation := newTicketMutation(c.config, OpUpdate)
+	return &TicketUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TicketClient) UpdateOne(_m *Ticket) *TicketUpdateOne {
+	mutation := newTicketMutation(c.config, OpUpdateOne, withTicket(_m))
+	return &TicketUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TicketClient) UpdateOneID(id int64) *TicketUpdateOne {
+	mutation := newTicketMutation(c.config, OpUpdateOne, withTicketID(id))
+	return &TicketUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Ticket.
+func (c *TicketClient) Delete() *TicketDelete {
+	mutation := newTicketMutation(c.config, OpDelete)
+	return &TicketDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TicketClient) DeleteOne(_m *Ticket) *TicketDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TicketClient) DeleteOneID(id int64) *TicketDeleteOne {
+	builder := c.Delete().Where(ticket.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TicketDeleteOne{builder}
+}
+
+// Query returns a query builder for Ticket.
+func (c *TicketClient) Query() *TicketQuery {
+	return &TicketQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTicket},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Ticket entity by its id.
+func (c *TicketClient) Get(ctx context.Context, id int64) (*Ticket, error) {
+	return c.Query().Where(ticket.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TicketClient) GetX(ctx context.Context, id int64) *Ticket {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TicketClient) Hooks() []Hook {
+	return c.hooks.Ticket
+}
+
+// Interceptors returns the client interceptors.
+func (c *TicketClient) Interceptors() []Interceptor {
+	return c.inters.Ticket
+}
+
+func (c *TicketClient) mutate(ctx context.Context, m *TicketMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TicketCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TicketUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TicketUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TicketDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Ticket mutation op: %q", m.Op())
+	}
+}
+
+// TicketAgentKeyClient is a client for the TicketAgentKey schema.
+type TicketAgentKeyClient struct {
+	config
+}
+
+// NewTicketAgentKeyClient returns a client for the TicketAgentKey from the given config.
+func NewTicketAgentKeyClient(c config) *TicketAgentKeyClient {
+	return &TicketAgentKeyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `ticketagentkey.Hooks(f(g(h())))`.
+func (c *TicketAgentKeyClient) Use(hooks ...Hook) {
+	c.hooks.TicketAgentKey = append(c.hooks.TicketAgentKey, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `ticketagentkey.Intercept(f(g(h())))`.
+func (c *TicketAgentKeyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TicketAgentKey = append(c.inters.TicketAgentKey, interceptors...)
+}
+
+// Create returns a builder for creating a TicketAgentKey entity.
+func (c *TicketAgentKeyClient) Create() *TicketAgentKeyCreate {
+	mutation := newTicketAgentKeyMutation(c.config, OpCreate)
+	return &TicketAgentKeyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TicketAgentKey entities.
+func (c *TicketAgentKeyClient) CreateBulk(builders ...*TicketAgentKeyCreate) *TicketAgentKeyCreateBulk {
+	return &TicketAgentKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TicketAgentKeyClient) MapCreateBulk(slice any, setFunc func(*TicketAgentKeyCreate, int)) *TicketAgentKeyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TicketAgentKeyCreateBulk{err: fmt.Errorf("calling to TicketAgentKeyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TicketAgentKeyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TicketAgentKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TicketAgentKey.
+func (c *TicketAgentKeyClient) Update() *TicketAgentKeyUpdate {
+	mutation := newTicketAgentKeyMutation(c.config, OpUpdate)
+	return &TicketAgentKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TicketAgentKeyClient) UpdateOne(_m *TicketAgentKey) *TicketAgentKeyUpdateOne {
+	mutation := newTicketAgentKeyMutation(c.config, OpUpdateOne, withTicketAgentKey(_m))
+	return &TicketAgentKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TicketAgentKeyClient) UpdateOneID(id int64) *TicketAgentKeyUpdateOne {
+	mutation := newTicketAgentKeyMutation(c.config, OpUpdateOne, withTicketAgentKeyID(id))
+	return &TicketAgentKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TicketAgentKey.
+func (c *TicketAgentKeyClient) Delete() *TicketAgentKeyDelete {
+	mutation := newTicketAgentKeyMutation(c.config, OpDelete)
+	return &TicketAgentKeyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TicketAgentKeyClient) DeleteOne(_m *TicketAgentKey) *TicketAgentKeyDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TicketAgentKeyClient) DeleteOneID(id int64) *TicketAgentKeyDeleteOne {
+	builder := c.Delete().Where(ticketagentkey.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TicketAgentKeyDeleteOne{builder}
+}
+
+// Query returns a query builder for TicketAgentKey.
+func (c *TicketAgentKeyClient) Query() *TicketAgentKeyQuery {
+	return &TicketAgentKeyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTicketAgentKey},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TicketAgentKey entity by its id.
+func (c *TicketAgentKeyClient) Get(ctx context.Context, id int64) (*TicketAgentKey, error) {
+	return c.Query().Where(ticketagentkey.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TicketAgentKeyClient) GetX(ctx context.Context, id int64) *TicketAgentKey {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TicketAgentKeyClient) Hooks() []Hook {
+	hooks := c.hooks.TicketAgentKey
+	return append(hooks[:len(hooks):len(hooks)], ticketagentkey.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *TicketAgentKeyClient) Interceptors() []Interceptor {
+	inters := c.inters.TicketAgentKey
+	return append(inters[:len(inters):len(inters)], ticketagentkey.Interceptors[:]...)
+}
+
+func (c *TicketAgentKeyClient) mutate(ctx context.Context, m *TicketAgentKeyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TicketAgentKeyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TicketAgentKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TicketAgentKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TicketAgentKeyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TicketAgentKey mutation op: %q", m.Op())
+	}
+}
+
+// TicketMessageClient is a client for the TicketMessage schema.
+type TicketMessageClient struct {
+	config
+}
+
+// NewTicketMessageClient returns a client for the TicketMessage from the given config.
+func NewTicketMessageClient(c config) *TicketMessageClient {
+	return &TicketMessageClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `ticketmessage.Hooks(f(g(h())))`.
+func (c *TicketMessageClient) Use(hooks ...Hook) {
+	c.hooks.TicketMessage = append(c.hooks.TicketMessage, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `ticketmessage.Intercept(f(g(h())))`.
+func (c *TicketMessageClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TicketMessage = append(c.inters.TicketMessage, interceptors...)
+}
+
+// Create returns a builder for creating a TicketMessage entity.
+func (c *TicketMessageClient) Create() *TicketMessageCreate {
+	mutation := newTicketMessageMutation(c.config, OpCreate)
+	return &TicketMessageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TicketMessage entities.
+func (c *TicketMessageClient) CreateBulk(builders ...*TicketMessageCreate) *TicketMessageCreateBulk {
+	return &TicketMessageCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TicketMessageClient) MapCreateBulk(slice any, setFunc func(*TicketMessageCreate, int)) *TicketMessageCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TicketMessageCreateBulk{err: fmt.Errorf("calling to TicketMessageClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TicketMessageCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TicketMessageCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TicketMessage.
+func (c *TicketMessageClient) Update() *TicketMessageUpdate {
+	mutation := newTicketMessageMutation(c.config, OpUpdate)
+	return &TicketMessageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TicketMessageClient) UpdateOne(_m *TicketMessage) *TicketMessageUpdateOne {
+	mutation := newTicketMessageMutation(c.config, OpUpdateOne, withTicketMessage(_m))
+	return &TicketMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TicketMessageClient) UpdateOneID(id int64) *TicketMessageUpdateOne {
+	mutation := newTicketMessageMutation(c.config, OpUpdateOne, withTicketMessageID(id))
+	return &TicketMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TicketMessage.
+func (c *TicketMessageClient) Delete() *TicketMessageDelete {
+	mutation := newTicketMessageMutation(c.config, OpDelete)
+	return &TicketMessageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TicketMessageClient) DeleteOne(_m *TicketMessage) *TicketMessageDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TicketMessageClient) DeleteOneID(id int64) *TicketMessageDeleteOne {
+	builder := c.Delete().Where(ticketmessage.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TicketMessageDeleteOne{builder}
+}
+
+// Query returns a query builder for TicketMessage.
+func (c *TicketMessageClient) Query() *TicketMessageQuery {
+	return &TicketMessageQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTicketMessage},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TicketMessage entity by its id.
+func (c *TicketMessageClient) Get(ctx context.Context, id int64) (*TicketMessage, error) {
+	return c.Query().Where(ticketmessage.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TicketMessageClient) GetX(ctx context.Context, id int64) *TicketMessage {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TicketMessageClient) Hooks() []Hook {
+	return c.hooks.TicketMessage
+}
+
+// Interceptors returns the client interceptors.
+func (c *TicketMessageClient) Interceptors() []Interceptor {
+	return c.inters.TicketMessage
+}
+
+func (c *TicketMessageClient) mutate(ctx context.Context, m *TicketMessageMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TicketMessageCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TicketMessageUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TicketMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TicketMessageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TicketMessage mutation op: %q", m.Op())
+	}
+}
+
+// TicketNotifyPreferenceClient is a client for the TicketNotifyPreference schema.
+type TicketNotifyPreferenceClient struct {
+	config
+}
+
+// NewTicketNotifyPreferenceClient returns a client for the TicketNotifyPreference from the given config.
+func NewTicketNotifyPreferenceClient(c config) *TicketNotifyPreferenceClient {
+	return &TicketNotifyPreferenceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `ticketnotifypreference.Hooks(f(g(h())))`.
+func (c *TicketNotifyPreferenceClient) Use(hooks ...Hook) {
+	c.hooks.TicketNotifyPreference = append(c.hooks.TicketNotifyPreference, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `ticketnotifypreference.Intercept(f(g(h())))`.
+func (c *TicketNotifyPreferenceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TicketNotifyPreference = append(c.inters.TicketNotifyPreference, interceptors...)
+}
+
+// Create returns a builder for creating a TicketNotifyPreference entity.
+func (c *TicketNotifyPreferenceClient) Create() *TicketNotifyPreferenceCreate {
+	mutation := newTicketNotifyPreferenceMutation(c.config, OpCreate)
+	return &TicketNotifyPreferenceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TicketNotifyPreference entities.
+func (c *TicketNotifyPreferenceClient) CreateBulk(builders ...*TicketNotifyPreferenceCreate) *TicketNotifyPreferenceCreateBulk {
+	return &TicketNotifyPreferenceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TicketNotifyPreferenceClient) MapCreateBulk(slice any, setFunc func(*TicketNotifyPreferenceCreate, int)) *TicketNotifyPreferenceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TicketNotifyPreferenceCreateBulk{err: fmt.Errorf("calling to TicketNotifyPreferenceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TicketNotifyPreferenceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TicketNotifyPreferenceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TicketNotifyPreference.
+func (c *TicketNotifyPreferenceClient) Update() *TicketNotifyPreferenceUpdate {
+	mutation := newTicketNotifyPreferenceMutation(c.config, OpUpdate)
+	return &TicketNotifyPreferenceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TicketNotifyPreferenceClient) UpdateOne(_m *TicketNotifyPreference) *TicketNotifyPreferenceUpdateOne {
+	mutation := newTicketNotifyPreferenceMutation(c.config, OpUpdateOne, withTicketNotifyPreference(_m))
+	return &TicketNotifyPreferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TicketNotifyPreferenceClient) UpdateOneID(id int64) *TicketNotifyPreferenceUpdateOne {
+	mutation := newTicketNotifyPreferenceMutation(c.config, OpUpdateOne, withTicketNotifyPreferenceID(id))
+	return &TicketNotifyPreferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TicketNotifyPreference.
+func (c *TicketNotifyPreferenceClient) Delete() *TicketNotifyPreferenceDelete {
+	mutation := newTicketNotifyPreferenceMutation(c.config, OpDelete)
+	return &TicketNotifyPreferenceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TicketNotifyPreferenceClient) DeleteOne(_m *TicketNotifyPreference) *TicketNotifyPreferenceDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TicketNotifyPreferenceClient) DeleteOneID(id int64) *TicketNotifyPreferenceDeleteOne {
+	builder := c.Delete().Where(ticketnotifypreference.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TicketNotifyPreferenceDeleteOne{builder}
+}
+
+// Query returns a query builder for TicketNotifyPreference.
+func (c *TicketNotifyPreferenceClient) Query() *TicketNotifyPreferenceQuery {
+	return &TicketNotifyPreferenceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTicketNotifyPreference},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TicketNotifyPreference entity by its id.
+func (c *TicketNotifyPreferenceClient) Get(ctx context.Context, id int64) (*TicketNotifyPreference, error) {
+	return c.Query().Where(ticketnotifypreference.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TicketNotifyPreferenceClient) GetX(ctx context.Context, id int64) *TicketNotifyPreference {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TicketNotifyPreferenceClient) Hooks() []Hook {
+	return c.hooks.TicketNotifyPreference
+}
+
+// Interceptors returns the client interceptors.
+func (c *TicketNotifyPreferenceClient) Interceptors() []Interceptor {
+	return c.inters.TicketNotifyPreference
+}
+
+func (c *TicketNotifyPreferenceClient) mutate(ctx context.Context, m *TicketNotifyPreferenceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TicketNotifyPreferenceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TicketNotifyPreferenceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TicketNotifyPreferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TicketNotifyPreferenceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TicketNotifyPreference mutation op: %q", m.Op())
+	}
+}
+
 // UsageCleanupTaskClient is a client for the UsageCleanupTask schema.
 type UsageCleanupTaskClient struct {
 	config
@@ -9434,9 +10002,10 @@ type (
 		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
 		RedeemCode, RewardTask, RewardTaskEvent, RewardTaskPartner, RewardTaskRecord,
-		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
-		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserCheckIn, UserPlatformQuota, UserSubscription []ent.Hook
+		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile, Ticket,
+		TicketAgentKey, TicketMessage, TicketNotifyPreference, UsageCleanupTask,
+		UsageLog, User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
+		UserCheckIn, UserPlatformQuota, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
@@ -9450,10 +10019,10 @@ type (
 		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
 		RedeemCode, RewardTask, RewardTaskEvent, RewardTaskPartner, RewardTaskRecord,
-		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
-		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserCheckIn, UserPlatformQuota,
-		UserSubscription []ent.Interceptor
+		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile, Ticket,
+		TicketAgentKey, TicketMessage, TicketNotifyPreference, UsageCleanupTask,
+		UsageLog, User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
+		UserCheckIn, UserPlatformQuota, UserSubscription []ent.Interceptor
 	}
 )
 

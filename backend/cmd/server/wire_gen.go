@@ -298,9 +298,9 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	enterpriseMembershipReader := service.ProvideEnterpriseMembershipReader(enterpriseRepository)
 	checkInService := service.NewCheckInService(client, userRepository, settingService, captchaVerifier, enterpriseMembershipReader, billingCacheService, apiKeyAuthCacheInvalidator)
 	checkInHandler := admin.NewCheckInHandler(checkInService)
-	rewardTaskNonceStore := repository.NewRewardTaskNonceStore(redisClient)
-	rewardTaskService := service.NewRewardTaskService(client, userRepository, settingService, enterpriseMembershipReader, billingCacheService, apiKeyAuthCacheInvalidator, secretEncryptor, rewardTaskNonceStore)
-	adminRewardTaskHandler := admin.NewRewardTaskHandler(rewardTaskService)
+	rewardNonceStore := repository.NewRewardTaskNonceStore(redisClient)
+	rewardTaskService := service.NewRewardTaskService(client, userRepository, settingService, enterpriseMembershipReader, billingCacheService, apiKeyAuthCacheInvalidator, secretEncryptor, rewardNonceStore)
+	rewardTaskHandler := admin.NewRewardTaskHandler(rewardTaskService)
 	rewardTaskSettingsHandler := admin.NewRewardTaskSettingsHandler(settingService)
 	degradationRepository := repository.NewDegradationRepository(client, db)
 	degradationService := service.ProvideDegradationService(degradationRepository, groupRepository, gatewayService, accountTestService, settingService)
@@ -315,7 +315,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	openCodeGoUsageService := service.ProvideOpenCodeGoUsageService(accountRepository, httpUpstream, settingService, leaderLockCache, db)
 	idempotencyCoordinator := service.ProvideIdempotencyCoordinator(idempotencyRepository, configConfig)
 	claudeResetCreditService := service.ProvideClaudeResetCreditService(accountRepository, claudeTokenProvider, proxyRepository, settingService, idempotencyCoordinator, leaderLockCache)
-	adminHandlers := handler.ProvideAdminHandlers(enterpriseHandler, dashboardHandler, adminUserHandler, groupHandler, accountHandler, adminAnnouncementHandler, dataManagementHandler, backupHandler, oAuthHandler, openAIOAuthHandler, geminiOAuthHandler, antigravityOAuthHandler, grokOAuthHandler, cnProviderHandler, proxyHandler, adminRedeemHandler, promoHandler, settingHandler, opsHandler, systemHandler, adminSubscriptionHandler, adminUsageHandler, userAttributeHandler, errorPassthroughHandler, tlsFingerprintProfileHandler, pluginHandler, adminAPIKeyHandler, scheduledTestHandler, channelHandler, channelMonitorHandler, channelMonitorRequestTemplateHandler, contentModerationHandler, promptAdminHandler, paymentHandler, affiliateHandler, checkInHandler, adminRewardTaskHandler, rewardTaskSettingsHandler, degradationHandler, complianceHandler, auditLogHandler, upstreamBillingProbeService, ollamaCloudUsageService, openCodeGoUsageService, claudeResetCreditService, enterpriseRepository)
+	adminHandlers := handler.ProvideAdminHandlers(enterpriseHandler, dashboardHandler, adminUserHandler, groupHandler, accountHandler, adminAnnouncementHandler, dataManagementHandler, backupHandler, oAuthHandler, openAIOAuthHandler, geminiOAuthHandler, antigravityOAuthHandler, grokOAuthHandler, cnProviderHandler, proxyHandler, adminRedeemHandler, promoHandler, settingHandler, opsHandler, systemHandler, adminSubscriptionHandler, adminUsageHandler, userAttributeHandler, errorPassthroughHandler, tlsFingerprintProfileHandler, pluginHandler, adminAPIKeyHandler, scheduledTestHandler, channelHandler, channelMonitorHandler, channelMonitorRequestTemplateHandler, contentModerationHandler, promptAdminHandler, paymentHandler, affiliateHandler, checkInHandler, rewardTaskHandler, rewardTaskSettingsHandler, degradationHandler, complianceHandler, auditLogHandler, upstreamBillingProbeService, ollamaCloudUsageService, openCodeGoUsageService, claudeResetCreditService, enterpriseRepository)
 	usageRecordWorkerPool := service.NewUsageRecordWorkerPool(configConfig)
 	userMsgQueueCache := repository.NewUserMsgQueueCache(redisClient)
 	userMessageQueueService := service.ProvideUserMessageQueueService(userMsgQueueCache, rpmCache, configConfig)
@@ -353,13 +353,18 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	batchImageCleanupService := service.ProvideBatchImageCleanupService(batchImageRepository, accountRepository, configConfig)
 	batchImageHandler := handler.ProvideBatchImageHandler(batchImagePublicService, batchImageDownloadService, batchImageCleanupService, openAIGatewayHandler)
 	handlerCheckInHandler := handler.ProvideCheckInHandler(checkInService)
-	rewardTaskHandler := handler.NewRewardTaskHandler(rewardTaskService)
+	handlerRewardTaskHandler := handler.NewRewardTaskHandler(rewardTaskService)
 	rewardTaskOpenHandler := handler.NewRewardTaskOpenHandler(rewardTaskService)
+	rateLimiter := service.ProvideTicketRateLimiter(redisClient)
+	ticketNotificationService := service.NewTicketNotificationService(db, settingService, notificationEmailService, rewardNonceStore, rateLimiter, secretEncryptor)
+	ticketService := service.NewTicketService(db, settingService, rateLimiter, ticketNotificationService)
+	ticketAgentService := service.NewTicketAgentService(client, userRepository, settingService, redisClient)
+	ticketHandler := handler.NewTicketHandler(ticketService, settingService, ticketNotificationService, ticketAgentService)
 	degradationUserHandler := handler.NewDegradationUserHandler(degradationService, settingService, apiKeyService, groupRepository, degradationVisualTokenService)
 	degradationVisualRenderHandler := handler.NewDegradationVisualRenderHandler(degradationService, degradationVisualTokenService)
 	idempotencyCleanupService := service.ProvideIdempotencyCleanupService(idempotencyRepository, configConfig)
 	openAIQuotaAutoResetService := service.ProvideOpenAIQuotaAutoResetService(accountRepository, openAIQuotaService, rateLimitService, idempotencyCoordinator, auditLogService, settingService, leaderLockCache)
-	handlers := handler.ProvideHandlers(authHandler, userHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, channelMonitorUserHandler, channelMonitorV2Handler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, totpHandler, passkeyHandler, handlerPaymentHandler, paymentWebhookHandler, availableChannelHandler, creationHandler, modelPlazaHandler, asyncImageHandler, batchImageHandler, handlerCheckInHandler, rewardTaskHandler, rewardTaskOpenHandler, degradationUserHandler, degradationVisualRenderHandler, idempotencyCoordinator, idempotencyCleanupService, openAIQuotaAutoResetService, enterpriseService)
+	handlers := handler.ProvideHandlers(authHandler, userHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, channelMonitorUserHandler, channelMonitorV2Handler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, totpHandler, passkeyHandler, handlerPaymentHandler, paymentWebhookHandler, availableChannelHandler, creationHandler, modelPlazaHandler, asyncImageHandler, batchImageHandler, handlerCheckInHandler, handlerRewardTaskHandler, rewardTaskOpenHandler, ticketHandler, degradationUserHandler, degradationVisualRenderHandler, idempotencyCoordinator, idempotencyCleanupService, openAIQuotaAutoResetService, enterpriseService)
 	jwtAuthMiddleware := middleware.NewJWTAuthMiddleware(authService, userService, settingService, auditLogService)
 	optionalJWTAuthMiddleware := middleware.NewOptionalJWTAuthMiddleware(authService, userService, settingService, auditLogService)
 	adminAuthMiddleware := middleware.NewAdminAuthMiddleware(authService, userService, settingService, auditLogService)
@@ -387,7 +392,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	channelMonitorRunner := service.ProvideChannelMonitorRunner(channelMonitorService, settingService, channelMonitorQuotaFetcher)
 	channelMonitorV2Aggregator := service.ProvideChannelMonitorV2Aggregator(channelMonitorV2Repository, db, settingService)
 	userPlatformQuotaUsageFlusher := service.ProvideUserPlatformQuotaUsageFlusher(configConfig, billingCache, serviceUserPlatformQuotaRepository, timingWheelService)
-	v := provideCleanup(client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, opsService, opsIngressRejectAggregator, apiKeyService, authCacheInvalidationWorker, schedulerSnapshotService, tokenRefreshService, accountExpiryService, cnProviderBalanceCheckService, openAICodexVersionSyncService, claudeCodeVersionSyncService, proxyExpiryService, subscriptionExpiryService, usageCleanupService, idempotencyCleanupService, geminiCachedContentService, batchImageCleanupService, batchImageWorkerRuntime, pricingService, emailQueueService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, grokOAuthService, openAIGatewayService, scheduledTestRunnerService, backupService, paymentOrderExpiryService, channelMonitorRunner, degradationRunner, channelMonitorV2Aggregator, userPlatformQuotaUsageFlusher, upstreamBillingProbeService, ollamaCloudUsageService, openCodeGoUsageService, auditLogService, openAIQuotaAutoResetService, promptService, pluginManager)
+	v := provideCleanup(client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, opsService, opsIngressRejectAggregator, apiKeyService, authCacheInvalidationWorker, schedulerSnapshotService, tokenRefreshService, accountExpiryService, cnProviderBalanceCheckService, openAICodexVersionSyncService, claudeCodeVersionSyncService, proxyExpiryService, subscriptionExpiryService, usageCleanupService, idempotencyCleanupService, geminiCachedContentService, batchImageCleanupService, batchImageWorkerRuntime, pricingService, emailQueueService, ticketNotificationService, ticketAgentService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, grokOAuthService, openAIGatewayService, scheduledTestRunnerService, backupService, paymentOrderExpiryService, channelMonitorRunner, degradationRunner, channelMonitorV2Aggregator, userPlatformQuotaUsageFlusher, upstreamBillingProbeService, ollamaCloudUsageService, openCodeGoUsageService, auditLogService, openAIQuotaAutoResetService, promptService, pluginManager)
 	application := &Application{
 		Server:        httpServer,
 		PromptAudit:   promptService,
@@ -452,6 +457,8 @@ func provideCleanup(
 	batchImageWorker *service.BatchImageWorkerRuntime,
 	pricing *service.PricingService,
 	emailQueue *service.EmailQueueService,
+	ticketNotifications *service.TicketNotificationService,
+	ticketAgents *service.TicketAgentService,
 	billingCache *service.BillingCacheService,
 	usageRecordWorkerPool *service.UsageRecordWorkerPool,
 	subscriptionService *service.SubscriptionService,
@@ -477,6 +484,12 @@ func provideCleanup(
 	pluginManager *service.PluginManager,
 ) func() {
 	return func() {
+		if ticketNotifications != nil {
+			ticketNotifications.Stop()
+		}
+		if ticketAgents != nil {
+			ticketAgents.Stop()
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
