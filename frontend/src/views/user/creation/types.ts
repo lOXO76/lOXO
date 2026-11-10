@@ -29,7 +29,10 @@ export interface CreationCurrentTask {
   progress?: number
   error: CreationErrorState | null
   handle: CreationTaskHandle | null
+  /** 提交请求尚未返回（异步任务尚未拿到任务 ID，或同步请求仍在进行）。 */
   submitting: boolean
+  /** 网关不支持异步提交（如 Gemini 生图），结果只能由当前页面的同步请求带回。 */
+  sync: boolean
   cancellationNoticed: boolean
 }
 

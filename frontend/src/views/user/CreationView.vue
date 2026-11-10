@@ -18,7 +18,15 @@
             class="rounded-md px-4 py-2 text-sm font-medium transition-colors"
             :class="mode === kind ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700'"
             @click="mode = kind"
-          >{{ t(`creation.modes.${kind}`) }}</button>
+          >
+            {{ t(`creation.modes.${kind}`) }}
+            <span
+              v-if="activeCounts[kind]"
+              class="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs"
+              :class="mode === kind ? 'bg-white/20 text-white' : 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200'"
+              :data-testid="`creation-tab-${kind}-active`"
+            >{{ activeCounts[kind] }}</span>
+          </button>
         </div>
       </div>
 
@@ -51,7 +59,8 @@
             :loading-keys="loadingKeys"
             :creating-key="creatingKey"
             :key-error="keyError"
-            :busy="running"
+            :at-capacity="atCapacity"
+            :max-active="MAX_ACTIVE_TASKS"
             @submit="submit"
             @create-key="createKey"
             @reload-keys="loadKeys"
@@ -67,8 +76,8 @@
           </section>
         </div>
         <div class="min-w-0 space-y-5">
-          <CreationResult :task="currentTask" @cancel="cancelWaiting" />
-          <CreationHistory :tasks="historyTasks" :records="sessionRecords" :loading="loadingHistory" :error="historyError" :downloading-id="downloadingId" @refresh="loadHistory" @download="downloadHistoryTask" />
+          <CreationResult :tasks="modeTasks" @stop="stopTracking" @dismiss="dismissTask" />
+          <CreationHistory :tasks="historyTasks" :records="sessionRecords" :loading="loadingHistory" :error="historyError" :downloading-id="downloadingId" @refresh="loadHistory(true)" @download="downloadHistoryTask" />
         </div>
       </div>
     </div>
@@ -76,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -118,22 +127,36 @@ const loadingHistory = ref(false)
 const historyError = ref('')
 const sessionRecords = ref<CreationSessionRecord[]>([])
 const downloadingId = ref('')
-const currentTask = ref<CreationCurrentTask | null>(null)
-const running = ref(false)
+/** 本页提交并在后台跟踪的任务，最新的在前。 */
+const tasks = ref<CreationCurrentTask[]>([])
+/** 同时在后台跟踪的进行中任务上限，避免并发轮询过多、撞上分组并发限制。 */
+const MAX_ACTIVE_TASKS = 5
+/** 任务列表最多保留的条数，超出时丢弃最早的已结束任务。 */
+const MAX_TRACKED_TASKS = 20
+/** 历史中仍有处理中的任务时，自动刷新历史的间隔。 */
+const HISTORY_POLL_MS = 10_000
+const taskControllers = new Map<number, AbortController>()
 let catalogController: AbortController | null = null
 let keysController: AbortController | null = null
 let historyController: AbortController | null = null
-let taskController: AbortController | null = null
+let historyTimer: ReturnType<typeof setInterval> | undefined
 let catalogRequest = 0
 let historyRequest = 0
 let taskSequence = 0
-let activeApiKey = ''
 let initialized = false
+let unmounted = false
 
 const userId = computed(() => authStore.user?.id ?? 'anonymous')
 const creationEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.creation))
 const featureDisabled = computed(() => !creationEnabled.value || catalogNotFound.value)
 const availableGroups = computed(() => filterCreationGroups(catalog.value?.groups, mode.value))
+const activeTasks = computed(() => tasks.value.filter(task => task.status === 'processing'))
+const activeCounts = computed<Record<CreationKind, number>>(() => ({
+  image: activeTasks.value.filter(task => task.kind === 'image').length,
+  video: activeTasks.value.filter(task => task.kind === 'video').length,
+}))
+const atCapacity = computed(() => activeTasks.value.length >= MAX_ACTIVE_TASKS)
+const modeTasks = computed(() => tasks.value.filter(task => task.kind === mode.value))
 
 function recordOf(error: unknown): Record<string, unknown> {
   return error && typeof error === 'object' ? error as Record<string, unknown> : {}
@@ -237,7 +260,11 @@ function normalizeHistoryTask(task: AsyncTask): AsyncTask {
   }
 }
 
-async function loadHistory(): Promise<void> {
+/**
+ * 拉取最近任务；refreshUpstream 时再让后端刷新「不在本页跟踪中」的处理中视频任务
+ * （本页跟踪的任务已由浏览器轮询网关，后端记录会随之更新，无需重复刷新）。
+ */
+async function loadHistory(refreshUpstream = false): Promise<void> {
   if (featureDisabled.value) return
   historyController?.abort()
   const controller = new AbortController()
@@ -247,12 +274,37 @@ async function loadHistory(): Promise<void> {
   historyError.value = ''
   try {
     const result = await asyncTasksAPI.list({ page: 1, page_size: 20, kind: mode.value, status: '', search: '' }, controller.signal)
-    if (request === historyRequest) historyTasks.value = result.items.map(normalizeHistoryTask)
+    if (request !== historyRequest) return
+    historyTasks.value = result.items.map(normalizeHistoryTask)
+    if (refreshUpstream) await refreshUntrackedVideos(request, controller.signal)
   } catch (error) {
     if (request === historyRequest && !isAbortError(error)) historyError.value = errorText(error, t('creation.messages.historyLoadFailed'))
   } finally {
     if (request === historyRequest) loadingHistory.value = false
   }
+}
+
+async function refreshUntrackedVideos(request: number, signal: AbortSignal): Promise<void> {
+  const tracked = new Set(activeTasks.value.flatMap(task => task.handle ? [task.handle.taskId] : []))
+  const pending = historyTasks.value.filter(task => task.kind === 'video' && task.status === 'processing' && !tracked.has(task.task_id))
+  // 与异步任务页一致：每次最多并发 3 个上游刷新。
+  for (let index = 0; index < pending.length && request === historyRequest; index += 3) {
+    await Promise.all(pending.slice(index, index + 3).map(async task => {
+      try {
+        const updated = normalizeHistoryTask(await asyncTasksAPI.refresh(task.id, signal))
+        if (request !== historyRequest) return
+        const position = historyTasks.value.findIndex(item => item.id === task.id)
+        if (position >= 0) historyTasks.value[position] = updated
+      } catch {
+        // 单个任务刷新失败不影响列表，下一轮自动刷新会重试。
+      }
+    }))
+  }
+}
+
+function pollHistory(): void {
+  if (document.hidden || loadingHistory.value || featureDisabled.value || !catalog.value) return
+  if (historyTasks.value.some(task => task.status === 'processing')) void loadHistory(true)
 }
 
 function loadSessionHistory(): void {
@@ -293,10 +345,29 @@ function taskError(error: unknown): CreationErrorState {
   }
 }
 
-function applySnapshot(runId: number, snapshot: CreationTaskSnapshot): void {
-  const task = currentTask.value
-  if (!task || task.id !== runId) return
-  if (task.assets !== snapshot.assets) {
+function findTask(id: number): CreationCurrentTask | undefined {
+  return tasks.value.find(task => task.id === id)
+}
+
+/** 超出保留上限时，从最早的已结束任务开始丢弃（进行中的任务不丢）。 */
+function trimTasks(): void {
+  for (let index = tasks.value.length - 1; index >= 0 && tasks.value.length > MAX_TRACKED_TASKS; index--) {
+    const task = tasks.value[index]
+    if (!task || task.status === 'processing') continue
+    revokeAssets(task.assets)
+    tasks.value.splice(index, 1)
+  }
+}
+
+function applySnapshot(id: number, snapshot: CreationTaskSnapshot): void {
+  const task = findTask(id)
+  // 任务已移除或已停止跟踪：丢弃迟到的快照，并释放其中的 blob URL。
+  if (!task || taskControllers.get(id)?.signal.aborted) {
+    if (!task || toRaw(task.assets) !== snapshot.assets) revokeAssets(snapshot.assets)
+    return
+  }
+  // 同一个终态快照会经 onUpdate 与返回值各应用一次；task.assets 是响应式代理，需比较原始数组。
+  if (toRaw(task.assets) !== snapshot.assets) {
     revokeAssets(task.assets)
     task.assets = snapshot.assets
   }
@@ -312,48 +383,62 @@ function applySnapshot(runId: number, snapshot: CreationTaskSnapshot): void {
   }
 }
 
+function notifyFinished(id: number): void {
+  const task = findTask(id)
+  if (task?.status === 'succeeded') {
+    saveSessionRecord(task)
+    appStore.showSuccess(t('creation.messages.taskSucceeded'))
+  } else if (task?.status === 'failed') {
+    appStore.showError(t('creation.messages.taskFailed'))
+  }
+}
+
+/**
+ * 提交即返回：任务进入右侧列表并在后台轮询，表单立刻可以继续提交下一条。
+ * 异步任务（视频、开启异步的 OpenAI/Grok 生图）离开本页后仍在服务端运行，可在历史/异步任务中查看；
+ * 网关只支持同步的协议（如 Gemini 生图）同样在后台进行，但需保持页面打开才能拿到结果。
+ */
 async function submit(submission: CreationSubmission): Promise<void> {
-  if (running.value) {
-    appStore.showError(t('creation.messages.taskInProgress'))
+  if (atCapacity.value) {
+    appStore.showError(t('creation.messages.tooManyTasks', { count: MAX_ACTIVE_TASKS }))
     return
   }
-  if (currentTask.value) revokeAssets(currentTask.value.assets)
-  const runId = ++taskSequence
+  const id = ++taskSequence
   const controller = new AbortController()
-  taskController = controller
-  activeApiKey = submission.apiKey
-  running.value = true
-  currentTask.value = {
-    id: runId, kind: submission.kind, protocol: submission.input.protocol, model: submission.input.model,
+  taskControllers.set(id, controller)
+  const apiKey = submission.apiKey
+  tasks.value.unshift({
+    id, kind: submission.kind, protocol: submission.input.protocol, model: submission.input.model,
     prompt: submission.input.prompt, groupName: submission.groupName, createdAt: Date.now(),
-    status: 'processing', assets: [], error: null, handle: null, submitting: true, cancellationNoticed: false,
-  }
+    status: 'processing', assets: [], error: null, handle: null, submitting: true,
+    sync: submission.kind === 'image' && !submission.input.preferAsync, cancellationNoticed: false,
+  })
+  trimTasks()
   try {
     const result = submission.kind === 'image'
       ? await submitImage({ ...submission.input, signal: controller.signal })
       : await submitVideo({ ...submission.input, signal: controller.signal })
-    if (currentTask.value?.id !== runId) {
+    const task = findTask(id)
+    if (!task || controller.signal.aborted) {
       revokeAssets(result.snapshot.assets)
       return
     }
-    currentTask.value.handle = result.handle
-    currentTask.value.submitting = false
-    applySnapshot(runId, result.snapshot)
+    task.handle = result.handle
+    task.submitting = false
+    applySnapshot(id, result.snapshot)
     if (result.handle && result.snapshot.status === 'processing') {
-      const snapshot = await waitForTask(activeApiKey, result.handle, {
+      appStore.showSuccess(t('creation.messages.taskSubmitted'))
+      void loadHistory()
+      const snapshot = await waitForTask(apiKey, result.handle, {
         signal: controller.signal,
-        onUpdate: update => applySnapshot(runId, update),
+        onUpdate: update => applySnapshot(id, update),
       })
-      applySnapshot(runId, snapshot)
+      applySnapshot(id, snapshot)
     }
-    const task = currentTask.value
-    if (task?.id === runId && task.status === 'succeeded') {
-      saveSessionRecord(task)
-      appStore.showSuccess(t('creation.messages.taskSucceeded'))
-    }
+    notifyFinished(id)
   } catch (error) {
-    const task = currentTask.value
-    if (task?.id === runId) {
+    const task = findTask(id)
+    if (task) {
       task.submitting = false
       if (isAbortError(error)) {
         task.status = 'cancelled'
@@ -363,25 +448,40 @@ async function submit(submission: CreationSubmission): Promise<void> {
         task.status = 'failed'
         task.error = taskError(error)
         if (task.error.code === 'TIMEOUT' || task.error.code === 'NETWORK_ERROR') task.cancellationNoticed = true
+        // 跟踪超时不代表任务失败（上游可能仍在跑），卡片里已提示去异步任务确认，不再弹失败提示。
+        if (task.error.code !== 'TIMEOUT') appStore.showError(t('creation.messages.taskFailed'))
       }
     }
   } finally {
-    if (currentTask.value?.id === runId) {
-      running.value = false
-      taskController = null
-      activeApiKey = ''
-      void loadHistory()
-    }
+    taskControllers.delete(id)
+    if (!unmounted) void loadHistory()
   }
 }
 
-function cancelWaiting(): void {
-  const task = currentTask.value
+/** 只停止浏览器侧的轮询，上游任务仍会继续运行并计费。 */
+function stopTracking(id: number): void {
+  const task = findTask(id)
   if (!task || task.status !== 'processing') return
   task.submitting = false
   task.status = 'cancelled'
   task.cancellationNoticed = true
-  taskController?.abort()
+  task.error = null
+  taskControllers.get(id)?.abort()
+}
+
+function dismissTask(id: number): void {
+  const index = tasks.value.findIndex(task => task.id === id)
+  const task = tasks.value[index]
+  if (!task || task.status === 'processing') return
+  revokeAssets(task.assets)
+  tasks.value.splice(index, 1)
+}
+
+function clearTasks(): void {
+  for (const controller of taskControllers.values()) controller.abort()
+  taskControllers.clear()
+  for (const task of tasks.value) revokeAssets(task.assets)
+  tasks.value = []
 }
 
 async function downloadHistoryTask(task: AsyncTask): Promise<void> {
@@ -417,6 +517,8 @@ watch(mode, () => {
   if (initialized && creationEnabled.value) void loadHistory()
 })
 watch(userId, () => {
+  // 换了账号：上一位用户的任务与密钥不能继续在本页轮询或展示。
+  clearTasks()
   loadSessionHistory()
   if (initialized && creationEnabled.value) {
     void loadKeys()
@@ -443,17 +545,18 @@ onMounted(async () => {
   }
   initialized = true
   void startRequests()
+  historyTimer = setInterval(pollHistory, HISTORY_POLL_MS)
 })
 
 onBeforeUnmount(() => {
+  unmounted = true
   catalogRequest++
   historyRequest++
-  taskSequence++
+  if (historyTimer) clearInterval(historyTimer)
   catalogController?.abort()
   keysController?.abort()
   historyController?.abort()
-  taskController?.abort()
-  if (currentTask.value) revokeAssets(currentTask.value.assets)
-  currentTask.value = null
+  // 离开页面只停止浏览器侧轮询；已提交的异步任务继续在服务端运行。
+  clearTasks()
 })
 </script>
