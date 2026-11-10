@@ -1,5 +1,5 @@
 <template>
-  <form class="card space-y-5 p-5" :aria-busy="busy" @submit.prevent="submit">
+  <form class="card space-y-5 p-5" @submit.prevent="submit">
     <div>
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ t('creation.composer.title') }}</h2>
     </div>
@@ -100,10 +100,7 @@
         <label for="creation-image-count" class="input-label">{{ t('creation.composer.count') }}</label>
         <input id="creation-image-count" v-model.number="imageCount" type="number" min="1" step="1" class="input" :disabled="selectedProtocol === 'gemini'" @blur="normalizeImageCount" />
       </div>
-      <label v-if="selectedProtocol === 'openai' && imageCapability?.async_supported" class="flex items-start gap-3 rounded-lg border border-gray-200 p-3 text-sm dark:border-dark-700 sm:col-span-2 xl:col-span-1 2xl:col-span-2">
-        <input v-model="preferAsync" type="checkbox" class="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-        <span><span class="block text-gray-800 dark:text-gray-200">{{ t('creation.composer.async') }}</span><span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">{{ t('creation.composer.asyncHint') }}</span></span>
-      </label>
+      <p v-if="selectedGroup && !submitsAsync" class="text-xs leading-5 text-amber-700 dark:text-amber-300 sm:col-span-2 xl:col-span-1 2xl:col-span-2" data-testid="creation-sync-hint">{{ t('creation.composer.syncOnlyHint') }}</p>
     </div>
 
     <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
@@ -126,16 +123,16 @@
 
     <p v-if="formNotice" role="status" class="text-xs text-amber-700 dark:text-amber-300">{{ formNotice }}</p>
     <p v-if="formError" role="alert" class="text-sm text-red-600 dark:text-red-400">{{ formError }}</p>
-    <button type="submit" class="btn btn-primary w-full justify-center" :disabled="busy || !canSubmit">
-      <Icon :name="busy ? 'refresh' : 'sparkles'" size="sm" class="mr-2" :class="busy ? 'animate-spin' : ''" />
-      {{ busy ? t('creation.composer.busy') : mode === 'image' ? t('creation.composer.submitImage') : t('creation.composer.submitVideo') }}
+    <button type="submit" class="btn btn-primary w-full justify-center" :disabled="atCapacity || cooldown || !canSubmit">
+      <Icon name="sparkles" size="sm" class="mr-2" />
+      {{ mode === 'image' ? t('creation.composer.submitImage') : t('creation.composer.submitVideo') }}
     </button>
-    <p v-if="busy" class="text-center text-xs leading-5 text-gray-500 dark:text-gray-400">{{ t('creation.composer.busyHint') }}</p>
+    <p class="text-center text-xs leading-5 text-gray-500 dark:text-gray-400">{{ atCapacity ? t('creation.composer.atCapacity', { count: maxActive }) : t('creation.composer.submitHint') }}</p>
   </form>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import ReferenceImagePicker from './ReferenceImagePicker.vue'
@@ -163,7 +160,9 @@ const props = defineProps<{
   loadingKeys: boolean
   creatingKey: boolean
   keyError: string
-  busy: boolean
+  /** 进行中的任务已达上限，暂不接受新提交。 */
+  atCapacity: boolean
+  maxActive: number
 }>()
 const emit = defineEmits<{
   submit: [submission: CreationSubmission]
@@ -190,7 +189,9 @@ const imageAspectRatio = ref('1:1')
 const imageResolution = ref('1K')
 const imageQuality = ref('auto')
 const imageCount = ref(1)
-const preferAsync = ref(false)
+/** 提交后短暂禁用按钮，防止双击重复提交（重复提交会重复计费）。 */
+const cooldown = ref(false)
+let cooldownTimer: ReturnType<typeof setTimeout> | undefined
 const videoDuration = ref('')
 const videoResolution = ref('')
 const videoRatio = ref('16:9')
@@ -227,6 +228,8 @@ const ratioOptions = computed(() => props.mode === 'video' && selectedProtocol.v
   : [])
 const referenceContext = computed(() => `${props.mode}:${selectedGroupId.value}:${selectedProtocol.value}:${selectedModel.value}`)
 const canSubmit = computed(() => Boolean(selectedGroup.value && selectedKey.value && selectedModel.value.trim() && prompt.value.trim()))
+/** 视频本身就是异步任务；生图仅 OpenAI 协议且站点开启异步生图时走异步任务，否则只能同步请求。 */
+const submitsAsync = computed(() => props.mode === 'video' || Boolean(selectedProtocol.value === 'openai' && imageCapability.value?.async_supported))
 
 function syncGroupContext(): void {
   const groups = availableGroups.value
@@ -262,7 +265,6 @@ function resetParameters(): void {
   imageResolution.value = '1K'
   imageQuality.value = 'auto'
   imageCount.value = 1
-  preferAsync.value = false
   videoResolution.value = ''
   videoRatio.value = ratioOptions.value[0] ?? '16:9'
   const duration = props.mode === 'video' && selectedProtocol.value !== 'openai'
@@ -318,13 +320,19 @@ function enforceVeoDuration(): void {
   if (needsEightSeconds && videoDuration.value !== '8') setRequiredDuration(8)
 }
 
+function startCooldown(): void {
+  cooldown.value = true
+  clearTimeout(cooldownTimer)
+  cooldownTimer = setTimeout(() => { cooldown.value = false }, 1000)
+}
+
 function submit(): void {
   formError.value = ''
   const group = selectedGroup.value
   const apiKey = selectedKey.value
   const model = selectedModel.value.trim()
   const text = prompt.value.trim()
-  if (props.busy) return
+  if (props.atCapacity || cooldown.value) return
   if (!group || !apiKey || !model || !text) {
     formError.value = t('creation.composer.required')
     return
@@ -342,17 +350,19 @@ function submit(): void {
       n: protocol === 'gemini' ? 1 : imageCount.value,
       referenceImages: references.value.length ? references.value : undefined,
     }
-    const submitAsync = Boolean(imageCapability.value?.async_supported && preferAsync.value)
+    const submitAsync = submitsAsync.value
     let input: ImageGenerationInput
     if (protocol === 'gemini') input = { ...common, protocol, aspectRatio: imageAspectRatio.value, imageSize: imageResolution.value }
     else if (imageParamStyle.value === 'grok') input = { ...common, protocol, aspectRatio: imageAspectRatio.value, imageSize: imageResolution.value, preferAsync: submitAsync }
     else input = { ...common, protocol, size: imageSizeOpenAI.value, quality: imageQuality.value, preferAsync: submitAsync }
+    startCooldown()
     emit('submit', { kind: 'image', groupId: group.id, groupName: group.name, apiKey: apiKey.key, input })
     return
   }
   if (selectedProtocol.value === 'openai') return
   enforceVeoDuration()
   const duration = clampVideoDuration(videoDuration.value, selectedProtocol.value, selectedModel.value, videoCapability.value)
+  startCooldown()
   emit('submit', {
     kind: 'video', groupId: group.id, groupName: group.name, apiKey: apiKey.key,
     input: {
@@ -368,4 +378,5 @@ watch(availableKeys, keys => {
   if (!keys.some(key => key.id === selectedKeyId.value)) selectedKeyId.value = keys[0]?.id ?? 0
 }, { immediate: true })
 watch([videoResolution, () => props.mode], enforceVeoDuration)
+onBeforeUnmount(() => clearTimeout(cooldownTimer))
 </script>
