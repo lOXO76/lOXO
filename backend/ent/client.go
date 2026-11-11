@@ -6741,6 +6741,38 @@ func (c *RedeemCodeClient) QueryGroup(_m *RedeemCode) *GroupQuery {
 	return query
 }
 
+// QueryParent queries the parent edge of a RedeemCode.
+func (c *RedeemCodeClient) QueryParent(_m *RedeemCode) *RedeemCodeQuery {
+	query := (&RedeemCodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(redeemcode.Table, redeemcode.FieldID, id),
+			sqlgraph.To(redeemcode.Table, redeemcode.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, redeemcode.ParentTable, redeemcode.ParentColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRedemptions queries the redemptions edge of a RedeemCode.
+func (c *RedeemCodeClient) QueryRedemptions(_m *RedeemCode) *RedeemCodeQuery {
+	query := (&RedeemCodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(redeemcode.Table, redeemcode.FieldID, id),
+			sqlgraph.To(redeemcode.Table, redeemcode.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, redeemcode.RedemptionsTable, redeemcode.RedemptionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RedeemCodeClient) Hooks() []Hook {
 	return c.hooks.RedeemCode

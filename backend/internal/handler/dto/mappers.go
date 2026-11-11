@@ -639,10 +639,20 @@ func RedeemCodeFromServiceAdmin(rc *service.RedeemCode) *AdminRedeemCode {
 	if rc == nil {
 		return nil
 	}
-	return &AdminRedeemCode{
+	out := &AdminRedeemCode{
 		RedeemCode: redeemCodeFromServiceBase(rc),
 		Notes:      rc.Notes,
+		ParentID:   rc.ParentID,
 	}
+	// 限制与计数只对多次兑换码有意义，一次性兑换码不输出这些字段。
+	if rc.IsMultiUse() {
+		out.BenefitType = rc.BenefitType
+		out.MaxUsers = rc.MaxUsers
+		out.MaxUsesPerUser = rc.MaxUsesPerUser
+		out.UsedCount = rc.UsedCount
+		out.UsedUserCount = rc.UsedUserCount
+	}
+	return out
 }
 
 func redeemCodeFromServiceBase(rc *service.RedeemCode) RedeemCode {
@@ -658,6 +668,7 @@ func redeemCodeFromServiceBase(rc *service.RedeemCode) RedeemCode {
 		ExpiresAt:    rc.ExpiresAt,
 		GroupID:      rc.GroupID,
 		ValidityDays: rc.ValidityDays,
+		ParentCode:   rc.ParentCode,
 		User:         UserFromServiceShallow(rc.User),
 		Group:        GroupFromServiceShallow(rc.Group),
 	}

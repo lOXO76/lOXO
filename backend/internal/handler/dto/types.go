@@ -528,6 +528,9 @@ type RedeemCode struct {
 	// so users can see why they were charged or credited
 	Notes *string `json:"notes,omitempty"`
 
+	// ParentCode 仅多次兑换码的兑换流水才有：被兑换的那个多次兑换码的码值。
+	ParentCode string `json:"parent_code,omitempty"`
+
 	User  *User  `json:"user,omitempty"`
 	Group *Group `json:"group,omitempty"`
 }
@@ -538,6 +541,15 @@ type AdminRedeemCode struct {
 	RedeemCode
 
 	Notes string `json:"notes"`
+
+	// 多次兑换码（type = multi_use）的权益类型、限制与已用计数。
+	BenefitType    string `json:"benefit_type,omitempty"`
+	MaxUsers       int    `json:"max_users,omitempty"`
+	MaxUsesPerUser int    `json:"max_uses_per_user,omitempty"`
+	UsedCount      int    `json:"used_count,omitempty"`
+	UsedUserCount  int    `json:"used_user_count,omitempty"`
+	// ParentID 非空表示这是某个多次兑换码的一次兑换流水。
+	ParentID *int64 `json:"parent_id,omitempty"`
 }
 
 type NullableTimeField struct {

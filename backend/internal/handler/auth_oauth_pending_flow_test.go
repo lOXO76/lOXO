@@ -3653,3 +3653,7 @@ func (s *oauthPendingFlowEmailCacheStub) IncrNotifyVerifyCodeAttempts(context.Co
 func (s *oauthPendingFlowEmailCacheStub) ConsumePasswordResetToken(context.Context, string, string) (bool, error) {
 	return false, nil
 }
+
+func (r *oauthPendingFlowRedeemCodeRepo) RedeemMultiUse(context.Context, int64, int64, string) (*service.RedeemCode, error) {
+	panic("unexpected RedeemMultiUse call")
+}

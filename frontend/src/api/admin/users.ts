@@ -268,6 +268,8 @@ export interface BalanceHistoryItem {
   group_id: number | null
   validity_days: number
   notes: string
+  // 多次兑换码的兑换流水才有：被兑换的那个多次兑换码
+  parent_code?: string
   user?: { id: number; email: string } | null
   group?: { id: number; name: string } | null
 }

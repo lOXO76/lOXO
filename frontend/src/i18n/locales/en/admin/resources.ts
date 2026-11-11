@@ -251,6 +251,22 @@ export default {
       subscription: 'Subscription',
       invitation: 'Invitation',
       invitationHint: 'Invitation codes are used to restrict user registration. They are automatically marked as used after use.',
+      multiUse: 'Multi-use',
+      multiUseHint:
+        'A multi-use code can be redeemed by many users; each redemption grants the selected benefit once. Limit how many users may redeem it and how many times each user may redeem it.',
+      benefitType: 'Benefit',
+      maxUsers: 'Max users',
+      maxUsersHint: 'How many users may redeem this code',
+      maxUsesPerUser: 'Uses per user',
+      maxUsesPerUserHint: 'How many times one user may redeem it',
+      multiUseLimitsRequired: 'Enter a valid user count (1-1000000) and uses per user (1-1000)',
+      multiUseUsage: '{usedCount} redeemed · {usedUsers}/{maxUsers} users · {perUser} per user',
+      perRedemption: 'per redemption',
+      redeemedFrom: 'From {code}',
+      multiUseStatus: {
+        active: 'Active',
+        exhausted: 'Used up'
+      },
       unused: 'Unused',
       used: 'Used',
       columns: {
@@ -316,6 +332,7 @@ export default {
         concurrency: 'Concurrency',
         subscription: 'Subscription',
         invitation: 'Invitation',
+        multi_use: 'Multi-use',
         // Admin adjustment types (created when admin modifies user balance/concurrency)
         admin_balance: 'Balance (Admin)',
         admin_concurrency: 'Concurrency (Admin)'

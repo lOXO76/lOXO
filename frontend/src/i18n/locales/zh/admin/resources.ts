@@ -257,6 +257,7 @@ export default {
         concurrency: '并发数',
         subscription: '订阅',
         invitation: '邀请码',
+        multi_use: '多次兑换',
         // 管理员在用户管理页面调整余额/并发时产生的记录
         admin_balance: '余额（管理员）',
         admin_concurrency: '并发数（管理员）'
@@ -267,6 +268,22 @@ export default {
       subscription: '订阅',
       invitation: '邀请码',
       invitationHint: '邀请码用于限制用户注册，使用后自动标记为已使用。',
+      multiUse: '多次兑换',
+      multiUseHint:
+        '多次兑换码可被多个用户兑换，每次兑换发放一次所选权益。可分别限制允许兑换的用户数，以及每个用户可兑换的次数。',
+      benefitType: '兑换权益',
+      maxUsers: '允许兑换的用户数',
+      maxUsersHint: '最多有多少个用户可以兑换',
+      maxUsesPerUser: '每个用户可兑换次数',
+      maxUsesPerUserHint: '同一个用户最多可兑换几次',
+      multiUseLimitsRequired: '请输入有效的用户数（1-1000000）和每用户次数（1-1000）',
+      multiUseUsage: '已兑换 {usedCount} 次 · {usedUsers}/{maxUsers} 人 · 每人限 {perUser} 次',
+      perRedemption: '每次',
+      redeemedFrom: '来自 {code}',
+      multiUseStatus: {
+        active: '可兑换',
+        exhausted: '已兑完'
+      },
       allTypes: '全部类型',
       allStatus: '全部状态',
       unused: '未使用',

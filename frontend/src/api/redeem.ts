@@ -16,6 +16,8 @@ export interface RedeemHistoryItem {
   created_at: string
   // Notes from admin for admin_balance/admin_concurrency types
   notes?: string
+  // Set on redemptions of a multi-use code: the code that was redeemed
+  parent_code?: string
   // Subscription-specific fields
   group_id?: number
   validity_days?: number

@@ -789,7 +789,7 @@ export default {
     newBalance: 'New Balance',
     newConcurrency: 'New Concurrency',
     aboutCodes: 'About Redeem Codes',
-    codeRule1: 'Each code can only be used once',
+    codeRule1: 'Most codes can only be used once; campaign codes follow their own limits',
     codeRule2: 'Codes may add balance, increase concurrency, or grant trial access',
     codeRule3: 'Contact support if you have issues redeeming a code',
     codeRule4: 'Balance and concurrency updates are immediate',
@@ -814,7 +814,11 @@ export default {
     historyLoadFailed: 'Failed to load activity. Please try again.',
     userRefreshFailed: 'Redeemed successfully, but failed to refresh account information.',
     subscriptionRefreshFailed: 'Redeemed successfully, but failed to refresh subscription status.',
-    pleaseEnterCode: 'Please enter a redeem code'
+    pleaseEnterCode: 'Please enter a redeem code',
+    errors: {
+      userLimitReached: 'You have reached the redemption limit for this code',
+      userQuotaExhausted: 'This code has reached its maximum number of users'
+    }
   },
 
   // Profile

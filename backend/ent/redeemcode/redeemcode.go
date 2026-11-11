@@ -36,10 +36,26 @@ const (
 	FieldGroupID = "group_id"
 	// FieldValidityDays holds the string denoting the validity_days field in the database.
 	FieldValidityDays = "validity_days"
+	// FieldBenefitType holds the string denoting the benefit_type field in the database.
+	FieldBenefitType = "benefit_type"
+	// FieldMaxUsers holds the string denoting the max_users field in the database.
+	FieldMaxUsers = "max_users"
+	// FieldMaxUsesPerUser holds the string denoting the max_uses_per_user field in the database.
+	FieldMaxUsesPerUser = "max_uses_per_user"
+	// FieldUsedCount holds the string denoting the used_count field in the database.
+	FieldUsedCount = "used_count"
+	// FieldUsedUserCount holds the string denoting the used_user_count field in the database.
+	FieldUsedUserCount = "used_user_count"
+	// FieldParentID holds the string denoting the parent_id field in the database.
+	FieldParentID = "parent_id"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
+	// EdgeParent holds the string denoting the parent edge name in mutations.
+	EdgeParent = "parent"
+	// EdgeRedemptions holds the string denoting the redemptions edge name in mutations.
+	EdgeRedemptions = "redemptions"
 	// Table holds the table name of the redeemcode in the database.
 	Table = "redeem_codes"
 	// UserTable is the table that holds the user relation/edge.
@@ -56,6 +72,14 @@ const (
 	GroupInverseTable = "groups"
 	// GroupColumn is the table column denoting the group relation/edge.
 	GroupColumn = "group_id"
+	// ParentTable is the table that holds the parent relation/edge.
+	ParentTable = "redeem_codes"
+	// ParentColumn is the table column denoting the parent relation/edge.
+	ParentColumn = "parent_id"
+	// RedemptionsTable is the table that holds the redemptions relation/edge.
+	RedemptionsTable = "redeem_codes"
+	// RedemptionsColumn is the table column denoting the redemptions relation/edge.
+	RedemptionsColumn = "parent_id"
 )
 
 // Columns holds all SQL columns for redeemcode fields.
@@ -72,6 +96,12 @@ var Columns = []string{
 	FieldExpiresAt,
 	FieldGroupID,
 	FieldValidityDays,
+	FieldBenefitType,
+	FieldMaxUsers,
+	FieldMaxUsesPerUser,
+	FieldUsedCount,
+	FieldUsedUserCount,
+	FieldParentID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -101,6 +131,18 @@ var (
 	DefaultCreatedAt func() time.Time
 	// DefaultValidityDays holds the default value on creation for the "validity_days" field.
 	DefaultValidityDays int
+	// DefaultBenefitType holds the default value on creation for the "benefit_type" field.
+	DefaultBenefitType string
+	// BenefitTypeValidator is a validator for the "benefit_type" field. It is called by the builders before save.
+	BenefitTypeValidator func(string) error
+	// DefaultMaxUsers holds the default value on creation for the "max_users" field.
+	DefaultMaxUsers int
+	// DefaultMaxUsesPerUser holds the default value on creation for the "max_uses_per_user" field.
+	DefaultMaxUsesPerUser int
+	// DefaultUsedCount holds the default value on creation for the "used_count" field.
+	DefaultUsedCount int
+	// DefaultUsedUserCount holds the default value on creation for the "used_user_count" field.
+	DefaultUsedUserCount int
 )
 
 // OrderOption defines the ordering options for the RedeemCode queries.
@@ -166,6 +208,36 @@ func ByValidityDays(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidityDays, opts...).ToFunc()
 }
 
+// ByBenefitType orders the results by the benefit_type field.
+func ByBenefitType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBenefitType, opts...).ToFunc()
+}
+
+// ByMaxUsers orders the results by the max_users field.
+func ByMaxUsers(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMaxUsers, opts...).ToFunc()
+}
+
+// ByMaxUsesPerUser orders the results by the max_uses_per_user field.
+func ByMaxUsesPerUser(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMaxUsesPerUser, opts...).ToFunc()
+}
+
+// ByUsedCount orders the results by the used_count field.
+func ByUsedCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsedCount, opts...).ToFunc()
+}
+
+// ByUsedUserCount orders the results by the used_user_count field.
+func ByUsedUserCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsedUserCount, opts...).ToFunc()
+}
+
+// ByParentID orders the results by the parent_id field.
+func ByParentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldParentID, opts...).ToFunc()
+}
+
 // ByUserField orders the results by user field.
 func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -177,6 +249,27 @@ func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 func ByGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newGroupStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByParentField orders the results by parent field.
+func ByParentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newParentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByRedemptionsCount orders the results by redemptions count.
+func ByRedemptionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRedemptionsStep(), opts...)
+	}
+}
+
+// ByRedemptions orders the results by redemptions terms.
+func ByRedemptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRedemptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newUserStep() *sqlgraph.Step {
@@ -191,5 +284,19 @@ func newGroupStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GroupInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, GroupTable, GroupColumn),
+	)
+}
+func newParentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(Table, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ParentTable, ParentColumn),
+	)
+}
+func newRedemptionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(Table, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RedemptionsTable, RedemptionsColumn),
 	)
 }

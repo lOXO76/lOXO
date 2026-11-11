@@ -35,12 +35,18 @@ func NewRedeemHandler(adminService service.AdminService, redeemService *service.
 // GenerateRedeemCodesRequest represents generate redeem codes request
 type GenerateRedeemCodesRequest struct {
 	Count         int        `json:"count" binding:"required,min=1,max=100"`
-	Type          string     `json:"type" binding:"required,oneof=balance concurrency subscription invitation"`
+	Type          string     `json:"type" binding:"required,oneof=balance concurrency subscription invitation multi_use"`
 	Value         float64    `json:"value"`
 	GroupID       *int64     `json:"group_id"`      // 订阅类型必填
 	ValidityDays  int        `json:"validity_days"` // 订阅类型使用，正数增加/负数退款扣减
 	ExpiresAt     *time.Time `json:"expires_at"`
 	ExpiresInDays *int       `json:"expires_in_days" binding:"omitempty,min=1,max=3650"`
+
+	// 多次兑换码（type=multi_use）专用：每次兑换发放的权益类型、允许兑换的用户数、
+	// 每个用户可兑换的次数。面值/分组/有效天数沿用上面的字段。
+	BenefitType    string `json:"benefit_type" binding:"omitempty,oneof=balance concurrency subscription"`
+	MaxUsers       int    `json:"max_users" binding:"omitempty,min=1,max=1000000"`
+	MaxUsesPerUser int    `json:"max_uses_per_user" binding:"omitempty,min=1,max=1000"`
 }
 
 // CreateAndRedeemCodeRequest represents creating a fixed code and redeeming it for a target user.
@@ -150,6 +156,10 @@ func (h *RedeemHandler) Generate(c *gin.Context) {
 			GroupID:      req.GroupID,
 			ValidityDays: req.ValidityDays,
 			ExpiresAt:    expiresAt,
+
+			BenefitType:    req.BenefitType,
+			MaxUsers:       req.MaxUsers,
+			MaxUsesPerUser: req.MaxUsesPerUser,
 		})
 		if execErr != nil {
 			return nil, execErr
@@ -412,7 +422,11 @@ func (h *RedeemHandler) Export(c *gin.Context) {
 	writer := csv.NewWriter(&buf)
 
 	// Write header
-	if err := writer.Write([]string{"id", "code", "type", "value", "status", "used_by", "used_by_email", "used_at", "expires_at", "created_at"}); err != nil {
+	// 多次兑换码的列追加在末尾，不改变既有列的位置。
+	if err := writer.Write([]string{
+		"id", "code", "type", "value", "status", "used_by", "used_by_email", "used_at", "expires_at", "created_at",
+		"benefit_type", "max_users", "max_uses_per_user", "used_count", "used_user_count", "parent_code",
+	}); err != nil {
 		response.InternalError(c, "Failed to export redeem codes: "+err.Error())
 		return
 	}
@@ -446,6 +460,12 @@ func (h *RedeemHandler) Export(c *gin.Context) {
 			usedAt,
 			expiresAt,
 			code.CreatedAt.Format("2006-01-02 15:04:05"),
+			code.BenefitType,
+			strconv.Itoa(code.MaxUsers),
+			strconv.Itoa(code.MaxUsesPerUser),
+			strconv.Itoa(code.UsedCount),
+			strconv.Itoa(code.UsedUserCount),
+			code.ParentCode,
 		}); err != nil {
 			response.InternalError(c, "Failed to export redeem codes: "+err.Error())
 			return

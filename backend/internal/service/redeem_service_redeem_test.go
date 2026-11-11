@@ -100,3 +100,7 @@ func TestRedeemRejectsInvitationCodeBeforeTransaction(t *testing.T) {
 	require.Equal(t, StatusUnused, redeemRepo.code.Status)
 	require.Nil(t, redeemRepo.code.UsedBy)
 }
+
+func (r *redeemRejectRepo) RedeemMultiUse(context.Context, int64, int64, string) (*RedeemCode, error) {
+	panic("unexpected RedeemMultiUse call")
+}

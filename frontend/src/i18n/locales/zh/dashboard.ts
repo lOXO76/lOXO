@@ -793,7 +793,7 @@ export default {
     newBalance: '新余额',
     newConcurrency: '新并发数',
     aboutCodes: '关于兑换码',
-    codeRule1: '每个兑换码只能使用一次',
+    codeRule1: '兑换码通常只能使用一次，活动兑换码以活动规则为准',
     codeRule2: '兑换码可以增加余额、并发数或试用权限',
     codeRule3: '如有兑换问题，请联系客服',
     codeRule4: '余额和并发数即时更新',
@@ -818,7 +818,11 @@ export default {
     historyLoadFailed: '加载兑换记录失败，请重试。',
     userRefreshFailed: '兑换成功，但账户信息刷新失败。',
     subscriptionRefreshFailed: '兑换成功，但订阅状态刷新失败。',
-    pleaseEnterCode: '请输入兑换码'
+    pleaseEnterCode: '请输入兑换码',
+    errors: {
+      userLimitReached: '您已达到该兑换码的可兑换次数上限',
+      userQuotaExhausted: '该兑换码的可兑换名额已满'
+    }
   },
 
   // Profile

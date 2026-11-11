@@ -22,6 +22,10 @@ var (
 	ErrInsufficientBalance = infraerrors.BadRequest("INSUFFICIENT_BALANCE", "insufficient balance")
 	ErrRedeemRateLimited   = infraerrors.TooManyRequests("REDEEM_RATE_LIMITED", "too many failed attempts, please try again later")
 	ErrRedeemCodeLocked    = infraerrors.Conflict("REDEEM_CODE_LOCKED", "redeem code is being processed, please try again")
+	// 多次兑换码：当前用户已用完自己的可兑换次数。
+	ErrRedeemCodeUserLimitReached = infraerrors.Conflict("REDEEM_CODE_USER_LIMIT_REACHED", "you have reached the redemption limit for this code")
+	// 多次兑换码：允许兑换的用户名额已满，而当前用户此前没有兑换过。
+	ErrRedeemCodeUserQuotaExhausted = infraerrors.Conflict("REDEEM_CODE_USER_QUOTA_EXHAUSTED", "this code has reached its maximum number of users")
 )
 
 const (
@@ -63,6 +67,14 @@ type RedeemCodeRepository interface {
 	BatchUpdate(ctx context.Context, ids []int64, fields RedeemCodeBatchUpdateFields) (int64, error)
 	Delete(ctx context.Context, id int64) error
 	Use(ctx context.Context, id, userID int64) error
+	// RedeemMultiUse 占用多次兑换码的一次兑换名额，并写入本次兑换的流水行
+	// （type 为权益类型、status 为 used、parent_id 指向该码），返回这条流水行。
+	// recordCode 是流水行自身的唯一码值。
+	//
+	// 用户已用完自己的次数返回 ErrRedeemCodeUserLimitReached；用户名额已满返回
+	// ErrRedeemCodeUserQuotaExhausted；码已用完或被禁用返回 ErrRedeemCodeUsed；
+	// 已过期返回 ErrRedeemCodeExpired。在调用方事务内返回错误时，调用方必须回滚。
+	RedeemMultiUse(ctx context.Context, id, userID int64, recordCode string) (*RedeemCode, error)
 
 	List(ctx context.Context, params pagination.PaginationParams) ([]RedeemCode, *pagination.PaginationResult, error)
 	ListWithFilters(ctx context.Context, params pagination.PaginationParams, codeType, status, search string) ([]RedeemCode, *pagination.PaginationResult, error)
@@ -420,13 +432,18 @@ func (s *RedeemService) redeem(ctx context.Context, userID int64, code string, r
 	}
 
 	// 获取分布式锁，防止同一兑换码并发使用
-	if !s.acquireRedeemLock(ctx, code) {
-		return nil, ErrRedeemCodeLocked
+	locked := s.acquireRedeemLock(ctx, code)
+	if locked {
+		defer s.releaseRedeemLock(ctx, code)
 	}
-	defer s.releaseRedeemLock(ctx, code)
 
 	// 查找兑换码
 	redeemCode, err := s.redeemRepo.GetByCode(ctx, code)
+	// 多次兑换码本就允许多个用户同时兑换，并发由数据库行锁串行化（见 RedeemMultiUse），
+	// 不能因为别的用户正持有这把锁就失败；其余情况维持「处理中，请重试」。
+	if !locked && (err != nil || !redeemCode.IsMultiUse()) {
+		return nil, ErrRedeemCodeLocked
+	}
 	if err != nil {
 		if errors.Is(err, ErrRedeemCodeNotFound) {
 			if rateLimitPolicy == enforceRedeemRateLimit {
@@ -437,10 +454,13 @@ func (s *RedeemService) redeem(ctx context.Context, userID int64, code string, r
 		return nil, fmt.Errorf("get redeem code: %w", err)
 	}
 
+	// 实际发放的权益类型：多次兑换码由 BenefitType 指定，其余即兑换码类型本身。
+	benefitType := redeemCode.EffectiveType()
+
 	// 检查兑换码状态和码本身的过期时间
 	// Only user-initiated redemption is a new personal-wallet operation. Trusted
 	// fulfillment must still settle orders created before enterprise membership.
-	if rateLimitPolicy == enforceRedeemRateLimit && redeemCode.Type == RedeemTypeBalance {
+	if rateLimitPolicy == enforceRedeemRateLimit && benefitType == RedeemTypeBalance {
 		if err := checkEnterprisePersonalWallet(ctx, s.enterpriseMemberships, userID); err != nil {
 			return nil, err
 		}
@@ -460,7 +480,7 @@ func (s *RedeemService) redeem(ctx context.Context, userID int64, code string, r
 	}
 
 	// 验证兑换码类型的前置条件。邀请码属于注册流程，不能通过普通兑换接口使用。
-	switch redeemCode.Type {
+	switch benefitType {
 	case RedeemTypeBalance, RedeemTypeConcurrency:
 	case RedeemTypeSubscription:
 		if redeemCode.GroupID == nil {
@@ -486,19 +506,16 @@ func (s *RedeemService) redeem(ctx context.Context, userID int64, code string, r
 	// 将事务放入 context，使 repository 方法能够使用同一事务
 	txCtx := dbent.NewTxContext(ctx, tx)
 
-	// 【关键】先标记兑换码为已使用，确保并发安全
-	// 利用数据库乐观锁（WHERE status = 'unused'）保证原子性
-	if err := s.redeemRepo.Use(txCtx, redeemCode.ID, userID); err != nil {
-		if errors.Is(err, ErrRedeemCodeNotFound) || errors.Is(err, ErrRedeemCodeUsed) {
-			return nil, ErrRedeemCodeUsed
-		}
-		return nil, fmt.Errorf("mark code as used: %w", err)
+	// 【关键】先占用兑换码，确保并发安全；granted 是本次兑换发放权益所依据的记录。
+	granted, err := s.claimRedeemCode(txCtx, redeemCode, userID)
+	if err != nil {
+		return nil, err
 	}
 
 	// 执行兑换逻辑（兑换码已被锁定，此时可安全操作）
-	switch redeemCode.Type {
+	switch granted.Type {
 	case RedeemTypeBalance:
-		amount := redeemCode.Value
+		amount := granted.Value
 		if amount < 0 {
 			if s.redeemUserRepo == nil {
 				return nil, errors.New("user repository does not support atomic redeem balance adjustments")
@@ -511,7 +528,7 @@ func (s *RedeemService) redeem(ctx context.Context, userID int64, code string, r
 		}
 
 	case RedeemTypeConcurrency:
-		delta := int(redeemCode.Value)
+		delta := int(granted.Value)
 		if delta < 0 {
 			if s.redeemUserRepo == nil {
 				return nil, errors.New("user repository does not support atomic redeem concurrency adjustments")
@@ -524,10 +541,13 @@ func (s *RedeemService) redeem(ctx context.Context, userID int64, code string, r
 		}
 
 	case RedeemTypeSubscription:
-		validityDays := redeemCode.ValidityDays
+		if granted.GroupID == nil {
+			return nil, infraerrors.BadRequest("REDEEM_CODE_INVALID", "invalid subscription redeem code: missing group_id")
+		}
+		validityDays := granted.ValidityDays
 		if validityDays < 0 {
 			// 负数天数：缩短订阅，减到 0 则取消订阅
-			if err := s.reduceOrCancelSubscription(txCtx, userID, *redeemCode.GroupID, -validityDays, redeemCode.Code); err != nil {
+			if err := s.reduceOrCancelSubscription(txCtx, userID, *granted.GroupID, -validityDays, redeemCode.Code); err != nil {
 				return nil, fmt.Errorf("reduce or cancel subscription: %w", err)
 			}
 		} else {
@@ -536,7 +556,7 @@ func (s *RedeemService) redeem(ctx context.Context, userID int64, code string, r
 			}
 			_, _, err := s.subscriptionService.AssignOrExtendSubscription(txCtx, &AssignSubscriptionInput{
 				UserID:       userID,
-				GroupID:      *redeemCode.GroupID,
+				GroupID:      *granted.GroupID,
 				ValidityDays: validityDays,
 				AssignedBy:   0, // 系统分配
 				Notes:        fmt.Sprintf("通过兑换码 %s 兑换", redeemCode.Code),
@@ -547,7 +567,7 @@ func (s *RedeemService) redeem(ctx context.Context, userID int64, code string, r
 		}
 
 	default:
-		return nil, unsupportedRedeemTypeError(redeemCode.Type)
+		return nil, unsupportedRedeemTypeError(granted.Type)
 	}
 
 	// 提交事务
@@ -556,20 +576,57 @@ func (s *RedeemService) redeem(ctx context.Context, userID int64, code string, r
 	}
 
 	// 事务提交成功后失效缓存
-	s.invalidateRedeemCaches(ctx, userID, redeemCode)
+	s.invalidateRedeemCaches(ctx, userID, granted)
 
-	// 余额类正数兑换码触发邀请返利（best-effort，失败不影响兑换结果）
-	if redeemCode.Type == RedeemTypeBalance && redeemCode.Value > 0 {
-		s.tryAccrueAffiliateRebateForRedeem(ctx, userID, redeemCode.Value)
+	// 余额类正数兑换码触发邀请返利（best-effort，失败不影响兑换结果）。
+	// 多次兑换码是面向多人公开发放的赠送额度，不计返利。
+	if !redeemCode.IsMultiUse() && granted.Type == RedeemTypeBalance && granted.Value > 0 {
+		s.tryAccrueAffiliateRebateForRedeem(ctx, userID, granted.Value)
 	}
 
-	// 重新获取更新后的兑换码
-	redeemCode, err = s.redeemRepo.GetByID(ctx, redeemCode.ID)
+	// 重新获取更新后的兑换码（多次兑换码返回本次兑换的流水行）
+	result, err := s.redeemRepo.GetByID(ctx, granted.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get updated redeem code: %w", err)
 	}
 
-	return redeemCode, nil
+	return result, nil
+}
+
+// claimRedeemCode 在事务内占用兑换码，返回本次兑换发放权益所依据的记录：
+// 一次性兑换码就是它自身；多次兑换码则是本次兑换新写入的流水行。
+func (s *RedeemService) claimRedeemCode(txCtx context.Context, redeemCode *RedeemCode, userID int64) (*RedeemCode, error) {
+	if !redeemCode.IsMultiUse() {
+		// 利用数据库乐观锁（WHERE status = 'unused'）保证原子性
+		if err := s.redeemRepo.Use(txCtx, redeemCode.ID, userID); err != nil {
+			if errors.Is(err, ErrRedeemCodeNotFound) || errors.Is(err, ErrRedeemCodeUsed) {
+				return nil, ErrRedeemCodeUsed
+			}
+			return nil, fmt.Errorf("mark code as used: %w", err)
+		}
+		return redeemCode, nil
+	}
+
+	recordCode, err := GenerateRedeemCode()
+	if err != nil {
+		return nil, fmt.Errorf("generate redemption record code: %w", err)
+	}
+	record, err := s.redeemRepo.RedeemMultiUse(txCtx, redeemCode.ID, userID, recordCode)
+	if err != nil {
+		// 业务错误原样返回，保持其 HTTP 状态与 reason。
+		switch {
+		case errors.Is(err, ErrRedeemCodeNotFound), errors.Is(err, ErrRedeemCodeUsed):
+			return nil, ErrRedeemCodeUsed
+		case errors.Is(err, ErrRedeemCodeExpired):
+			return nil, ErrRedeemCodeExpired
+		case errors.Is(err, ErrRedeemCodeUserLimitReached):
+			return nil, ErrRedeemCodeUserLimitReached
+		case errors.Is(err, ErrRedeemCodeUserQuotaExhausted):
+			return nil, ErrRedeemCodeUserQuotaExhausted
+		}
+		return nil, fmt.Errorf("redeem multi-use code: %w", err)
+	}
+	return record, nil
 }
 
 // invalidateRedeemCaches 失效兑换相关的缓存

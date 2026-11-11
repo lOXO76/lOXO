@@ -864,3 +864,7 @@ func newPaymentOrderLifecycleTestClient(t *testing.T) *dbent.Client {
 	t.Cleanup(func() { _ = client.Close() })
 	return client
 }
+
+func (r *paymentOrderLifecycleRedeemRepo) RedeemMultiUse(context.Context, int64, int64, string) (*RedeemCode, error) {
+	panic("unexpected call")
+}

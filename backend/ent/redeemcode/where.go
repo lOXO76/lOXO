@@ -110,6 +110,36 @@ func ValidityDays(v int) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldEQ(FieldValidityDays, v))
 }
 
+// BenefitType applies equality check predicate on the "benefit_type" field. It's identical to BenefitTypeEQ.
+func BenefitType(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldBenefitType, v))
+}
+
+// MaxUsers applies equality check predicate on the "max_users" field. It's identical to MaxUsersEQ.
+func MaxUsers(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldMaxUsers, v))
+}
+
+// MaxUsesPerUser applies equality check predicate on the "max_uses_per_user" field. It's identical to MaxUsesPerUserEQ.
+func MaxUsesPerUser(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldMaxUsesPerUser, v))
+}
+
+// UsedCount applies equality check predicate on the "used_count" field. It's identical to UsedCountEQ.
+func UsedCount(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldUsedCount, v))
+}
+
+// UsedUserCount applies equality check predicate on the "used_user_count" field. It's identical to UsedUserCountEQ.
+func UsedUserCount(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldUsedUserCount, v))
+}
+
+// ParentID applies equality check predicate on the "parent_id" field. It's identical to ParentIDEQ.
+func ParentID(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldParentID, v))
+}
+
 // CodeEQ applies the EQ predicate on the "code" field.
 func CodeEQ(v string) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldEQ(FieldCode, v))
@@ -660,6 +690,261 @@ func ValidityDaysLTE(v int) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldLTE(FieldValidityDays, v))
 }
 
+// BenefitTypeEQ applies the EQ predicate on the "benefit_type" field.
+func BenefitTypeEQ(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldBenefitType, v))
+}
+
+// BenefitTypeNEQ applies the NEQ predicate on the "benefit_type" field.
+func BenefitTypeNEQ(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNEQ(FieldBenefitType, v))
+}
+
+// BenefitTypeIn applies the In predicate on the "benefit_type" field.
+func BenefitTypeIn(vs ...string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIn(FieldBenefitType, vs...))
+}
+
+// BenefitTypeNotIn applies the NotIn predicate on the "benefit_type" field.
+func BenefitTypeNotIn(vs ...string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotIn(FieldBenefitType, vs...))
+}
+
+// BenefitTypeGT applies the GT predicate on the "benefit_type" field.
+func BenefitTypeGT(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGT(FieldBenefitType, v))
+}
+
+// BenefitTypeGTE applies the GTE predicate on the "benefit_type" field.
+func BenefitTypeGTE(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGTE(FieldBenefitType, v))
+}
+
+// BenefitTypeLT applies the LT predicate on the "benefit_type" field.
+func BenefitTypeLT(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLT(FieldBenefitType, v))
+}
+
+// BenefitTypeLTE applies the LTE predicate on the "benefit_type" field.
+func BenefitTypeLTE(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLTE(FieldBenefitType, v))
+}
+
+// BenefitTypeContains applies the Contains predicate on the "benefit_type" field.
+func BenefitTypeContains(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldContains(FieldBenefitType, v))
+}
+
+// BenefitTypeHasPrefix applies the HasPrefix predicate on the "benefit_type" field.
+func BenefitTypeHasPrefix(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldHasPrefix(FieldBenefitType, v))
+}
+
+// BenefitTypeHasSuffix applies the HasSuffix predicate on the "benefit_type" field.
+func BenefitTypeHasSuffix(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldHasSuffix(FieldBenefitType, v))
+}
+
+// BenefitTypeEqualFold applies the EqualFold predicate on the "benefit_type" field.
+func BenefitTypeEqualFold(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEqualFold(FieldBenefitType, v))
+}
+
+// BenefitTypeContainsFold applies the ContainsFold predicate on the "benefit_type" field.
+func BenefitTypeContainsFold(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldContainsFold(FieldBenefitType, v))
+}
+
+// MaxUsersEQ applies the EQ predicate on the "max_users" field.
+func MaxUsersEQ(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldMaxUsers, v))
+}
+
+// MaxUsersNEQ applies the NEQ predicate on the "max_users" field.
+func MaxUsersNEQ(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNEQ(FieldMaxUsers, v))
+}
+
+// MaxUsersIn applies the In predicate on the "max_users" field.
+func MaxUsersIn(vs ...int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIn(FieldMaxUsers, vs...))
+}
+
+// MaxUsersNotIn applies the NotIn predicate on the "max_users" field.
+func MaxUsersNotIn(vs ...int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotIn(FieldMaxUsers, vs...))
+}
+
+// MaxUsersGT applies the GT predicate on the "max_users" field.
+func MaxUsersGT(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGT(FieldMaxUsers, v))
+}
+
+// MaxUsersGTE applies the GTE predicate on the "max_users" field.
+func MaxUsersGTE(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGTE(FieldMaxUsers, v))
+}
+
+// MaxUsersLT applies the LT predicate on the "max_users" field.
+func MaxUsersLT(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLT(FieldMaxUsers, v))
+}
+
+// MaxUsersLTE applies the LTE predicate on the "max_users" field.
+func MaxUsersLTE(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLTE(FieldMaxUsers, v))
+}
+
+// MaxUsesPerUserEQ applies the EQ predicate on the "max_uses_per_user" field.
+func MaxUsesPerUserEQ(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldMaxUsesPerUser, v))
+}
+
+// MaxUsesPerUserNEQ applies the NEQ predicate on the "max_uses_per_user" field.
+func MaxUsesPerUserNEQ(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNEQ(FieldMaxUsesPerUser, v))
+}
+
+// MaxUsesPerUserIn applies the In predicate on the "max_uses_per_user" field.
+func MaxUsesPerUserIn(vs ...int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIn(FieldMaxUsesPerUser, vs...))
+}
+
+// MaxUsesPerUserNotIn applies the NotIn predicate on the "max_uses_per_user" field.
+func MaxUsesPerUserNotIn(vs ...int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotIn(FieldMaxUsesPerUser, vs...))
+}
+
+// MaxUsesPerUserGT applies the GT predicate on the "max_uses_per_user" field.
+func MaxUsesPerUserGT(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGT(FieldMaxUsesPerUser, v))
+}
+
+// MaxUsesPerUserGTE applies the GTE predicate on the "max_uses_per_user" field.
+func MaxUsesPerUserGTE(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGTE(FieldMaxUsesPerUser, v))
+}
+
+// MaxUsesPerUserLT applies the LT predicate on the "max_uses_per_user" field.
+func MaxUsesPerUserLT(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLT(FieldMaxUsesPerUser, v))
+}
+
+// MaxUsesPerUserLTE applies the LTE predicate on the "max_uses_per_user" field.
+func MaxUsesPerUserLTE(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLTE(FieldMaxUsesPerUser, v))
+}
+
+// UsedCountEQ applies the EQ predicate on the "used_count" field.
+func UsedCountEQ(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldUsedCount, v))
+}
+
+// UsedCountNEQ applies the NEQ predicate on the "used_count" field.
+func UsedCountNEQ(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNEQ(FieldUsedCount, v))
+}
+
+// UsedCountIn applies the In predicate on the "used_count" field.
+func UsedCountIn(vs ...int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIn(FieldUsedCount, vs...))
+}
+
+// UsedCountNotIn applies the NotIn predicate on the "used_count" field.
+func UsedCountNotIn(vs ...int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotIn(FieldUsedCount, vs...))
+}
+
+// UsedCountGT applies the GT predicate on the "used_count" field.
+func UsedCountGT(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGT(FieldUsedCount, v))
+}
+
+// UsedCountGTE applies the GTE predicate on the "used_count" field.
+func UsedCountGTE(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGTE(FieldUsedCount, v))
+}
+
+// UsedCountLT applies the LT predicate on the "used_count" field.
+func UsedCountLT(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLT(FieldUsedCount, v))
+}
+
+// UsedCountLTE applies the LTE predicate on the "used_count" field.
+func UsedCountLTE(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLTE(FieldUsedCount, v))
+}
+
+// UsedUserCountEQ applies the EQ predicate on the "used_user_count" field.
+func UsedUserCountEQ(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldUsedUserCount, v))
+}
+
+// UsedUserCountNEQ applies the NEQ predicate on the "used_user_count" field.
+func UsedUserCountNEQ(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNEQ(FieldUsedUserCount, v))
+}
+
+// UsedUserCountIn applies the In predicate on the "used_user_count" field.
+func UsedUserCountIn(vs ...int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIn(FieldUsedUserCount, vs...))
+}
+
+// UsedUserCountNotIn applies the NotIn predicate on the "used_user_count" field.
+func UsedUserCountNotIn(vs ...int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotIn(FieldUsedUserCount, vs...))
+}
+
+// UsedUserCountGT applies the GT predicate on the "used_user_count" field.
+func UsedUserCountGT(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGT(FieldUsedUserCount, v))
+}
+
+// UsedUserCountGTE applies the GTE predicate on the "used_user_count" field.
+func UsedUserCountGTE(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGTE(FieldUsedUserCount, v))
+}
+
+// UsedUserCountLT applies the LT predicate on the "used_user_count" field.
+func UsedUserCountLT(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLT(FieldUsedUserCount, v))
+}
+
+// UsedUserCountLTE applies the LTE predicate on the "used_user_count" field.
+func UsedUserCountLTE(v int) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLTE(FieldUsedUserCount, v))
+}
+
+// ParentIDEQ applies the EQ predicate on the "parent_id" field.
+func ParentIDEQ(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldParentID, v))
+}
+
+// ParentIDNEQ applies the NEQ predicate on the "parent_id" field.
+func ParentIDNEQ(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNEQ(FieldParentID, v))
+}
+
+// ParentIDIn applies the In predicate on the "parent_id" field.
+func ParentIDIn(vs ...int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIn(FieldParentID, vs...))
+}
+
+// ParentIDNotIn applies the NotIn predicate on the "parent_id" field.
+func ParentIDNotIn(vs ...int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotIn(FieldParentID, vs...))
+}
+
+// ParentIDIsNil applies the IsNil predicate on the "parent_id" field.
+func ParentIDIsNil() predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIsNull(FieldParentID))
+}
+
+// ParentIDNotNil applies the NotNil predicate on the "parent_id" field.
+func ParentIDNotNil() predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotNull(FieldParentID))
+}
+
 // HasUser applies the HasEdge predicate on the "user" edge.
 func HasUser() predicate.RedeemCode {
 	return predicate.RedeemCode(func(s *sql.Selector) {
@@ -698,6 +983,52 @@ func HasGroup() predicate.RedeemCode {
 func HasGroupWith(preds ...predicate.Group) predicate.RedeemCode {
 	return predicate.RedeemCode(func(s *sql.Selector) {
 		step := newGroupStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasParent applies the HasEdge predicate on the "parent" edge.
+func HasParent() predicate.RedeemCode {
+	return predicate.RedeemCode(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ParentTable, ParentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasParentWith applies the HasEdge predicate on the "parent" edge with a given conditions (other predicates).
+func HasParentWith(preds ...predicate.RedeemCode) predicate.RedeemCode {
+	return predicate.RedeemCode(func(s *sql.Selector) {
+		step := newParentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRedemptions applies the HasEdge predicate on the "redemptions" edge.
+func HasRedemptions() predicate.RedeemCode {
+	return predicate.RedeemCode(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RedemptionsTable, RedemptionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRedemptionsWith applies the HasEdge predicate on the "redemptions" edge with a given conditions (other predicates).
+func HasRedemptionsWith(preds ...predicate.RedeemCode) predicate.RedeemCode {
+	return predicate.RedeemCode(func(s *sql.Selector) {
+		step := newRedemptionsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

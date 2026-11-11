@@ -2999,3 +2999,7 @@ var (
 	_ service.UsageLogRepository         = (*stubUsageLogRepo)(nil)
 	_ service.SettingRepository          = (*stubSettingRepo)(nil)
 )
+
+func (stubRedeemCodeRepo) RedeemMultiUse(context.Context, int64, int64, string) (*service.RedeemCode, error) {
+	return nil, errors.New("not implemented")
+}
