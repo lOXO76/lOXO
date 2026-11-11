@@ -1799,7 +1799,9 @@ export interface CodexSessionImportResult {
 
 // ==================== Usage & Redeem Types ====================
 
-export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'invitation'
+export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'invitation' | 'multi_use'
+// 多次兑换码（multi_use）每次兑换发放的权益类型
+export type RedeemBenefitType = 'balance' | 'concurrency' | 'subscription'
 export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2' | 'cyber' | 'live'
 export type ImageSizeSource = 'output' | 'input' | 'default' | 'legacy'
 export type ImageSizeBreakdown = Record<string, number>
@@ -1946,6 +1948,15 @@ export interface RedeemCode {
   notes?: string
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
+  // 多次兑换码（type = multi_use）专用：权益类型、限制与已用计数
+  benefit_type?: RedeemBenefitType | ''
+  max_users?: number
+  max_uses_per_user?: number
+  used_count?: number
+  used_user_count?: number
+  // 多次兑换码的兑换流水才有：被兑换的那个多次兑换码
+  parent_id?: number | null
+  parent_code?: string
   user?: User
   group?: Group // 关联的分组
 }
@@ -1958,6 +1969,10 @@ export interface GenerateRedeemCodesRequest {
   validity_days?: number // 订阅类型专用
   expires_at?: string | null
   expires_in_days?: number
+  // 多次兑换码（type = multi_use）专用
+  benefit_type?: RedeemBenefitType
+  max_users?: number
+  max_uses_per_user?: number
 }
 
 export interface BatchUpdateRedeemCodeFields {

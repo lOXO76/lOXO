@@ -8,9 +8,20 @@ import type {
   RedeemCode,
   GenerateRedeemCodesRequest,
   BatchUpdateRedeemCodeFields,
+  RedeemBenefitType,
   RedeemCodeType,
   PaginatedResponse
 } from '@/types'
+
+/** 多次兑换码（multi_use）的生成参数 */
+export interface MultiUseRedeemOptions {
+  /** 每次兑换发放的权益类型 */
+  benefitType: RedeemBenefitType
+  /** 允许兑换的用户数 */
+  maxUsers: number
+  /** 每个用户可兑换的次数 */
+  maxUsesPerUser: number
+}
 
 /**
  * List all redeem codes with pagination
@@ -62,6 +73,7 @@ export async function getById(id: number): Promise<RedeemCode> {
  * @param groupId - Group ID (required for subscription type)
  * @param validityDays - Validity days (for subscription type)
  * @param expiresInDays - Days before the code itself expires
+ * @param multiUse - Benefit and limits (required for multi_use type)
  * @returns Array of generated redeem codes
  */
 export async function generate(
@@ -70,7 +82,8 @@ export async function generate(
   value: number,
   groupId?: number | null,
   validityDays?: number,
-  expiresInDays?: number | null
+  expiresInDays?: number | null,
+  multiUse?: MultiUseRedeemOptions
 ): Promise<RedeemCode[]> {
   const payload: GenerateRedeemCodesRequest = {
     count,
@@ -78,8 +91,19 @@ export async function generate(
     value
   }
 
-  // 订阅类型专用字段
-  if (type === 'subscription') {
+  // 多次兑换码：权益类型与限制；实际发放的权益决定下面是否带订阅字段
+  let benefitType: RedeemCodeType | undefined = type
+  if (type === 'multi_use') {
+    benefitType = multiUse?.benefitType
+    if (multiUse) {
+      payload.benefit_type = multiUse.benefitType
+      payload.max_users = multiUse.maxUsers
+      payload.max_uses_per_user = multiUse.maxUsesPerUser
+    }
+  }
+
+  // 订阅权益专用字段
+  if (benefitType === 'subscription') {
     payload.group_id = groupId
     if (validityDays && validityDays > 0) {
       payload.validity_days = validityDays

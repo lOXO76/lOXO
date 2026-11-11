@@ -48,7 +48,7 @@
               <Icon name="edit" size="md" class="mr-2" />
               {{ t('admin.redeem.batchUpdate') }}
             </button>
-            <button @click="showGenerateDialog = true" class="btn btn-primary">
+            <button data-test="generate-open" @click="showGenerateDialog = true" class="btn btn-primary">
               {{ t('admin.redeem.generateCodes') }}
             </button>
           </div>
@@ -87,7 +87,7 @@
             />
           </template>
 
-          <template #cell-code="{ value }">
+          <template #cell-code="{ value, row }">
             <div class="flex items-center space-x-2">
               <code class="font-mono text-sm text-gray-900 dark:text-gray-100">{{ value }}</code>
               <button
@@ -111,6 +111,14 @@
                 </svg>
               </button>
             </div>
+            <!-- 多次兑换码的兑换流水：标出它来自哪个码 -->
+            <p
+              v-if="row.parent_code"
+              data-test="redeemed-from"
+              class="mt-0.5 text-xs text-gray-500 dark:text-dark-400"
+            >
+              {{ t('admin.redeem.redeemedFrom', { code: row.parent_code }) }}
+            </p>
           </template>
 
           <template #cell-type="{ value }">
@@ -121,7 +129,9 @@
                   ? 'badge-success'
                   : value === 'subscription'
                     ? 'badge-warning'
-                    : 'badge-primary'
+                    : value === 'multi_use'
+                      ? 'badge-purple'
+                      : 'badge-primary'
               ]"
             >
               {{ t('admin.redeem.types.' + value) }}
@@ -130,18 +140,23 @@
 
           <template #cell-value="{ value, row }">
             <span class="text-sm font-medium text-gray-900 dark:text-white">
-              <template v-if="row.type === 'balance'">${{ value.toFixed(2) }}</template>
-              <template v-else-if="row.type === 'subscription'">
+              <template v-if="benefitTypeOf(row) === 'balance'">${{ value.toFixed(2) }}</template>
+              <template v-else-if="benefitTypeOf(row) === 'subscription'">
                 {{ row.validity_days || 30 }} {{ t('admin.redeem.days') }}
                 <span v-if="row.group" class="ml-1 text-xs text-gray-500 dark:text-gray-400"
                   >({{ row.group.name }})</span
                 >
               </template>
               <template v-else>{{ value }}</template>
+              <span
+                v-if="row.type === 'multi_use'"
+                class="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400"
+                >/ {{ t('admin.redeem.perRedemption') }}</span
+              >
             </span>
           </template>
 
-          <template #cell-status="{ value }">
+          <template #cell-status="{ value, row }">
             <span
               :class="[
                 'badge',
@@ -152,8 +167,23 @@
                     : 'badge-danger'
               ]"
             >
-              {{ t('admin.redeem.status.' + value) }}
+              {{ statusLabel(value, row) }}
             </span>
+            <!-- 多次兑换码：已兑换次数、已兑换用户数与每人上限 -->
+            <p
+              v-if="row.type === 'multi_use'"
+              data-test="multi-use-usage"
+              class="mt-1 whitespace-nowrap text-xs text-gray-500 dark:text-dark-400"
+            >
+              {{
+                t('admin.redeem.multiUseUsage', {
+                  usedCount: row.used_count ?? 0,
+                  usedUsers: row.used_user_count ?? 0,
+                  maxUsers: row.max_users ?? 1,
+                  perUser: row.max_uses_per_user ?? 1
+                })
+              }}
+            </p>
           </template>
 
           <template #cell-used_by="{ value, row }">
@@ -282,25 +312,46 @@
           <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
             {{ t('admin.redeem.generateCodesTitle') }}
           </h2>
-          <form @submit.prevent="handleGenerateCodes" class="space-y-4">
+          <form data-test="generate-form" @submit.prevent="handleGenerateCodes" class="space-y-4">
             <div>
               <label class="input-label">{{ t('admin.redeem.codeType') }}</label>
-              <Select v-model="generateForm.type" :options="typeOptions" />
+              <Select
+                v-model="generateForm.type"
+                data-test="generate-type-select"
+                :options="typeOptions"
+              />
             </div>
+            <!-- 多次兑换码：说明 + 每次兑换发放的权益类型 -->
+            <template v-if="generateForm.type === 'multi_use'">
+              <div class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+                <p class="text-sm text-blue-700 dark:text-blue-300">
+                  {{ t('admin.redeem.multiUseHint') }}
+                </p>
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.redeem.benefitType') }}</label>
+                <Select
+                  v-model="generateForm.benefit_type"
+                  data-test="generate-benefit-type-select"
+                  :options="benefitTypeOptions"
+                />
+              </div>
+            </template>
             <!-- 余额/并发类型：显示数值输入 -->
-            <div v-if="generateForm.type !== 'subscription' && generateForm.type !== 'invitation'">
+            <div v-if="effectiveGenerateType === 'balance' || effectiveGenerateType === 'concurrency'">
               <label class="input-label">
                 {{
-                  generateForm.type === 'balance'
+                  effectiveGenerateType === 'balance'
                     ? t('admin.redeem.amount')
                     : t('admin.redeem.columns.value')
                 }}
               </label>
               <input
                 v-model.number="generateForm.value"
+                data-test="generate-value-input"
                 type="number"
-                :step="generateForm.type === 'balance' ? '0.01' : '1'"
-                :min="generateForm.type === 'balance' ? '0.01' : '1'"
+                :step="effectiveGenerateType === 'balance' ? '0.01' : '1'"
+                :min="effectiveGenerateType === 'balance' ? '0.01' : '1'"
                 required
                 class="input"
               />
@@ -312,7 +363,7 @@
               </p>
             </div>
             <!-- 订阅类型：显示分组选择和有效天数 -->
-            <template v-if="generateForm.type === 'subscription'">
+            <template v-if="effectiveGenerateType === 'subscription'">
               <div>
                 <label class="input-label">{{ t('admin.redeem.selectGroup') }}</label>
                 <Select
@@ -356,6 +407,37 @@
                 />
               </div>
             </template>
+            <!-- 多次兑换码：允许兑换的用户数、每个用户可兑换的次数 -->
+            <div v-if="generateForm.type === 'multi_use'" class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="input-label">{{ t('admin.redeem.maxUsers') }}</label>
+                <input
+                  v-model.number="generateForm.max_users"
+                  data-test="generate-max-users-input"
+                  type="number"
+                  step="1"
+                  min="1"
+                  :max="MULTI_USE_MAX_USERS"
+                  required
+                  class="input"
+                />
+                <p class="input-hint">{{ t('admin.redeem.maxUsersHint') }}</p>
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.redeem.maxUsesPerUser') }}</label>
+                <input
+                  v-model.number="generateForm.max_uses_per_user"
+                  data-test="generate-max-uses-per-user-input"
+                  type="number"
+                  step="1"
+                  min="1"
+                  :max="MULTI_USE_MAX_USES_PER_USER"
+                  required
+                  class="input"
+                />
+                <p class="input-hint">{{ t('admin.redeem.maxUsesPerUserHint') }}</p>
+              </div>
+            </div>
             <div>
               <label class="input-label">{{ t('admin.redeem.codeExpiry') }}</label>
               <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -626,6 +708,7 @@ import {
 import type {
   RedeemCode,
   RedeemCodeType,
+  RedeemBenefitType,
   Group,
   GroupPlatform,
   SubscriptionType,
@@ -743,7 +826,8 @@ const typeOptions = computed(() => [
   { value: 'balance', label: t('admin.redeem.balance') },
   { value: 'concurrency', label: t('admin.redeem.concurrency') },
   { value: 'subscription', label: t('admin.redeem.subscription') },
-  { value: 'invitation', label: t('admin.redeem.invitation') }
+  { value: 'invitation', label: t('admin.redeem.invitation') },
+  { value: 'multi_use', label: t('admin.redeem.multiUse') }
 ])
 
 const filterTypeOptions = computed(() => [
@@ -751,7 +835,15 @@ const filterTypeOptions = computed(() => [
   { value: 'balance', label: t('admin.redeem.balance') },
   { value: 'concurrency', label: t('admin.redeem.concurrency') },
   { value: 'subscription', label: t('admin.redeem.subscription') },
-  { value: 'invitation', label: t('admin.redeem.invitation') }
+  { value: 'invitation', label: t('admin.redeem.invitation') },
+  { value: 'multi_use', label: t('admin.redeem.multiUse') }
+])
+
+// 多次兑换码每次兑换可发放的权益类型
+const benefitTypeOptions = computed(() => [
+  { value: 'balance', label: t('admin.redeem.balance') },
+  { value: 'concurrency', label: t('admin.redeem.concurrency') },
+  { value: 'subscription', label: t('admin.redeem.subscription') }
 ])
 
 const filterStatusOptions = computed(() => [
@@ -842,8 +934,54 @@ const generateForm = reactive({
   group_id: null as number | null,
   validity_days: 30,
   expiry_option: 'never' as RedeemCodeExpiryOption,
-  custom_expiry_days: 7
+  custom_expiry_days: 7,
+  // 多次兑换码专用
+  benefit_type: 'balance' as RedeemBenefitType,
+  max_users: 100,
+  max_uses_per_user: 1
 })
+
+// 与后端一致的多次兑换码限制上限
+const MULTI_USE_MAX_USERS = 1000000
+const MULTI_USE_MAX_USES_PER_USER = 1000
+
+// 生成表单实际发放的权益类型：多次兑换码取所选权益，其余即类型本身
+const effectiveGenerateType = computed<RedeemCodeType>(() =>
+  generateForm.type === 'multi_use' ? generateForm.benefit_type : generateForm.type
+)
+
+// 列表行实际发放的权益类型，决定面值如何展示
+const benefitTypeOf = (row: RedeemCode) =>
+  row.type === 'multi_use' ? row.benefit_type || 'balance' : row.type
+
+// 多次兑换码在名额用完之前一直是 unused 状态，显示「未使用」会误导，改用「可兑换 / 已兑完」
+const statusLabel = (status: string, row: RedeemCode) => {
+  if (row.type === 'multi_use') {
+    if (status === 'unused') return t('admin.redeem.multiUseStatus.active')
+    if (status === 'used') return t('admin.redeem.multiUseStatus.exhausted')
+  }
+  return t('admin.redeem.status.' + status)
+}
+
+// 多次兑换码的限制参数：非多次兑换码返回 undefined，输入无效返回 null
+const buildMultiUseOptions = () => {
+  if (generateForm.type !== 'multi_use') {
+    return undefined
+  }
+  const inRange = (value: number, max: number) =>
+    Number.isInteger(value) && value >= 1 && value <= max
+  if (
+    !inRange(generateForm.max_users, MULTI_USE_MAX_USERS) ||
+    !inRange(generateForm.max_uses_per_user, MULTI_USE_MAX_USES_PER_USER)
+  ) {
+    return null
+  }
+  return {
+    benefitType: generateForm.benefit_type,
+    maxUsers: generateForm.max_users,
+    maxUsesPerUser: generateForm.max_uses_per_user
+  }
+}
 
 // 监听类型变化，邀请码类型时自动设置 value 为 0
 watch(
@@ -1026,9 +1164,15 @@ const buildBatchUpdateFields = (): BatchUpdateRedeemCodeFields | null => {
 }
 
 const handleGenerateCodes = async () => {
-  // 订阅类型必须选择分组
-  if (generateForm.type === 'subscription' && !generateForm.group_id) {
+  // 发放订阅权益时必须选择分组
+  if (effectiveGenerateType.value === 'subscription' && !generateForm.group_id) {
     appStore.showError(t('admin.redeem.groupRequired'))
+    return
+  }
+
+  const multiUse = buildMultiUseOptions()
+  if (multiUse === null) {
+    appStore.showError(t('admin.redeem.multiUseLimitsRequired'))
     return
   }
 
@@ -1044,9 +1188,10 @@ const handleGenerateCodes = async () => {
       generateForm.count,
       generateForm.type,
       generateForm.value,
-      generateForm.type === 'subscription' ? generateForm.group_id : undefined,
-      generateForm.type === 'subscription' ? generateForm.validity_days : undefined,
-      expiresInDays
+      effectiveGenerateType.value === 'subscription' ? generateForm.group_id : undefined,
+      effectiveGenerateType.value === 'subscription' ? generateForm.validity_days : undefined,
+      expiresInDays,
+      multiUse
     )
     showGenerateDialog.value = false
     generatedCodes.value = result
@@ -1120,7 +1265,10 @@ const confirmDeleteUnused = async () => {
   try {
     // Get all unused codes and delete them
     const unusedCodesResponse = await adminAPI.redeem.list(1, 1000, { status: 'unused' })
-    const unusedCodeIds = unusedCodesResponse.items.map((code) => code.id)
+    // 已有人兑换过的多次兑换码仍是 unused 状态，但属于进行中的活动码，不随「删除全部未使用」删除
+    const unusedCodeIds = unusedCodesResponse.items
+      .filter((code) => !(code.type === 'multi_use' && (code.used_count ?? 0) > 0))
+      .map((code) => code.id)
 
     if (unusedCodeIds.length === 0) {
       appStore.showInfo(t('admin.redeem.noUnusedCodes'))

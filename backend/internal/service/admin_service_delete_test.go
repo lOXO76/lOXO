@@ -812,3 +812,7 @@ func TestAdminService_BatchDeleteRedeemCodes_PartialFailures(t *testing.T) {
 	require.Equal(t, int64(2), deleted)
 	require.Equal(t, []int64{1, 2, 3}, repo.deletedIDs)
 }
+
+func (s *redeemRepoStub) RedeemMultiUse(context.Context, int64, int64, string) (*RedeemCode, error) {
+	panic("unexpected RedeemMultiUse call")
+}

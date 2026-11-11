@@ -173,6 +173,7 @@ const (
 	RedeemTypeConcurrency      = domain.RedeemTypeConcurrency
 	RedeemTypeSubscription     = domain.RedeemTypeSubscription
 	RedeemTypeInvitation       = domain.RedeemTypeInvitation
+	RedeemTypeMultiUse         = domain.RedeemTypeMultiUse
 	RedeemTypeAffiliateBalance = "affiliate_balance"
 	// RedeemTypeCheckIn 仅用于余额流水展示：由 user_check_ins 合成，不对应真实兑换码。
 	RedeemTypeCheckIn = "check_in"

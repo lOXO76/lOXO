@@ -1476,8 +1476,25 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		return nil, ErrRedeemCodeExpired
 	}
 
-	// 如果是订阅类型，验证必须有 GroupID
-	if input.Type == RedeemTypeSubscription {
+	// 实际发放的权益类型：多次兑换码由 BenefitType 指定，其余即兑换码类型本身。
+	benefitType := input.Type
+	maxUsers, maxUsesPerUser := input.MaxUsers, input.MaxUsesPerUser
+	if input.Type == RedeemTypeMultiUse {
+		benefitType = input.BenefitType
+		// 未指定限制时退化为「1 个用户、每人 1 次」。
+		if maxUsers == 0 {
+			maxUsers = 1
+		}
+		if maxUsesPerUser == 0 {
+			maxUsesPerUser = 1
+		}
+		if err := validateMultiUseRedeemCode(benefitType, input.Value, maxUsers, maxUsesPerUser); err != nil {
+			return nil, err
+		}
+	}
+
+	// 如果发放的是订阅，验证必须有 GroupID
+	if benefitType == RedeemTypeSubscription {
 		if input.GroupID == nil {
 			return nil, errors.New("group_id is required for subscription type")
 		}
@@ -1504,8 +1521,13 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 			Status:    StatusUnused,
 			ExpiresAt: input.ExpiresAt,
 		}
-		// 订阅类型专用字段
-		if input.Type == RedeemTypeSubscription {
+		if input.Type == RedeemTypeMultiUse {
+			code.BenefitType = benefitType
+			code.MaxUsers = maxUsers
+			code.MaxUsesPerUser = maxUsesPerUser
+		}
+		// 订阅权益专用字段
+		if benefitType == RedeemTypeSubscription {
 			code.GroupID = input.GroupID
 			code.ValidityDays = input.ValidityDays
 			if code.ValidityDays <= 0 {

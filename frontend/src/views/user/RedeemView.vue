@@ -307,7 +307,7 @@
                   v-if="!isAdminAdjustment(item.type)"
                   class="font-mono text-xs text-gray-400 dark:text-dark-500"
                 >
-                  {{ item.code.slice(0, 8) }}...
+                  {{ (item.parent_code || item.code).slice(0, 8) }}...
                 </p>
                 <p v-else class="text-xs text-gray-400 dark:text-dark-500">
                   {{ t('redeem.adminAdjustment') }}
@@ -449,6 +449,18 @@ const formatHistoryValue = (item: RedeemHistoryItem) => {
   }
 }
 
+// 多次兑换码的限制类错误：兑换码本身有效，提示「检查兑换码」会误导用户，单独给出原因
+const redeemLimitErrorMessage = (error: any): string => {
+  switch (error?.reason) {
+    case 'REDEEM_CODE_USER_LIMIT_REACHED':
+      return t('redeem.errors.userLimitReached')
+    case 'REDEEM_CODE_USER_QUOTA_EXHAUSTED':
+      return t('redeem.errors.userQuotaExhausted')
+    default:
+      return ''
+  }
+}
+
 const fetchHistory = async (page = 1) => {
   const request = ++historyRequest
   const pageSize = historyPageSize.value
@@ -513,7 +525,10 @@ const handleRedeem = async () => {
     // Show success toast
     appStore.showSuccess(t('redeem.codeRedeemSuccess'))
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.detail || t('redeem.failedToRedeem')
+    errorMessage.value =
+      redeemLimitErrorMessage(error) ||
+      error.response?.data?.detail ||
+      t('redeem.failedToRedeem')
 
     appStore.showError(t('redeem.redeemFailed'))
   } finally {

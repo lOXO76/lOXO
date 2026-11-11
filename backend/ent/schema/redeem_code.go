@@ -23,6 +23,15 @@ import (
 //   - 减少数据库存储压力和查询复杂度
 //
 // 如需审计已删除的兑换码，建议在删除前将关键信息写入审计日志表。
+//
+// 多次兑换码（type = multi_use）：
+//   - 码本身（父码）不记录 used_by，而是用 max_users / max_uses_per_user 限制
+//     可兑换的用户数与每个用户的可兑换次数，used_count / used_user_count 为已用计数
+//   - benefit_type 决定每次兑换发放的权益（balance / concurrency / subscription），
+//     面值、分组与有效天数沿用 value / group_id / validity_days
+//   - 每次兑换都会落一条 type = benefit_type、status = used 的流水行，parent_id 指向父码；
+//     兑换历史、余额流水与充值统计因此无需额外的数据来源
+//   - 父码被删除时流水行保留（parent_id 置空）
 type RedeemCode struct {
 	ent.Schema
 }
@@ -72,6 +81,26 @@ func (RedeemCode) Fields() []ent.Field {
 			Nillable(),
 		field.Int("validity_days").
 			Default(30),
+		field.String("benefit_type").
+			MaxLen(20).
+			Default("").
+			Comment("多次兑换码：每次兑换发放的权益类型（balance/concurrency/subscription）"),
+		field.Int("max_users").
+			Default(1).
+			Comment("多次兑换码：允许兑换的用户数"),
+		field.Int("max_uses_per_user").
+			Default(1).
+			Comment("多次兑换码：每个用户可兑换的次数"),
+		field.Int("used_count").
+			Default(0).
+			Comment("多次兑换码：已兑换总次数"),
+		field.Int("used_user_count").
+			Default(0).
+			Comment("多次兑换码：已兑换的用户数"),
+		field.Int64("parent_id").
+			Optional().
+			Nillable().
+			Comment("多次兑换码的兑换流水：指向被兑换的父码"),
 	}
 }
 
@@ -85,6 +114,11 @@ func (RedeemCode) Edges() []ent.Edge {
 			Ref("redeem_codes").
 			Field("group_id").
 			Unique(),
+		// 多次兑换码（父码）与其兑换流水行的自引用关系。
+		edge.To("redemptions", RedeemCode.Type).
+			From("parent").
+			Field("parent_id").
+			Unique(),
 	}
 }
 
@@ -95,5 +129,8 @@ func (RedeemCode) Indexes() []ent.Index {
 		index.Fields("used_by"),
 		index.Fields("group_id"),
 		index.Fields("expires_at"),
+		// 多次兑换码按「父码 + 用户」统计该用户已兑换次数。
+		index.Fields("parent_id", "used_by").
+			Annotations(entsql.IndexWhere("parent_id IS NOT NULL")),
 	}
 }

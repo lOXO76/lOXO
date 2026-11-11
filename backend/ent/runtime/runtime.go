@@ -2320,6 +2320,28 @@ func init() {
 	redeemcodeDescValidityDays := redeemcodeFields[10].Descriptor()
 	// redeemcode.DefaultValidityDays holds the default value on creation for the validity_days field.
 	redeemcode.DefaultValidityDays = redeemcodeDescValidityDays.Default.(int)
+	// redeemcodeDescBenefitType is the schema descriptor for benefit_type field.
+	redeemcodeDescBenefitType := redeemcodeFields[11].Descriptor()
+	// redeemcode.DefaultBenefitType holds the default value on creation for the benefit_type field.
+	redeemcode.DefaultBenefitType = redeemcodeDescBenefitType.Default.(string)
+	// redeemcode.BenefitTypeValidator is a validator for the "benefit_type" field. It is called by the builders before save.
+	redeemcode.BenefitTypeValidator = redeemcodeDescBenefitType.Validators[0].(func(string) error)
+	// redeemcodeDescMaxUsers is the schema descriptor for max_users field.
+	redeemcodeDescMaxUsers := redeemcodeFields[12].Descriptor()
+	// redeemcode.DefaultMaxUsers holds the default value on creation for the max_users field.
+	redeemcode.DefaultMaxUsers = redeemcodeDescMaxUsers.Default.(int)
+	// redeemcodeDescMaxUsesPerUser is the schema descriptor for max_uses_per_user field.
+	redeemcodeDescMaxUsesPerUser := redeemcodeFields[13].Descriptor()
+	// redeemcode.DefaultMaxUsesPerUser holds the default value on creation for the max_uses_per_user field.
+	redeemcode.DefaultMaxUsesPerUser = redeemcodeDescMaxUsesPerUser.Default.(int)
+	// redeemcodeDescUsedCount is the schema descriptor for used_count field.
+	redeemcodeDescUsedCount := redeemcodeFields[14].Descriptor()
+	// redeemcode.DefaultUsedCount holds the default value on creation for the used_count field.
+	redeemcode.DefaultUsedCount = redeemcodeDescUsedCount.Default.(int)
+	// redeemcodeDescUsedUserCount is the schema descriptor for used_user_count field.
+	redeemcodeDescUsedUserCount := redeemcodeFields[15].Descriptor()
+	// redeemcode.DefaultUsedUserCount holds the default value on creation for the used_user_count field.
+	redeemcode.DefaultUsedUserCount = redeemcodeDescUsedUserCount.Default.(int)
 	rewardtaskMixin := schema.RewardTask{}.Mixin()
 	rewardtaskMixinHooks1 := rewardtaskMixin[1].Hooks()
 	rewardtask.Hooks[0] = rewardtaskMixinHooks1[0]

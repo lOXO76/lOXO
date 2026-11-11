@@ -77,6 +77,8 @@ const (
 	RedeemTypeConcurrency  = "concurrency"
 	RedeemTypeSubscription = "subscription"
 	RedeemTypeInvitation   = "invitation"
+	// RedeemTypeMultiUse 多次兑换码：可被多个用户兑换，每个用户可兑换多次，每次发放余额。
+	RedeemTypeMultiUse = "multi_use"
 )
 
 // PromoCode status constants

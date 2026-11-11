@@ -41,6 +41,18 @@ type RedeemCode struct {
 	GroupID *int64 `json:"group_id,omitempty"`
 	// ValidityDays holds the value of the "validity_days" field.
 	ValidityDays int `json:"validity_days,omitempty"`
+	// 多次兑换码：每次兑换发放的权益类型（balance/concurrency/subscription）
+	BenefitType string `json:"benefit_type,omitempty"`
+	// 多次兑换码：允许兑换的用户数
+	MaxUsers int `json:"max_users,omitempty"`
+	// 多次兑换码：每个用户可兑换的次数
+	MaxUsesPerUser int `json:"max_uses_per_user,omitempty"`
+	// 多次兑换码：已兑换总次数
+	UsedCount int `json:"used_count,omitempty"`
+	// 多次兑换码：已兑换的用户数
+	UsedUserCount int `json:"used_user_count,omitempty"`
+	// 多次兑换码的兑换流水：指向被兑换的父码
+	ParentID *int64 `json:"parent_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RedeemCodeQuery when eager-loading is set.
 	Edges        RedeemCodeEdges `json:"edges"`
@@ -53,9 +65,13 @@ type RedeemCodeEdges struct {
 	User *User `json:"user,omitempty"`
 	// Group holds the value of the group edge.
 	Group *Group `json:"group,omitempty"`
+	// Parent holds the value of the parent edge.
+	Parent *RedeemCode `json:"parent,omitempty"`
+	// Redemptions holds the value of the redemptions edge.
+	Redemptions []*RedeemCode `json:"redemptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -80,6 +96,26 @@ func (e RedeemCodeEdges) GroupOrErr() (*Group, error) {
 	return nil, &NotLoadedError{edge: "group"}
 }
 
+// ParentOrErr returns the Parent value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RedeemCodeEdges) ParentOrErr() (*RedeemCode, error) {
+	if e.Parent != nil {
+		return e.Parent, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: redeemcode.Label}
+	}
+	return nil, &NotLoadedError{edge: "parent"}
+}
+
+// RedemptionsOrErr returns the Redemptions value or an error if the edge
+// was not loaded in eager-loading.
+func (e RedeemCodeEdges) RedemptionsOrErr() ([]*RedeemCode, error) {
+	if e.loadedTypes[3] {
+		return e.Redemptions, nil
+	}
+	return nil, &NotLoadedError{edge: "redemptions"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*RedeemCode) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -87,9 +123,9 @@ func (*RedeemCode) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case redeemcode.FieldValue:
 			values[i] = new(sql.NullFloat64)
-		case redeemcode.FieldID, redeemcode.FieldUsedBy, redeemcode.FieldGroupID, redeemcode.FieldValidityDays:
+		case redeemcode.FieldID, redeemcode.FieldUsedBy, redeemcode.FieldGroupID, redeemcode.FieldValidityDays, redeemcode.FieldMaxUsers, redeemcode.FieldMaxUsesPerUser, redeemcode.FieldUsedCount, redeemcode.FieldUsedUserCount, redeemcode.FieldParentID:
 			values[i] = new(sql.NullInt64)
-		case redeemcode.FieldCode, redeemcode.FieldType, redeemcode.FieldStatus, redeemcode.FieldNotes:
+		case redeemcode.FieldCode, redeemcode.FieldType, redeemcode.FieldStatus, redeemcode.FieldNotes, redeemcode.FieldBenefitType:
 			values[i] = new(sql.NullString)
 		case redeemcode.FieldUsedAt, redeemcode.FieldCreatedAt, redeemcode.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
@@ -185,6 +221,43 @@ func (_m *RedeemCode) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ValidityDays = int(value.Int64)
 			}
+		case redeemcode.FieldBenefitType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field benefit_type", values[i])
+			} else if value.Valid {
+				_m.BenefitType = value.String
+			}
+		case redeemcode.FieldMaxUsers:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field max_users", values[i])
+			} else if value.Valid {
+				_m.MaxUsers = int(value.Int64)
+			}
+		case redeemcode.FieldMaxUsesPerUser:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field max_uses_per_user", values[i])
+			} else if value.Valid {
+				_m.MaxUsesPerUser = int(value.Int64)
+			}
+		case redeemcode.FieldUsedCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field used_count", values[i])
+			} else if value.Valid {
+				_m.UsedCount = int(value.Int64)
+			}
+		case redeemcode.FieldUsedUserCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field used_user_count", values[i])
+			} else if value.Valid {
+				_m.UsedUserCount = int(value.Int64)
+			}
+		case redeemcode.FieldParentID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
+			} else if value.Valid {
+				_m.ParentID = new(int64)
+				*_m.ParentID = value.Int64
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -206,6 +279,16 @@ func (_m *RedeemCode) QueryUser() *UserQuery {
 // QueryGroup queries the "group" edge of the RedeemCode entity.
 func (_m *RedeemCode) QueryGroup() *GroupQuery {
 	return NewRedeemCodeClient(_m.config).QueryGroup(_m)
+}
+
+// QueryParent queries the "parent" edge of the RedeemCode entity.
+func (_m *RedeemCode) QueryParent() *RedeemCodeQuery {
+	return NewRedeemCodeClient(_m.config).QueryParent(_m)
+}
+
+// QueryRedemptions queries the "redemptions" edge of the RedeemCode entity.
+func (_m *RedeemCode) QueryRedemptions() *RedeemCodeQuery {
+	return NewRedeemCodeClient(_m.config).QueryRedemptions(_m)
 }
 
 // Update returns a builder for updating this RedeemCode.
@@ -273,6 +356,26 @@ func (_m *RedeemCode) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("validity_days=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ValidityDays))
+	builder.WriteString(", ")
+	builder.WriteString("benefit_type=")
+	builder.WriteString(_m.BenefitType)
+	builder.WriteString(", ")
+	builder.WriteString("max_users=")
+	builder.WriteString(fmt.Sprintf("%v", _m.MaxUsers))
+	builder.WriteString(", ")
+	builder.WriteString("max_uses_per_user=")
+	builder.WriteString(fmt.Sprintf("%v", _m.MaxUsesPerUser))
+	builder.WriteString(", ")
+	builder.WriteString("used_count=")
+	builder.WriteString(fmt.Sprintf("%v", _m.UsedCount))
+	builder.WriteString(", ")
+	builder.WriteString("used_user_count=")
+	builder.WriteString(fmt.Sprintf("%v", _m.UsedUserCount))
+	builder.WriteString(", ")
+	if v := _m.ParentID; v != nil {
+		builder.WriteString("parent_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

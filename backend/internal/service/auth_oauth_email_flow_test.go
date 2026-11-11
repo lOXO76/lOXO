@@ -552,3 +552,7 @@ func TestFinalizeOAuthEmailAccount_SnapshotsPlatformQuotaDefaults(t *testing.T) 
 	require.NotNil(t, anthropicRecord.DailyLimitUSD)
 	require.InDelta(t, 5.5, *anthropicRecord.DailyLimitUSD, 0.0001)
 }
+
+func (s *redeemCodeRepoStub) RedeemMultiUse(context.Context, int64, int64, string) (*RedeemCode, error) {
+	panic("unexpected RedeemMultiUse call")
+}

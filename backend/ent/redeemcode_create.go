@@ -170,6 +170,90 @@ func (_c *RedeemCodeCreate) SetNillableValidityDays(v *int) *RedeemCodeCreate {
 	return _c
 }
 
+// SetBenefitType sets the "benefit_type" field.
+func (_c *RedeemCodeCreate) SetBenefitType(v string) *RedeemCodeCreate {
+	_c.mutation.SetBenefitType(v)
+	return _c
+}
+
+// SetNillableBenefitType sets the "benefit_type" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableBenefitType(v *string) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetBenefitType(*v)
+	}
+	return _c
+}
+
+// SetMaxUsers sets the "max_users" field.
+func (_c *RedeemCodeCreate) SetMaxUsers(v int) *RedeemCodeCreate {
+	_c.mutation.SetMaxUsers(v)
+	return _c
+}
+
+// SetNillableMaxUsers sets the "max_users" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableMaxUsers(v *int) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetMaxUsers(*v)
+	}
+	return _c
+}
+
+// SetMaxUsesPerUser sets the "max_uses_per_user" field.
+func (_c *RedeemCodeCreate) SetMaxUsesPerUser(v int) *RedeemCodeCreate {
+	_c.mutation.SetMaxUsesPerUser(v)
+	return _c
+}
+
+// SetNillableMaxUsesPerUser sets the "max_uses_per_user" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableMaxUsesPerUser(v *int) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetMaxUsesPerUser(*v)
+	}
+	return _c
+}
+
+// SetUsedCount sets the "used_count" field.
+func (_c *RedeemCodeCreate) SetUsedCount(v int) *RedeemCodeCreate {
+	_c.mutation.SetUsedCount(v)
+	return _c
+}
+
+// SetNillableUsedCount sets the "used_count" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableUsedCount(v *int) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetUsedCount(*v)
+	}
+	return _c
+}
+
+// SetUsedUserCount sets the "used_user_count" field.
+func (_c *RedeemCodeCreate) SetUsedUserCount(v int) *RedeemCodeCreate {
+	_c.mutation.SetUsedUserCount(v)
+	return _c
+}
+
+// SetNillableUsedUserCount sets the "used_user_count" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableUsedUserCount(v *int) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetUsedUserCount(*v)
+	}
+	return _c
+}
+
+// SetParentID sets the "parent_id" field.
+func (_c *RedeemCodeCreate) SetParentID(v int64) *RedeemCodeCreate {
+	_c.mutation.SetParentID(v)
+	return _c
+}
+
+// SetNillableParentID sets the "parent_id" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableParentID(v *int64) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetParentID(*v)
+	}
+	return _c
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_c *RedeemCodeCreate) SetUserID(id int64) *RedeemCodeCreate {
 	_c.mutation.SetUserID(id)
@@ -192,6 +276,26 @@ func (_c *RedeemCodeCreate) SetUser(v *User) *RedeemCodeCreate {
 // SetGroup sets the "group" edge to the Group entity.
 func (_c *RedeemCodeCreate) SetGroup(v *Group) *RedeemCodeCreate {
 	return _c.SetGroupID(v.ID)
+}
+
+// SetParent sets the "parent" edge to the RedeemCode entity.
+func (_c *RedeemCodeCreate) SetParent(v *RedeemCode) *RedeemCodeCreate {
+	return _c.SetParentID(v.ID)
+}
+
+// AddRedemptionIDs adds the "redemptions" edge to the RedeemCode entity by IDs.
+func (_c *RedeemCodeCreate) AddRedemptionIDs(ids ...int64) *RedeemCodeCreate {
+	_c.mutation.AddRedemptionIDs(ids...)
+	return _c
+}
+
+// AddRedemptions adds the "redemptions" edges to the RedeemCode entity.
+func (_c *RedeemCodeCreate) AddRedemptions(v ...*RedeemCode) *RedeemCodeCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRedemptionIDs(ids...)
 }
 
 // Mutation returns the RedeemCodeMutation object of the builder.
@@ -249,6 +353,26 @@ func (_c *RedeemCodeCreate) defaults() {
 		v := redeemcode.DefaultValidityDays
 		_c.mutation.SetValidityDays(v)
 	}
+	if _, ok := _c.mutation.BenefitType(); !ok {
+		v := redeemcode.DefaultBenefitType
+		_c.mutation.SetBenefitType(v)
+	}
+	if _, ok := _c.mutation.MaxUsers(); !ok {
+		v := redeemcode.DefaultMaxUsers
+		_c.mutation.SetMaxUsers(v)
+	}
+	if _, ok := _c.mutation.MaxUsesPerUser(); !ok {
+		v := redeemcode.DefaultMaxUsesPerUser
+		_c.mutation.SetMaxUsesPerUser(v)
+	}
+	if _, ok := _c.mutation.UsedCount(); !ok {
+		v := redeemcode.DefaultUsedCount
+		_c.mutation.SetUsedCount(v)
+	}
+	if _, ok := _c.mutation.UsedUserCount(); !ok {
+		v := redeemcode.DefaultUsedUserCount
+		_c.mutation.SetUsedUserCount(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -285,6 +409,26 @@ func (_c *RedeemCodeCreate) check() error {
 	}
 	if _, ok := _c.mutation.ValidityDays(); !ok {
 		return &ValidationError{Name: "validity_days", err: errors.New(`ent: missing required field "RedeemCode.validity_days"`)}
+	}
+	if _, ok := _c.mutation.BenefitType(); !ok {
+		return &ValidationError{Name: "benefit_type", err: errors.New(`ent: missing required field "RedeemCode.benefit_type"`)}
+	}
+	if v, ok := _c.mutation.BenefitType(); ok {
+		if err := redeemcode.BenefitTypeValidator(v); err != nil {
+			return &ValidationError{Name: "benefit_type", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.benefit_type": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.MaxUsers(); !ok {
+		return &ValidationError{Name: "max_users", err: errors.New(`ent: missing required field "RedeemCode.max_users"`)}
+	}
+	if _, ok := _c.mutation.MaxUsesPerUser(); !ok {
+		return &ValidationError{Name: "max_uses_per_user", err: errors.New(`ent: missing required field "RedeemCode.max_uses_per_user"`)}
+	}
+	if _, ok := _c.mutation.UsedCount(); !ok {
+		return &ValidationError{Name: "used_count", err: errors.New(`ent: missing required field "RedeemCode.used_count"`)}
+	}
+	if _, ok := _c.mutation.UsedUserCount(); !ok {
+		return &ValidationError{Name: "used_user_count", err: errors.New(`ent: missing required field "RedeemCode.used_user_count"`)}
 	}
 	return nil
 }
@@ -349,6 +493,26 @@ func (_c *RedeemCodeCreate) createSpec() (*RedeemCode, *sqlgraph.CreateSpec) {
 		_spec.SetField(redeemcode.FieldValidityDays, field.TypeInt, value)
 		_node.ValidityDays = value
 	}
+	if value, ok := _c.mutation.BenefitType(); ok {
+		_spec.SetField(redeemcode.FieldBenefitType, field.TypeString, value)
+		_node.BenefitType = value
+	}
+	if value, ok := _c.mutation.MaxUsers(); ok {
+		_spec.SetField(redeemcode.FieldMaxUsers, field.TypeInt, value)
+		_node.MaxUsers = value
+	}
+	if value, ok := _c.mutation.MaxUsesPerUser(); ok {
+		_spec.SetField(redeemcode.FieldMaxUsesPerUser, field.TypeInt, value)
+		_node.MaxUsesPerUser = value
+	}
+	if value, ok := _c.mutation.UsedCount(); ok {
+		_spec.SetField(redeemcode.FieldUsedCount, field.TypeInt, value)
+		_node.UsedCount = value
+	}
+	if value, ok := _c.mutation.UsedUserCount(); ok {
+		_spec.SetField(redeemcode.FieldUsedUserCount, field.TypeInt, value)
+		_node.UsedUserCount = value
+	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -381,6 +545,39 @@ func (_c *RedeemCodeCreate) createSpec() (*RedeemCode, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.GroupID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ParentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   redeemcode.ParentTable,
+			Columns: []string{redeemcode.ParentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(redeemcode.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ParentID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RedemptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   redeemcode.RedemptionsTable,
+			Columns: []string{redeemcode.RedemptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(redeemcode.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -594,6 +791,108 @@ func (u *RedeemCodeUpsert) UpdateValidityDays() *RedeemCodeUpsert {
 // AddValidityDays adds v to the "validity_days" field.
 func (u *RedeemCodeUpsert) AddValidityDays(v int) *RedeemCodeUpsert {
 	u.Add(redeemcode.FieldValidityDays, v)
+	return u
+}
+
+// SetBenefitType sets the "benefit_type" field.
+func (u *RedeemCodeUpsert) SetBenefitType(v string) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldBenefitType, v)
+	return u
+}
+
+// UpdateBenefitType sets the "benefit_type" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateBenefitType() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldBenefitType)
+	return u
+}
+
+// SetMaxUsers sets the "max_users" field.
+func (u *RedeemCodeUpsert) SetMaxUsers(v int) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldMaxUsers, v)
+	return u
+}
+
+// UpdateMaxUsers sets the "max_users" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateMaxUsers() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldMaxUsers)
+	return u
+}
+
+// AddMaxUsers adds v to the "max_users" field.
+func (u *RedeemCodeUpsert) AddMaxUsers(v int) *RedeemCodeUpsert {
+	u.Add(redeemcode.FieldMaxUsers, v)
+	return u
+}
+
+// SetMaxUsesPerUser sets the "max_uses_per_user" field.
+func (u *RedeemCodeUpsert) SetMaxUsesPerUser(v int) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldMaxUsesPerUser, v)
+	return u
+}
+
+// UpdateMaxUsesPerUser sets the "max_uses_per_user" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateMaxUsesPerUser() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldMaxUsesPerUser)
+	return u
+}
+
+// AddMaxUsesPerUser adds v to the "max_uses_per_user" field.
+func (u *RedeemCodeUpsert) AddMaxUsesPerUser(v int) *RedeemCodeUpsert {
+	u.Add(redeemcode.FieldMaxUsesPerUser, v)
+	return u
+}
+
+// SetUsedCount sets the "used_count" field.
+func (u *RedeemCodeUpsert) SetUsedCount(v int) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldUsedCount, v)
+	return u
+}
+
+// UpdateUsedCount sets the "used_count" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateUsedCount() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldUsedCount)
+	return u
+}
+
+// AddUsedCount adds v to the "used_count" field.
+func (u *RedeemCodeUpsert) AddUsedCount(v int) *RedeemCodeUpsert {
+	u.Add(redeemcode.FieldUsedCount, v)
+	return u
+}
+
+// SetUsedUserCount sets the "used_user_count" field.
+func (u *RedeemCodeUpsert) SetUsedUserCount(v int) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldUsedUserCount, v)
+	return u
+}
+
+// UpdateUsedUserCount sets the "used_user_count" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateUsedUserCount() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldUsedUserCount)
+	return u
+}
+
+// AddUsedUserCount adds v to the "used_user_count" field.
+func (u *RedeemCodeUpsert) AddUsedUserCount(v int) *RedeemCodeUpsert {
+	u.Add(redeemcode.FieldUsedUserCount, v)
+	return u
+}
+
+// SetParentID sets the "parent_id" field.
+func (u *RedeemCodeUpsert) SetParentID(v int64) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldParentID, v)
+	return u
+}
+
+// UpdateParentID sets the "parent_id" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateParentID() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldParentID)
+	return u
+}
+
+// ClearParentID clears the value of the "parent_id" field.
+func (u *RedeemCodeUpsert) ClearParentID() *RedeemCodeUpsert {
+	u.SetNull(redeemcode.FieldParentID)
 	return u
 }
 
@@ -828,6 +1127,125 @@ func (u *RedeemCodeUpsertOne) AddValidityDays(v int) *RedeemCodeUpsertOne {
 func (u *RedeemCodeUpsertOne) UpdateValidityDays() *RedeemCodeUpsertOne {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.UpdateValidityDays()
+	})
+}
+
+// SetBenefitType sets the "benefit_type" field.
+func (u *RedeemCodeUpsertOne) SetBenefitType(v string) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetBenefitType(v)
+	})
+}
+
+// UpdateBenefitType sets the "benefit_type" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateBenefitType() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateBenefitType()
+	})
+}
+
+// SetMaxUsers sets the "max_users" field.
+func (u *RedeemCodeUpsertOne) SetMaxUsers(v int) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetMaxUsers(v)
+	})
+}
+
+// AddMaxUsers adds v to the "max_users" field.
+func (u *RedeemCodeUpsertOne) AddMaxUsers(v int) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddMaxUsers(v)
+	})
+}
+
+// UpdateMaxUsers sets the "max_users" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateMaxUsers() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateMaxUsers()
+	})
+}
+
+// SetMaxUsesPerUser sets the "max_uses_per_user" field.
+func (u *RedeemCodeUpsertOne) SetMaxUsesPerUser(v int) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetMaxUsesPerUser(v)
+	})
+}
+
+// AddMaxUsesPerUser adds v to the "max_uses_per_user" field.
+func (u *RedeemCodeUpsertOne) AddMaxUsesPerUser(v int) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddMaxUsesPerUser(v)
+	})
+}
+
+// UpdateMaxUsesPerUser sets the "max_uses_per_user" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateMaxUsesPerUser() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateMaxUsesPerUser()
+	})
+}
+
+// SetUsedCount sets the "used_count" field.
+func (u *RedeemCodeUpsertOne) SetUsedCount(v int) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetUsedCount(v)
+	})
+}
+
+// AddUsedCount adds v to the "used_count" field.
+func (u *RedeemCodeUpsertOne) AddUsedCount(v int) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddUsedCount(v)
+	})
+}
+
+// UpdateUsedCount sets the "used_count" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateUsedCount() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateUsedCount()
+	})
+}
+
+// SetUsedUserCount sets the "used_user_count" field.
+func (u *RedeemCodeUpsertOne) SetUsedUserCount(v int) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetUsedUserCount(v)
+	})
+}
+
+// AddUsedUserCount adds v to the "used_user_count" field.
+func (u *RedeemCodeUpsertOne) AddUsedUserCount(v int) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddUsedUserCount(v)
+	})
+}
+
+// UpdateUsedUserCount sets the "used_user_count" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateUsedUserCount() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateUsedUserCount()
+	})
+}
+
+// SetParentID sets the "parent_id" field.
+func (u *RedeemCodeUpsertOne) SetParentID(v int64) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetParentID(v)
+	})
+}
+
+// UpdateParentID sets the "parent_id" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateParentID() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateParentID()
+	})
+}
+
+// ClearParentID clears the value of the "parent_id" field.
+func (u *RedeemCodeUpsertOne) ClearParentID() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearParentID()
 	})
 }
 
@@ -1228,6 +1646,125 @@ func (u *RedeemCodeUpsertBulk) AddValidityDays(v int) *RedeemCodeUpsertBulk {
 func (u *RedeemCodeUpsertBulk) UpdateValidityDays() *RedeemCodeUpsertBulk {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.UpdateValidityDays()
+	})
+}
+
+// SetBenefitType sets the "benefit_type" field.
+func (u *RedeemCodeUpsertBulk) SetBenefitType(v string) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetBenefitType(v)
+	})
+}
+
+// UpdateBenefitType sets the "benefit_type" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateBenefitType() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateBenefitType()
+	})
+}
+
+// SetMaxUsers sets the "max_users" field.
+func (u *RedeemCodeUpsertBulk) SetMaxUsers(v int) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetMaxUsers(v)
+	})
+}
+
+// AddMaxUsers adds v to the "max_users" field.
+func (u *RedeemCodeUpsertBulk) AddMaxUsers(v int) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddMaxUsers(v)
+	})
+}
+
+// UpdateMaxUsers sets the "max_users" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateMaxUsers() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateMaxUsers()
+	})
+}
+
+// SetMaxUsesPerUser sets the "max_uses_per_user" field.
+func (u *RedeemCodeUpsertBulk) SetMaxUsesPerUser(v int) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetMaxUsesPerUser(v)
+	})
+}
+
+// AddMaxUsesPerUser adds v to the "max_uses_per_user" field.
+func (u *RedeemCodeUpsertBulk) AddMaxUsesPerUser(v int) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddMaxUsesPerUser(v)
+	})
+}
+
+// UpdateMaxUsesPerUser sets the "max_uses_per_user" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateMaxUsesPerUser() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateMaxUsesPerUser()
+	})
+}
+
+// SetUsedCount sets the "used_count" field.
+func (u *RedeemCodeUpsertBulk) SetUsedCount(v int) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetUsedCount(v)
+	})
+}
+
+// AddUsedCount adds v to the "used_count" field.
+func (u *RedeemCodeUpsertBulk) AddUsedCount(v int) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddUsedCount(v)
+	})
+}
+
+// UpdateUsedCount sets the "used_count" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateUsedCount() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateUsedCount()
+	})
+}
+
+// SetUsedUserCount sets the "used_user_count" field.
+func (u *RedeemCodeUpsertBulk) SetUsedUserCount(v int) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetUsedUserCount(v)
+	})
+}
+
+// AddUsedUserCount adds v to the "used_user_count" field.
+func (u *RedeemCodeUpsertBulk) AddUsedUserCount(v int) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddUsedUserCount(v)
+	})
+}
+
+// UpdateUsedUserCount sets the "used_user_count" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateUsedUserCount() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateUsedUserCount()
+	})
+}
+
+// SetParentID sets the "parent_id" field.
+func (u *RedeemCodeUpsertBulk) SetParentID(v int64) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetParentID(v)
+	})
+}
+
+// UpdateParentID sets the "parent_id" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateParentID() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateParentID()
+	})
+}
+
+// ClearParentID clears the value of the "parent_id" field.
+func (u *RedeemCodeUpsertBulk) ClearParentID() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearParentID()
 	})
 }
 
