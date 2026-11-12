@@ -1,83 +1,141 @@
 <template>
   <AppLayout>
-    <div class="space-y-5">
-      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('creation.title') }}</h1>
-          <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">{{ t('creation.description') }}</p>
+    <div class="cs-page">
+      <header class="cs-header">
+        <div class="min-w-0">
+          <h1 class="cs-title">{{ t('creation.title') }}</h1>
+          <p class="cs-description">{{ t('creation.description') }}</p>
         </div>
-        <div v-if="!featureDisabled" class="flex shrink-0 rounded-lg border border-gray-200 bg-white p-1 dark:border-dark-700 dark:bg-dark-800" role="tablist" :aria-label="t('creation.title')">
+      </header>
+
+      <!-- 模式切换 -->
+      <div v-if="!featureDisabled" class="cs-segmented cs-mode-switch" role="tablist" :aria-label="t('creation.title')">
+        <button
+          v-for="item in modeItems"
+          :id="`creation-tab-${item.kind}`"
+          :key="item.kind"
+          type="button"
+          role="tab"
+          :aria-selected="mode === item.kind"
+          aria-controls="creation-workspace"
+          class="cs-segmented-item"
+          @click="mode = item.kind"
+        >
+          <component :is="item.icon" aria-hidden="true" />
+          <span>{{ t(`creation.modes.${item.kind}`) }}</span>
+          <span
+            v-if="activeCounts[item.kind]"
+            class="cs-segmented-badge"
+            :data-testid="`creation-tab-${item.kind}-active`"
+          >{{ activeCounts[item.kind] }}</span>
+        </button>
+      </div>
+
+      <!-- 移动端「参数 / 结果」切换：单列布局下二选一显示 -->
+      <div v-if="showWorkspace" class="cs-view-switch-bar">
+        <div class="cs-segmented w-full" role="tablist" :aria-label="t('creation.title')">
           <button
-            v-for="kind in (['image', 'video'] as CreationKind[])"
-            :id="`creation-tab-${kind}`"
-            :key="kind"
             type="button"
             role="tab"
-            :aria-selected="mode === kind"
-            aria-controls="creation-workspace"
-            class="rounded-md px-4 py-2 text-sm font-medium transition-colors"
-            :class="mode === kind ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700'"
-            @click="mode = kind"
+            class="cs-segmented-item"
+            :aria-selected="mobileView === 'form'"
+            @click="mobileView = 'form'"
           >
-            {{ t(`creation.modes.${kind}`) }}
-            <span
-              v-if="activeCounts[kind]"
-              class="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs"
-              :class="mode === kind ? 'bg-white/20 text-white' : 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200'"
-              :data-testid="`creation-tab-${kind}-active`"
-            >{{ activeCounts[kind] }}</span>
+            {{ t('creation.view.form') }}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="cs-segmented-item"
+            :aria-selected="mobileView === 'results'"
+            @click="mobileView = 'results'"
+          >
+            {{ t('creation.view.results') }}
+            <span v-if="activeTasks.length" class="cs-segmented-badge">{{ activeTasks.length }}</span>
           </button>
         </div>
       </div>
 
-      <div v-if="featureDisabled" class="card px-6 py-16 text-center" data-testid="creation-disabled">
-        <Icon name="ban" size="xl" class="mx-auto text-gray-400 dark:text-dark-500" />
-        <h2 class="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('creation.disabled.title') }}</h2>
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ t('creation.disabled.description') }}</p>
+      <div v-if="featureDisabled" class="card cs-empty" data-testid="creation-disabled">
+        <Ban class="cs-empty-icon" aria-hidden="true" />
+        <h2 class="cs-empty-title">{{ t('creation.disabled.title') }}</h2>
+        <p class="cs-empty-desc">{{ t('creation.disabled.description') }}</p>
       </div>
 
-      <div v-else-if="loadingCatalog && !catalog" class="card space-y-4 p-6" aria-busy="true" role="status">
+      <div v-else-if="loadingCatalog && !catalog" class="cs-layout" aria-busy="true" role="status">
         <span class="sr-only">{{ t('creation.loading') }}</span>
-        <div class="h-5 w-40 animate-pulse rounded bg-gray-100 dark:bg-dark-800" />
-        <div class="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]"><div class="h-96 animate-pulse rounded-lg bg-gray-100 dark:bg-dark-800" /><div class="h-96 animate-pulse rounded-lg bg-gray-100 dark:bg-dark-800" /></div>
-      </div>
-
-      <div v-else-if="catalogError" role="alert" class="card border-red-200 p-5 text-sm text-red-700 dark:border-red-900 dark:text-red-300">
-        <p>{{ catalogError }}</p>
-        <button type="button" class="btn btn-secondary btn-sm mt-3" @click="retryCatalog">{{ t('creation.history.refresh') }}</button>
-      </div>
-
-      <div v-else-if="catalog" id="creation-workspace" role="tabpanel" :aria-labelledby="`creation-tab-${mode}`" class="grid items-start gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <div class="min-w-0">
-          <CreationComposer
-            v-if="availableGroups.length"
-            :key="String(userId)"
-            :mode="mode"
-            :groups="catalog.groups"
-            :api-keys="apiKeys"
-            :user-id="userId"
-            :loading-keys="loadingKeys"
-            :creating-key="creatingKey"
-            :key-error="keyError"
-            :at-capacity="atCapacity"
-            :max-active="MAX_ACTIVE_TASKS"
-            @submit="submit"
-            @create-key="createKey"
-            @reload-keys="loadKeys"
-          />
-          <section v-else class="card px-6 py-12 text-center">
-            <Icon name="inbox" size="xl" class="mx-auto text-gray-400 dark:text-dark-500" />
-            <h2 class="mt-4 text-base font-semibold text-gray-900 dark:text-gray-100">{{ t(mode === 'image' ? 'creation.empty.imageTitle' : 'creation.empty.videoTitle') }}</h2>
-            <p class="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">{{ t('creation.empty.description') }}</p>
-            <div class="mt-5 flex flex-col justify-center gap-2 sm:flex-row xl:flex-col 2xl:flex-row">
-              <router-link to="/available-channels" class="btn btn-secondary">{{ t('creation.empty.channels') }}</router-link>
-              <router-link to="/keys" class="btn btn-primary">{{ t('creation.empty.keys') }}</router-link>
-            </div>
-          </section>
+        <div class="card space-y-4 p-5">
+          <div class="skeleton h-3 w-20" />
+          <div class="skeleton h-10 w-full rounded-xl" />
+          <div class="skeleton h-10 w-full rounded-xl" />
+          <div class="skeleton h-28 w-full rounded-xl" />
+          <div class="skeleton h-11 w-full rounded-xl" />
         </div>
-        <div class="min-w-0 space-y-5">
-          <CreationResult :tasks="modeTasks" @stop="stopTracking" @dismiss="dismissTask" />
-          <CreationHistory :tasks="historyTasks" :records="sessionRecords" :loading="loadingHistory" :error="historyError" :downloading-id="downloadingId" @refresh="loadHistory(true)" @download="downloadHistoryTask" />
+        <div class="space-y-3">
+          <div class="skeleton h-4 w-24" />
+          <div class="card space-y-3 p-5">
+            <div class="skeleton h-4 w-1/3" />
+            <div class="skeleton h-3 w-2/3" />
+            <div class="skeleton h-40 w-full rounded-xl" />
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="catalogError" role="alert" class="cs-callout cs-callout--danger">
+        <TriangleAlert class="cs-callout-icon" aria-hidden="true" />
+        <div class="cs-callout-content">
+          <p class="cs-callout-title">{{ catalogError }}</p>
+          <div class="cs-callout-actions">
+            <button type="button" class="cs-callout-link" @click="retryCatalog">{{ t('creation.history.refresh') }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="catalog" id="creation-workspace" role="tabpanel" :aria-labelledby="`creation-tab-${mode}`" class="cs-layout">
+        <!-- 表单列：面板本身是栅格子项，桌面端才能吸顶 -->
+        <CreationComposer
+          v-if="availableGroups.length"
+          :key="String(userId)"
+          :class="mobileView === 'form' ? '' : 'hidden md:flex'"
+          :mode="mode"
+          :groups="catalog.groups"
+          :api-keys="apiKeys"
+          :user-id="userId"
+          :loading-keys="loadingKeys"
+          :creating-key="creatingKey"
+          :key-error="keyError"
+          :at-capacity="atCapacity"
+          :max-active="MAX_ACTIVE_TASKS"
+          :balance="balance"
+          :enterprise-balance="Boolean(enterprise)"
+          @submit="submit"
+          @create-key="createKey"
+          @reload-keys="loadKeys"
+        />
+        <section v-else class="card cs-empty" :class="mobileView === 'form' ? '' : 'hidden md:flex'">
+          <img class="cs-illu" :src="setupRequired" alt="" aria-hidden="true" />
+          <h2 class="cs-empty-title">{{ t(mode === 'image' ? 'creation.empty.imageTitle' : 'creation.empty.videoTitle') }}</h2>
+          <p class="cs-empty-desc">{{ t('creation.empty.description') }}</p>
+          <div class="cs-empty-actions">
+            <router-link to="/available-channels" class="btn btn-secondary">{{ t('creation.empty.channels') }}</router-link>
+            <router-link to="/keys" class="btn btn-primary">{{ t('creation.empty.keys') }}</router-link>
+          </div>
+        </section>
+
+        <!-- 历史记录：本页提交的任务与已完成的图片、视频合并成一个列表 -->
+        <div class="cs-results" :class="mobileView === 'results' ? '' : 'hidden md:block'">
+          <CreationFeed
+            v-model:filter="historyFilter"
+            :tasks="feedTasks"
+            :items="historyItems"
+            :loading="loadingHistory"
+            :error="historyError"
+            :has-more="hasMoreHistory"
+            @refresh="loadHistory(true)"
+            @load-more="loadMoreHistory"
+            @stop="stopTracking"
+            @dismiss="dismissTask"
+          />
         </div>
       </div>
     </div>
@@ -85,13 +143,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, toRaw, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Ban, Film, ImageIcon, TriangleAlert } from '@lucide/vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import Icon from '@/components/icons/Icon.vue'
+import setupRequired from '@/assets/creation/setup-required.svg'
 import CreationComposer from './creation/CreationComposer.vue'
-import CreationResult from './creation/CreationResult.vue'
-import CreationHistory from './creation/CreationHistory.vue'
+import CreationFeed from './creation/CreationFeed.vue'
 import { creationAPI } from '@/features/creation/api'
 import { CreationGatewayError, revokeAssets, submitImage, submitVideo, waitForTask } from '@/features/creation/gateway'
 import type { CreationCatalog, CreationKind, CreationTaskSnapshot } from '@/features/creation/types'
@@ -102,18 +160,26 @@ import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
 import {
+  buildCreationHistory,
+  creationPreviewShape,
   filterCreationGroups,
   readCreationHistory,
   safeMediaUrl,
   writeCreationHistory,
   type CreationSessionRecord,
 } from './creation/viewModel'
-import type { CreationCurrentTask, CreationErrorState, CreationSubmission } from './creation/types'
+import type { CreationCurrentTask, CreationErrorState, CreationFeedFilter, CreationSubmission } from './creation/types'
 
 const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const mode = ref<CreationKind>('image')
+const modeItems: Array<{ kind: CreationKind; icon: Component }> = [
+  { kind: 'image', icon: ImageIcon },
+  { kind: 'video', icon: Film },
+]
+/** 移动端单列布局下当前显示的一侧；md 以上两栏同时显示，不受它影响。 */
+const mobileView = ref<'form' | 'results'>('form')
 const catalog = ref<CreationCatalog | null>(null)
 const loadingCatalog = ref(false)
 const catalogError = ref('')
@@ -123,10 +189,17 @@ const loadingKeys = ref(false)
 const creatingKey = ref(false)
 const keyError = ref('')
 const historyTasks = ref<AsyncTask[]>([])
+const historyTotal = ref(0)
+/** 已加载的历史页数；「加载更多」时加一，自动刷新会重新拉取这些页。 */
+const historyPages = ref(1)
+/** 历史记录的类型筛选，与左侧的生图 / 生视频模式互不影响。 */
+const historyFilter = ref<CreationFeedFilter>('all')
 const loadingHistory = ref(false)
 const historyError = ref('')
+/** 保存在本机的生成记录（图片与视频），用来补全提示词和同步生成的结果。 */
 const sessionRecords = ref<CreationSessionRecord[]>([])
-const downloadingId = ref('')
+/** 用户从列表移除的失败任务：服务端留下的同一条失败记录在本次会话内也不再显示。 */
+const dismissedTaskIds = reactive(new Set<string>())
 /** 本页提交并在后台跟踪的任务，最新的在前。 */
 const tasks = ref<CreationCurrentTask[]>([])
 /** 同时在后台跟踪的进行中任务上限，避免并发轮询过多、撞上分组并发限制。 */
@@ -135,6 +208,7 @@ const MAX_ACTIVE_TASKS = 5
 const MAX_TRACKED_TASKS = 20
 /** 历史中仍有处理中的任务时，自动刷新历史的间隔。 */
 const HISTORY_POLL_MS = 10_000
+const HISTORY_PAGE_SIZE = 20
 const taskControllers = new Map<number, AbortController>()
 let catalogController: AbortController | null = null
 let keysController: AbortController | null = null
@@ -147,6 +221,14 @@ let initialized = false
 let unmounted = false
 
 const userId = computed(() => authStore.user?.id ?? 'anonymous')
+/** 企业成员用公司余额扣费（可能对成员不可见），其余用户用个人余额；与顶栏余额同口径。 */
+const enterprise = computed(() => authStore.user?.enterprise ?? null)
+const balance = computed<number | null>(() => {
+  const value = enterprise.value
+    ? (enterprise.value.balance_visible ? enterprise.value.balance : null)
+    : authStore.user?.balance
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+})
 const creationEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.creation))
 const featureDisabled = computed(() => !creationEnabled.value || catalogNotFound.value)
 const availableGroups = computed(() => filterCreationGroups(catalog.value?.groups, mode.value))
@@ -156,7 +238,32 @@ const activeCounts = computed<Record<CreationKind, number>>(() => ({
   video: activeTasks.value.filter(task => task.kind === 'video').length,
 }))
 const atCapacity = computed(() => activeTasks.value.length >= MAX_ACTIVE_TASKS)
-const modeTasks = computed(() => tasks.value.filter(task => task.kind === mode.value))
+const feedTasks = computed(() => historyFilter.value === 'all'
+  ? tasks.value
+  : tasks.value.filter(task => task.kind === historyFilter.value))
+const hasMoreHistory = computed(() => historyTasks.value.length < historyTotal.value)
+/** 已归档的历史：服务端异步任务与本机记录合并，去掉本页正在用任务卡片展示的那些。 */
+const historyItems = computed(() => {
+  const taskIds = new Set(dismissedTaskIds)
+  const recordIds = new Set<string>()
+  for (const task of tasks.value) {
+    recordIds.add(sessionRecordId(task))
+    if (!task.handle) continue
+    taskIds.add(task.handle.taskId)
+    // 任务 ID 带路径前缀时（如 operations/<id>），同时按最后一段匹配。
+    const tail = task.handle.taskId.split('/').pop()
+    if (tail) taskIds.add(tail)
+  }
+  const records = historyFilter.value === 'all'
+    ? sessionRecords.value
+    : sessionRecords.value.filter(record => record.kind === historyFilter.value)
+  return buildCreationHistory(historyTasks.value, records, { taskIds, recordIds })
+})
+const showWorkspace = computed(() => !featureDisabled.value && !catalogError.value && Boolean(catalog.value))
+
+function isNarrowViewport(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767.98px)').matches
+}
 
 function recordOf(error: unknown): Record<string, unknown> {
   return error && typeof error === 'object' ? error as Record<string, unknown> : {}
@@ -261,7 +368,7 @@ function normalizeHistoryTask(task: AsyncTask): AsyncTask {
 }
 
 /**
- * 拉取最近任务；refreshUpstream 时再让后端刷新「不在本页跟踪中」的处理中视频任务
+ * 拉取已加载的历史页；refreshUpstream 时再让后端刷新「不在本页跟踪中」的处理中视频任务
  * （本页跟踪的任务已由浏览器轮询网关，后端记录会随之更新，无需重复刷新）。
  */
 async function loadHistory(refreshUpstream = false): Promise<void> {
@@ -273,15 +380,33 @@ async function loadHistory(refreshUpstream = false): Promise<void> {
   loadingHistory.value = true
   historyError.value = ''
   try {
-    const result = await asyncTasksAPI.list({ page: 1, page_size: 20, kind: mode.value, status: '', search: '' }, controller.signal)
-    if (request !== historyRequest) return
-    historyTasks.value = result.items.map(normalizeHistoryTask)
+    const kind = historyFilter.value === 'all' ? '' : historyFilter.value
+    const loaded = new Map<string, AsyncTask>()
+    let total = 0
+    for (let page = 1; page <= historyPages.value; page++) {
+      const result = await asyncTasksAPI.list({ page, page_size: HISTORY_PAGE_SIZE, kind, status: '', search: '' }, controller.signal)
+      if (request !== historyRequest) return
+      total = result.total
+      // 翻页期间有新任务插入时，同一条记录可能出现在相邻两页，按 ID 去重。
+      for (const task of result.items) loaded.set(task.id, normalizeHistoryTask(task))
+      if (result.items.length < HISTORY_PAGE_SIZE) break
+    }
+    historyTasks.value = [...loaded.values()]
+    historyTotal.value = Math.max(total, loaded.size)
     if (refreshUpstream) await refreshUntrackedVideos(request, controller.signal)
   } catch (error) {
     if (request === historyRequest && !isAbortError(error)) historyError.value = errorText(error, t('creation.messages.historyLoadFailed'))
   } finally {
     if (request === historyRequest) loadingHistory.value = false
   }
+}
+
+/** 多加载一页更早的历史；失败时退回原来的页数，已有内容保持不变。 */
+async function loadMoreHistory(): Promise<void> {
+  if (loadingHistory.value || !hasMoreHistory.value) return
+  historyPages.value += 1
+  await loadHistory()
+  if (historyError.value) historyPages.value -= 1
 }
 
 async function refreshUntrackedVideos(request: number, signal: AbortSignal): Promise<void> {
@@ -307,8 +432,15 @@ function pollHistory(): void {
   if (historyTasks.value.some(task => task.status === 'processing')) void loadHistory(true)
 }
 
+function sessionRecordId(task: CreationCurrentTask): string {
+  return `${task.createdAt}-${task.id}`
+}
+
 function loadSessionHistory(): void {
-  sessionRecords.value = readCreationHistory(localStorage, userId.value, mode.value)
+  sessionRecords.value = [
+    ...readCreationHistory(localStorage, userId.value, 'image'),
+    ...readCreationHistory(localStorage, userId.value, 'video'),
+  ].sort((left, right) => right.createdAt - left.createdAt)
 }
 
 function saveSessionRecord(task: CreationCurrentTask): void {
@@ -318,8 +450,9 @@ function saveSessionRecord(task: CreationCurrentTask): void {
     return url && !url.startsWith('blob:') ? [{ kind: asset.kind, url, ...(asset.mimeType ? { mimeType: asset.mimeType } : {}) }] : []
   })
   const record: CreationSessionRecord = {
-    id: `${task.createdAt}-${task.id}`, kind: task.kind, model: task.model, protocol: task.protocol,
+    id: sessionRecordId(task), kind: task.kind, model: task.model, protocol: task.protocol,
     prompt: task.prompt, createdAt: task.createdAt, assets,
+    ...(task.handle ? { taskId: task.handle.taskId } : {}),
   }
   const previous = [
     ...readCreationHistory(localStorage, userId.value, 'image'),
@@ -412,8 +545,11 @@ async function submit(submission: CreationSubmission): Promise<void> {
     prompt: submission.input.prompt, groupName: submission.groupName, createdAt: Date.now(),
     status: 'processing', assets: [], error: null, handle: null, submitting: true,
     sync: submission.kind === 'image' && !submission.input.preferAsync, cancellationNoticed: false,
+    ...creationPreviewShape(submission),
   })
   trimTasks()
+  // 移动端提交后切到「结果」，让用户直接看到新任务的进度。
+  if (isNarrowViewport()) mobileView.value = 'results'
   try {
     const result = submission.kind === 'image'
       ? await submitImage({ ...submission.input, signal: controller.signal })
@@ -473,6 +609,9 @@ function dismissTask(id: number): void {
   const index = tasks.value.findIndex(task => task.id === id)
   const task = tasks.value[index]
   if (!task || task.status === 'processing') return
+  // 上游已明确失败的任务，服务端也留有同一条失败记录，一并隐藏；
+  // 只是停止跟踪或跟踪出错的任务可能仍在运行，移除卡片后改由历史记录继续显示。
+  if (task.handle && task.status === 'failed' && task.error?.code === 'TASK_FAILED') dismissedTaskIds.add(task.handle.taskId)
   revokeAssets(task.assets)
   tasks.value.splice(index, 1)
 }
@@ -484,26 +623,6 @@ function clearTasks(): void {
   tasks.value = []
 }
 
-async function downloadHistoryTask(task: AsyncTask): Promise<void> {
-  if (downloadingId.value) return
-  downloadingId.value = task.id
-  try {
-    const blob = await asyncTasksAPI.download(task.id)
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    const id = task.task_id.replace(/[^a-zA-Z0-9-_]/g, '-') || task.id
-    const imageExtension = blob.type.split('/')[1]?.replace('jpeg', 'jpg') || 'png'
-    link.href = url
-    link.download = `${task.protocol || task.kind}-${id}.${task.kind === 'video' ? 'mp4' : imageExtension}`
-    link.click()
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-  } catch {
-    appStore.showError(t('creation.messages.downloadFailed'))
-  } finally {
-    downloadingId.value = ''
-  }
-}
-
 async function startRequests(): Promise<void> {
   if (!creationEnabled.value) return
   await loadCatalog()
@@ -511,14 +630,19 @@ async function startRequests(): Promise<void> {
   await Promise.all([loadKeys(), loadHistory()])
 }
 
-watch(mode, () => {
+watch(historyFilter, () => {
+  historyPages.value = 1
   historyTasks.value = []
-  loadSessionHistory()
+  historyTotal.value = 0
   if (initialized && creationEnabled.value) void loadHistory()
 })
 watch(userId, () => {
   // 换了账号：上一位用户的任务与密钥不能继续在本页轮询或展示。
   clearTasks()
+  dismissedTaskIds.clear()
+  historyPages.value = 1
+  historyTasks.value = []
+  historyTotal.value = 0
   loadSessionHistory()
   if (initialized && creationEnabled.value) {
     void loadKeys()

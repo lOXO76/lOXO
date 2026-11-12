@@ -1,156 +1,357 @@
 <template>
-  <form class="card space-y-5 p-5" @submit.prevent="submit">
-    <div>
-      <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ t('creation.composer.title') }}</h2>
-    </div>
+  <form class="card cs-form-panel" :aria-label="t('creation.composer.title')" @submit.prevent="submit">
+    <div class="cs-form-body">
+      <!-- 分组与密钥 -->
+      <section class="cs-group" aria-labelledby="creation-section-access">
+        <h2 id="creation-section-access" class="cs-group-title">{{ t('creation.composer.sections.access') }}</h2>
 
-    <div>
-      <label for="creation-group" class="input-label">{{ t('creation.composer.group') }}</label>
-      <select id="creation-group" v-model.number="selectedGroupId" class="input">
-        <option v-for="group in availableGroups" :key="group.id" :value="group.id">{{ group.name }} · {{ group.platform }}</option>
-      </select>
-      <p class="input-hint">{{ t('creation.composer.groupHint') }}</p>
-      <div v-if="selectedGroup" class="mt-2 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
-        <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">{{ t('creation.composer.platform', { value: selectedGroup.platform }) }}</span>
-      </div>
-      <p v-if="selectedGroup?.description" class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ selectedGroup.description }}</p>
-    </div>
-
-    <div>
-      <div class="flex items-center justify-between gap-2">
-        <label for="creation-api-key" class="input-label">{{ t('creation.composer.apiKey') }}</label>
-        <button type="button" class="text-xs text-primary-600 hover:underline dark:text-primary-400" :disabled="loadingKeys" @click="emit('reloadKeys')">{{ t('creation.composer.reloadKeys') }}</button>
-      </div>
-      <select id="creation-api-key" v-model.number="selectedKeyId" class="input" :disabled="loadingKeys || availableKeys.length === 0">
-        <option :value="0">{{ t('creation.composer.selectKey') }}</option>
-        <option v-for="apiKey in availableKeys" :key="apiKey.id" :value="apiKey.id">{{ apiKey.name }} · {{ maskKey(apiKey.key) }}</option>
-      </select>
-      <p class="input-hint">{{ t('creation.composer.apiKeyHint') }}</p>
-      <div v-if="selectedKey && selectedGroup" class="mt-2 rounded-lg bg-gray-50 p-3 text-xs leading-5 text-gray-600 dark:bg-dark-900/70 dark:text-gray-300">
-        <p>{{ t('creation.composer.keyBound', { group: selectedGroup.name }) }}</p>
-        <p>{{ t('creation.composer.keySource', { name: selectedKey.name }) }}</p>
-      </div>
-      <div v-if="!loadingKeys && availableKeys.length === 0" class="mt-3 rounded-lg border border-dashed border-gray-300 p-3 dark:border-dark-600">
-        <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('creation.composer.noKey') }}</p>
-        <button type="button" class="btn btn-secondary btn-sm mt-2 w-full" :disabled="creatingKey || !selectedGroup" @click="selectedGroup && emit('createKey', selectedGroup)">
-          <Icon name="plus" size="sm" class="mr-1" />{{ creatingKey ? t('creation.composer.creatingKey') : t('creation.composer.createKey') }}
-        </button>
-      </div>
-      <div v-if="keyError" role="alert" class="mt-2 text-xs text-red-600 dark:text-red-400">{{ keyError }}</div>
-    </div>
-
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-      <div v-if="protocolOptions.length > 1">
-        <label for="creation-protocol" class="input-label">{{ t('creation.composer.protocol') }}</label>
-        <select id="creation-protocol" :value="selectedProtocol" class="input" @change="changeProtocol">
-          <option v-for="protocol in protocolOptions" :key="protocol" :value="protocol">{{ protocol }}</option>
-        </select>
-      </div>
-      <div>
-        <label for="creation-model" class="input-label">{{ t('creation.composer.model') }}</label>
-        <select id="creation-model" v-model="selectedModel" class="input" :disabled="!models.length">
-          <option v-if="!models.length" value="">{{ t('creation.composer.noModels') }}</option>
-          <option v-for="model in models" :key="model.id" :value="model.id">{{ model.id }}</option>
-        </select>
-        <p v-if="!models.length" class="input-hint">{{ t('creation.composer.noModelsHint') }}</p>
-        <div v-else-if="priceEntries.length" class="mt-2 flex flex-wrap items-center gap-1.5 text-xs" data-testid="creation-model-price">
-          <span class="text-gray-500 dark:text-gray-400">{{ t('creation.composer.price') }}</span>
-          <span v-for="entry in priceEntries" :key="entry.label || 'flat'" class="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 font-mono text-gray-800 dark:bg-dark-800 dark:text-gray-200">
-            <span v-if="entry.label" class="font-sans text-gray-400 dark:text-gray-500">{{ entry.label }}</span>{{ entry.price }}<span class="font-sans text-gray-400 dark:text-gray-500">{{ priceUnit }}</span>
-          </span>
+        <div class="cs-field">
+          <label for="creation-group" class="cs-field-label">{{ t('creation.composer.group') }}</label>
+          <Select
+            id="creation-group"
+            :model-value="selectedGroupId || null"
+            :options="groupOptions"
+            :aria-label="t('creation.composer.group')"
+            @update:model-value="selectGroup"
+          >
+            <template #selected>
+              <span v-if="selectedGroup" class="cs-option">
+                <span class="cs-option-main cs-option-name">
+                  <PlatformIcon :platform="platformOf(selectedGroup)" size="md" />
+                  <span>{{ selectedGroup.name }}</span>
+                </span>
+                <span class="cs-option-aside" :title="t('creation.composer.platform', { value: selectedGroup.platform })">{{ selectedGroup.platform }}</span>
+              </span>
+              <template v-else>{{ t('common.selectOption') }}</template>
+            </template>
+            <template #option="{ option }">
+              <span class="cs-option">
+                <span class="cs-option-main cs-option-name">
+                  <PlatformIcon :platform="option.platform" size="md" />
+                  <span>{{ option.label }}</span>
+                </span>
+                <span class="cs-option-aside">{{ option.description }}</span>
+              </span>
+            </template>
+          </Select>
+          <p class="cs-field-hint">{{ t('creation.composer.groupHint') }}</p>
+          <p v-if="selectedGroup?.description" class="cs-field-hint">{{ selectedGroup.description }}</p>
         </div>
-        <p v-else class="input-hint">{{ t('creation.composer.noPrice') }}</p>
-      </div>
+
+        <div class="cs-field">
+          <div class="cs-field-head">
+            <label for="creation-api-key" class="cs-field-label">{{ t('creation.composer.apiKey') }}</label>
+            <button type="button" class="cs-field-link" :disabled="loadingKeys" @click="emit('reloadKeys')">
+              <RefreshCw :class="{ 'animate-spin': loadingKeys }" aria-hidden="true" />
+              {{ t('creation.composer.reloadKeys') }}
+            </button>
+          </div>
+          <Select
+            id="creation-api-key"
+            :model-value="selectedKeyId || null"
+            :options="keyOptions"
+            :disabled="loadingKeys || availableKeys.length === 0"
+            :placeholder="t('creation.composer.selectKey')"
+            :aria-label="t('creation.composer.apiKey')"
+            @update:model-value="selectKey"
+          >
+            <template #selected>
+              <span v-if="selectedKey" class="cs-option">
+                <span class="cs-option-main cs-option-name"><span>{{ selectedKey.name }}</span></span>
+                <span class="cs-option-aside font-mono">{{ maskKey(selectedKey.key) }}</span>
+              </span>
+              <template v-else>{{ t('creation.composer.selectKey') }}</template>
+            </template>
+            <template #option="{ option }">
+              <span class="cs-option">
+                <span class="cs-option-main">
+                  <span class="cs-option-name"><span>{{ option.label }}</span></span>
+                  <span class="cs-option-sub font-mono">{{ option.description }}</span>
+                </span>
+              </span>
+            </template>
+          </Select>
+          <p class="cs-field-hint">{{ t('creation.composer.apiKeyHint') }}</p>
+          <p v-if="selectedKey && selectedGroup" class="cs-task-meta gap-x-3">
+            <span>{{ t('creation.composer.keyBound', { group: selectedGroup.name }) }}</span>
+            <span>{{ t('creation.composer.keySource', { name: selectedKey.name }) }}</span>
+          </p>
+          <div v-if="!loadingKeys && availableKeys.length === 0" class="cs-callout cs-callout--warning">
+            <KeyRound class="cs-callout-icon" aria-hidden="true" />
+            <div class="cs-callout-content">
+              <p class="cs-callout-title">{{ t('creation.composer.noKey') }}</p>
+              <div class="cs-callout-actions">
+                <button type="button" class="btn btn-secondary btn-sm" :disabled="creatingKey || !selectedGroup" @click="selectedGroup && emit('createKey', selectedGroup)">
+                  <Plus class="h-3.5 w-3.5" aria-hidden="true" />
+                  {{ creatingKey ? t('creation.composer.creatingKey') : t('creation.composer.createKey') }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <p v-if="keyError" role="alert" class="cs-field-error">
+            <CircleX aria-hidden="true" />
+            <span>{{ keyError }}</span>
+          </p>
+        </div>
+      </section>
+
+      <!-- 创作内容 -->
+      <section class="cs-group" aria-labelledby="creation-section-content">
+        <h2 id="creation-section-content" class="cs-group-title">{{ t('creation.composer.sections.content') }}</h2>
+
+        <!-- 协议只在生图时可选（OpenAI / Gemini 的参数不同）；生视频由所选模型决定 -->
+        <div v-if="mode === 'image' && protocolOptions.length > 1" class="cs-field">
+          <span id="creation-protocol-label" class="cs-field-label">{{ t('creation.composer.protocol') }}</span>
+          <CreationChipGroup
+            name="creation-protocol"
+            :model-value="selectedProtocol"
+            :options="protocolChipOptions"
+            labelledby="creation-protocol-label"
+            @update:model-value="changeProtocol"
+          />
+        </div>
+
+        <div class="cs-field">
+          <label for="creation-model" class="cs-field-label">{{ t('creation.composer.model') }}</label>
+          <Select
+            id="creation-model"
+            :model-value="selectedModel || null"
+            :options="modelOptions"
+            :disabled="!models.length"
+            :placeholder="t('creation.composer.noModels')"
+            :empty-text="t('creation.composer.noModels')"
+            :aria-label="t('creation.composer.model')"
+            @update:model-value="selectModel"
+          >
+            <template #selected>
+              <span v-if="selectedModel" class="cs-option">
+                <span class="cs-option-main cs-option-name">
+                  <ModelIcon :model="selectedModel" size="16px" />
+                  <span class="font-mono">{{ selectedModel }}</span>
+                </span>
+              </span>
+              <template v-else>{{ t('creation.composer.noModels') }}</template>
+            </template>
+            <template #option="{ option }">
+              <span class="cs-option">
+                <span class="cs-option-main cs-option-name">
+                  <ModelIcon :model="option.label" size="16px" />
+                  <span class="font-mono">{{ option.label }}</span>
+                </span>
+                <span v-if="option.price" class="cs-option-aside">{{ option.price }}</span>
+              </span>
+            </template>
+          </Select>
+          <p v-if="!models.length" class="cs-field-hint">{{ t('creation.composer.noModelsHint') }}</p>
+          <div v-else-if="priceEntries.length" class="flex flex-wrap items-center gap-1.5" data-testid="creation-model-price">
+            <span class="cs-field-hint">{{ t('creation.composer.price') }}</span>
+            <span v-for="entry in priceEntries" :key="entry.label || 'flat'" class="cs-param-pill font-mono">
+              <span v-if="entry.label" class="font-sans opacity-60">{{ entry.label }}</span>{{ entry.price }}<span class="font-sans opacity-60">{{ priceUnit }}</span>
+            </span>
+          </div>
+          <p v-else class="cs-field-hint">{{ t('creation.composer.noPrice') }}</p>
+        </div>
+
+        <div class="cs-field">
+          <div class="cs-field-head">
+            <label for="creation-prompt" class="cs-field-label">{{ t('creation.composer.prompt') }}</label>
+            <span class="cs-field-counter">{{ t('creation.composer.shortcutHint') }}</span>
+          </div>
+          <textarea
+            id="creation-prompt"
+            v-model="prompt"
+            rows="5"
+            class="input cs-prompt"
+            aria-keyshortcuts="Meta+Enter Control+Enter"
+            :placeholder="mode === 'image' ? t('creation.composer.promptImagePlaceholder') : t('creation.composer.promptVideoPlaceholder')"
+            @keydown.meta.enter.prevent="submit"
+            @keydown.ctrl.enter.prevent="submit"
+          />
+        </div>
+
+        <ReferenceImagePicker
+          :key="referenceContext"
+          :kind="mode"
+          :protocol="selectedProtocol"
+          :model="selectedModel"
+          :platform="selectedGroup?.platform ?? ''"
+          :edit-supported="mode === 'image' ? Boolean(imageCapability?.edit_supported) : true"
+          @change="updateReferences"
+          @require-duration="setRequiredDuration"
+        />
+      </section>
+
+      <!-- 生成参数 -->
+      <section class="cs-group" aria-labelledby="creation-section-params">
+        <h2 id="creation-section-params" class="cs-group-title">{{ t('creation.composer.sections.params') }}</h2>
+
+        <template v-if="mode === 'image'">
+          <template v-if="imageParamStyle === 'openai'">
+            <div class="cs-field">
+              <span id="creation-image-size-label" class="cs-field-label">{{ t('creation.composer.size') }}</span>
+              <CreationChipGroup
+                v-model="imageSizeOpenAI"
+                name="creation-image-size"
+                :options="sizeChipOptions"
+                labelledby="creation-image-size-label"
+                grid
+                glyph
+                chip-min="7.5rem"
+              />
+            </div>
+            <div class="cs-field">
+              <span id="creation-image-quality-label" class="cs-field-label">{{ t('creation.composer.quality') }}</span>
+              <CreationChipGroup
+                v-model="imageQuality"
+                name="creation-image-quality"
+                :options="qualityChipOptions"
+                labelledby="creation-image-quality-label"
+              />
+            </div>
+          </template>
+          <template v-else>
+            <div class="cs-field">
+              <span id="creation-image-ratio-label" class="cs-field-label">{{ t('creation.composer.aspectRatio') }}</span>
+              <CreationChipGroup
+                v-model="imageAspectRatio"
+                name="creation-image-ratio"
+                :options="imageRatioChipOptions"
+                labelledby="creation-image-ratio-label"
+                grid
+                glyph
+              />
+            </div>
+            <div class="cs-field">
+              <span id="creation-image-resolution-label" class="cs-field-label">{{ t('creation.composer.imageSize') }}</span>
+              <CreationChipGroup
+                v-model="imageResolution"
+                name="creation-image-resolution"
+                :options="imageResolutionChipOptions"
+                labelledby="creation-image-resolution-label"
+              />
+            </div>
+          </template>
+          <div class="cs-field cs-field--inline">
+            <label for="creation-image-count" class="cs-field-label">{{ t('creation.composer.count') }}</label>
+            <CreationStepper
+              v-model="imageCount"
+              input-id="creation-image-count"
+              :min="1"
+              :disabled="selectedProtocol === 'gemini'"
+              :label="t('creation.composer.count')"
+              @step="stepImageCount"
+              @commit="normalizeImageCount"
+            />
+          </div>
+          <p v-if="selectedGroup && !submitsAsync" class="cs-field-warning" data-testid="creation-sync-hint">
+            <TriangleAlert aria-hidden="true" />
+            <span>{{ t('creation.composer.syncOnlyHint') }}</span>
+          </p>
+        </template>
+
+        <template v-else>
+          <div class="cs-field">
+            <label for="creation-video-duration" class="cs-field-label">{{ t('creation.composer.duration') }}</label>
+            <CreationStepper
+              input-id="creation-video-duration"
+              wide
+              :model-value="durationValue"
+              :min="durationRange.min"
+              :max="durationRange.max"
+              :label="t('creation.composer.duration')"
+              :placeholder="t('creation.composer.durationAuto')"
+              @update:model-value="setDuration"
+              @step="stepDuration"
+              @commit="normalizeDuration"
+            />
+          </div>
+          <div class="cs-field">
+            <span id="creation-video-resolution-label" class="cs-field-label">{{ t('creation.composer.resolution') }}</span>
+            <CreationChipGroup
+              v-model="videoResolution"
+              name="creation-video-resolution"
+              :options="videoResolutionChipOptions"
+              labelledby="creation-video-resolution-label"
+            />
+          </div>
+          <div class="cs-field">
+            <span id="creation-video-ratio-label" class="cs-field-label">{{ t('creation.composer.ratio') }}</span>
+            <CreationChipGroup
+              v-model="videoRatio"
+              name="creation-video-ratio"
+              :options="videoRatioChipOptions"
+              labelledby="creation-video-ratio-label"
+              grid
+              glyph
+            />
+          </div>
+        </template>
+      </section>
     </div>
 
-    <div>
-      <label for="creation-prompt" class="input-label">{{ t('creation.composer.prompt') }}</label>
-      <textarea id="creation-prompt" v-model="prompt" rows="5" class="input min-h-28 resize-y leading-6" :placeholder="mode === 'image' ? t('creation.composer.promptImagePlaceholder') : t('creation.composer.promptVideoPlaceholder')" />
+    <!-- 提交栏：桌面端固定在面板底部，移动端吸底 -->
+    <div class="cs-form-footer">
+      <!-- 预计费用与余额 -->
+      <div class="space-y-1.5">
+        <div class="cs-cost" :data-state="costState" data-testid="creation-cost">
+          <span class="cs-cost-label">{{ t('creation.cost.estimate') }}</span>
+          <div class="min-w-0 text-right">
+            <span class="cs-cost-value">{{ costValue }}</span>
+            <div class="cs-cost-detail">{{ costDetail }}</div>
+          </div>
+        </div>
+        <div v-if="availableBalance !== null" class="cs-balance" data-testid="creation-balance">
+          <span>{{ enterpriseBalance ? t('enterprise.companyBalance') : t('common.availableBalance') }}</span>
+          <span>{{ formatBalance(availableBalance) }}</span>
+        </div>
+      </div>
+      <p v-if="formNotice" role="status" class="cs-field-warning">
+        <TriangleAlert aria-hidden="true" />
+        <span>{{ formNotice }}</span>
+      </p>
+      <p v-if="formError" role="alert" class="cs-field-error">
+        <CircleX aria-hidden="true" />
+        <span>{{ formError }}</span>
+      </p>
+      <button type="submit" class="btn btn-primary cs-submit" :disabled="atCapacity || cooldown || !canSubmit">
+        <Sparkles aria-hidden="true" />
+        <span>{{ mode === 'image' ? t('creation.composer.submitImage') : t('creation.composer.submitVideo') }}</span>
+      </button>
+      <p class="cs-submit-reason">{{ atCapacity ? t('creation.composer.atCapacity', { count: maxActive }) : t('creation.composer.submitHint') }}</p>
     </div>
-
-    <ReferenceImagePicker
-      :key="referenceContext"
-      :kind="mode"
-      :protocol="selectedProtocol"
-      :model="selectedModel"
-      :platform="selectedGroup?.platform ?? ''"
-      :edit-supported="mode === 'image' ? Boolean(imageCapability?.edit_supported) : true"
-      @change="updateReferences"
-      @require-duration="setRequiredDuration"
-    />
-
-    <div v-if="mode === 'image'" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-      <div v-if="imageParamStyle === 'openai'">
-        <label for="creation-image-size" class="input-label">{{ t('creation.composer.size') }}</label>
-        <select id="creation-image-size" v-model="imageSizeOpenAI" class="input"><option v-for="size in openAISizes" :key="size" :value="size">{{ size }}</option></select>
-      </div>
-      <div v-else>
-        <label for="creation-image-ratio" class="input-label">{{ t('creation.composer.aspectRatio') }}</label>
-        <select id="creation-image-ratio" v-model="imageAspectRatio" class="input"><option v-for="ratio in imageRatioOptions" :key="ratio" :value="ratio">{{ ratio }}</option></select>
-      </div>
-      <div v-if="imageParamStyle === 'openai'">
-        <label for="creation-image-quality" class="input-label">{{ t('creation.composer.quality') }}</label>
-        <select id="creation-image-quality" v-model="imageQuality" class="input"><option v-for="quality in imageQualities" :key="quality" :value="quality">{{ quality }}</option></select>
-      </div>
-      <div v-else>
-        <label for="creation-image-resolution" class="input-label">{{ t('creation.composer.imageSize') }}</label>
-        <select id="creation-image-resolution" v-model="imageResolution" class="input"><option v-for="size in imageResolutionOptions" :key="size" :value="size">{{ size }}</option></select>
-      </div>
-      <div>
-        <label for="creation-image-count" class="input-label">{{ t('creation.composer.count') }}</label>
-        <input id="creation-image-count" v-model.number="imageCount" type="number" min="1" step="1" class="input" :disabled="selectedProtocol === 'gemini'" @blur="normalizeImageCount" />
-      </div>
-      <p v-if="selectedGroup && !submitsAsync" class="text-xs leading-5 text-amber-700 dark:text-amber-300 sm:col-span-2 xl:col-span-1 2xl:col-span-2" data-testid="creation-sync-hint">{{ t('creation.composer.syncOnlyHint') }}</p>
-    </div>
-
-    <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-      <div>
-        <label for="creation-video-duration" class="input-label">{{ t('creation.composer.duration') }}</label>
-        <input id="creation-video-duration" v-model="videoDuration" type="number" step="1" :min="durationRange.min ?? undefined" :max="durationRange.max ?? undefined" class="input" :placeholder="t('creation.composer.durationAuto')" @blur="normalizeDuration" />
-      </div>
-      <div>
-        <label for="creation-video-resolution" class="input-label">{{ t('creation.composer.resolution') }}</label>
-        <select id="creation-video-resolution" v-model="videoResolution" class="input">
-          <option value="">{{ t('creation.composer.resolutionAuto') }}</option>
-          <option v-for="resolution in resolutionOptions" :key="resolution" :value="resolution">{{ resolution }}</option>
-        </select>
-      </div>
-      <div>
-        <label for="creation-video-ratio" class="input-label">{{ t('creation.composer.ratio') }}</label>
-        <select id="creation-video-ratio" v-model="videoRatio" class="input"><option v-for="ratio in ratioOptions" :key="ratio" :value="ratio">{{ ratio }}</option></select>
-      </div>
-    </div>
-
-    <p v-if="formNotice" role="status" class="text-xs text-amber-700 dark:text-amber-300">{{ formNotice }}</p>
-    <p v-if="formError" role="alert" class="text-sm text-red-600 dark:text-red-400">{{ formError }}</p>
-    <button type="submit" class="btn btn-primary w-full justify-center" :disabled="atCapacity || cooldown || !canSubmit">
-      <Icon name="sparkles" size="sm" class="mr-2" />
-      {{ mode === 'image' ? t('creation.composer.submitImage') : t('creation.composer.submitVideo') }}
-    </button>
-    <p class="text-center text-xs leading-5 text-gray-500 dark:text-gray-400">{{ atCapacity ? t('creation.composer.atCapacity', { count: maxActive }) : t('creation.composer.submitHint') }}</p>
   </form>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Icon from '@/components/icons/Icon.vue'
+import { CircleX, KeyRound, Plus, RefreshCw, Sparkles, TriangleAlert } from '@lucide/vue'
+import Select from '@/components/common/Select.vue'
+import ModelIcon from '@/components/common/ModelIcon.vue'
+import PlatformIcon from '@/components/common/PlatformIcon.vue'
+import CreationChipGroup from './CreationChipGroup.vue'
+import CreationStepper from './CreationStepper.vue'
 import ReferenceImagePicker from './ReferenceImagePicker.vue'
-import type { ApiKey } from '@/types'
+import type { ApiKey, GroupPlatform } from '@/types'
 import type { CreationGroup, CreationKind, CreationProtocol, CreationReferenceImage, ImageGenerationInput } from '@/features/creation/types'
 import {
   clampVideoDuration,
   creationPriceEntries,
+  creationPriceRange,
+  creationVideoModels,
   defaultVideoDuration,
+  estimateCreationCost,
   defaultVideoRatios,
   defaultVideoResolutions,
   filterCreationGroups,
   filterCreationModels,
+  formatCreationPrice,
+  resolveCreationVideoProtocol,
   restoreSelectedGroupId,
   saveSelectedGroupId,
   videoDurationRange,
 } from './viewModel'
-import type { CreationSubmission } from './types'
+import type { CreationChipOption, CreationSubmission } from './types'
 
 const props = defineProps<{
   mode: CreationKind
@@ -163,6 +364,10 @@ const props = defineProps<{
   /** 进行中的任务已达上限，暂不接受新提交。 */
   atCapacity: boolean
   maxActive: number
+  /** 当前可用于扣费的余额（美元）；不可见或未知时为 null。 */
+  balance?: number | null
+  /** 余额是企业的公司余额（标签不同）。 */
+  enterpriseBalance?: boolean
 }>()
 const emit = defineEmits<{
   submit: [submission: CreationSubmission]
@@ -188,7 +393,8 @@ const imageSizeOpenAI = ref('1024x1024')
 const imageAspectRatio = ref('1:1')
 const imageResolution = ref('1K')
 const imageQuality = ref('auto')
-const imageCount = ref(1)
+/** null 表示输入框被清空，失焦或提交时归一化为 1。 */
+const imageCount = ref<number | null>(1)
 /** 提交后短暂禁用按钮，防止双击重复提交（重复提交会重复计费）。 */
 const cooldown = ref(false)
 let cooldownTimer: ReturnType<typeof setTimeout> | undefined
@@ -204,7 +410,10 @@ const selectedGroup = computed(() => availableGroups.value.find(group => group.i
 const imageCapability = computed(() => props.mode === 'image' ? selectedGroup.value?.image ?? null : null)
 const videoCapability = computed(() => props.mode === 'video' ? selectedGroup.value?.video ?? null : null)
 const protocolOptions = computed<CreationProtocol[]>(() => selectedGroup.value?.[props.mode]?.protocols ?? [])
-const models = computed(() => filterCreationModels(selectedGroup.value, props.mode, selectedProtocol.value))
+/** 生视频列出分组内的全部模型（协议跟随模型）；生图按所选协议筛选。 */
+const models = computed(() => props.mode === 'video'
+  ? creationVideoModels(selectedGroup.value)
+  : filterCreationModels(selectedGroup.value, 'image', selectedProtocol.value))
 const selectedPricing = computed(() => models.value.find(model => model.id === selectedModel.value)?.pricing ?? null)
 const priceEntries = computed(() => creationPriceEntries(selectedPricing.value))
 const priceUnit = computed(() => selectedPricing.value ? t(`creation.composer.priceUnit.${selectedPricing.value.unit}`) : '')
@@ -230,6 +439,126 @@ const referenceContext = computed(() => `${props.mode}:${selectedGroupId.value}:
 const canSubmit = computed(() => Boolean(selectedGroup.value && selectedKey.value && selectedModel.value.trim() && prompt.value.trim()))
 /** 视频本身就是异步任务；生图仅 OpenAI 协议且站点开启异步生图时走异步任务，否则只能同步请求。 */
 const submitsAsync = computed(() => props.mode === 'video' || Boolean(selectedProtocol.value === 'openai' && imageCapability.value?.async_supported))
+
+// ---- 预计费用 ----
+/** 按当前模型的实付单价和已选参数估算；与提交时发出的参数保持一致。 */
+const costEstimate = computed(() => {
+  const pricing = selectedPricing.value
+  if (props.mode === 'image') {
+    return estimateCreationCost(pricing, {
+      kind: 'image',
+      size: imageParamStyle.value === 'openai' ? imageSizeOpenAI.value : imageResolution.value,
+      count: selectedProtocol.value === 'gemini' ? 1 : imageCount.value ?? 1,
+    })
+  }
+  const protocol = selectedProtocol.value
+  if (protocol === 'openai') return null
+  return estimateCreationCost(pricing, {
+    kind: 'video',
+    protocol,
+    resolution: videoResolution.value,
+    duration: clampVideoDuration(videoDuration.value, protocol, selectedModel.value, videoCapability.value),
+  })
+})
+/** 订阅分组走订阅额度而不是余额，不显示余额也不提示余额不足。 */
+const availableBalance = computed(() => {
+  if (selectedGroup.value?.subscription_type === 'subscription') return null
+  return typeof props.balance === 'number' && Number.isFinite(props.balance) ? props.balance : null
+})
+const costShortfall = computed(() => {
+  const amount = costEstimate.value?.amount
+  return amount !== undefined && availableBalance.value !== null && amount > availableBalance.value ? amount - availableBalance.value : 0
+})
+const costState = computed(() => {
+  if (!costEstimate.value) return 'unavailable'
+  return costShortfall.value > 0 ? 'insufficient' : undefined
+})
+const costValue = computed(() => {
+  const estimate = costEstimate.value
+  return estimate ? `${estimate.assumed ? '≈ ' : ''}${formatCreationPrice(estimate.amount)}` : '—'
+})
+const costDetail = computed(() => {
+  const estimate = costEstimate.value
+  if (!estimate) return t('creation.cost.unavailable')
+  if (costShortfall.value > 0) return t('creation.cost.insufficient', { amount: formatCreationPrice(costShortfall.value) })
+  const parts = [estimate.unit === 'request'
+    ? t('creation.cost.detail.request')
+    : t(`creation.cost.detail.${estimate.unit}`, { count: estimate.quantity, price: formatCreationPrice(estimate.unitPrice) })]
+  if (estimate.tier) parts.push(estimate.tier)
+  if (estimate.assumed) parts.push(t('creation.cost.assumed'))
+  return parts.join(' · ')
+})
+
+function formatBalance(value: number): string {
+  return `$${value.toFixed(2)}`
+}
+
+// ---- 下拉与胶囊选项 ----
+const groupOptions = computed(() => availableGroups.value.map(group => ({
+  value: group.id, label: group.name, description: group.platform, platform: platformOf(group),
+})))
+const keyOptions = computed(() => availableKeys.value.map(apiKey => ({
+  value: apiKey.id, label: apiKey.name, description: maskKey(apiKey.key),
+})))
+const modelOptions = computed(() => models.value.map(model => {
+  const range = creationPriceRange(model.pricing)
+  return {
+    value: model.id,
+    label: model.id,
+    price: range && model.pricing ? `${range} ${t(`creation.composer.priceUnit.${model.pricing.unit}`)}` : '',
+  }
+}))
+/** auto 显示为本地化的「自动」，其余选项原样展示。 */
+function chipOptions(values: readonly string[]): CreationChipOption[] {
+  return values.map(value => ({ value, label: value === 'auto' ? t('creation.composer.auto') : value }))
+}
+const protocolChipOptions = computed(() => chipOptions(protocolOptions.value))
+const sizeChipOptions = computed(() => chipOptions(openAISizes))
+const qualityChipOptions = computed(() => chipOptions(imageQualities))
+const imageRatioChipOptions = computed(() => chipOptions(imageRatioOptions.value))
+const imageResolutionChipOptions = computed(() => chipOptions(imageResolutionOptions.value))
+const videoResolutionChipOptions = computed<CreationChipOption[]>(() => [
+  { value: '', label: t('creation.composer.auto'), title: t('creation.composer.resolutionAuto') },
+  ...chipOptions(resolutionOptions.value),
+])
+const videoRatioChipOptions = computed(() => chipOptions(ratioOptions.value))
+const durationValue = computed(() => {
+  if (!videoDuration.value.trim()) return null
+  const value = Number(videoDuration.value)
+  return Number.isFinite(value) ? value : null
+})
+
+function platformOf(group: CreationGroup): GroupPlatform {
+  return group.platform as GroupPlatform
+}
+
+function selectGroup(value: unknown): void {
+  if (typeof value === 'number') selectedGroupId.value = value
+}
+
+function selectKey(value: unknown): void {
+  if (typeof value === 'number') selectedKeyId.value = value
+}
+
+function selectModel(value: unknown): void {
+  if (typeof value !== 'string' || value === selectedModel.value) return
+  selectedModel.value = value
+  // 换到另一种接口的模型时，参数项和参考图规则都不同，按新协议重置。
+  if (syncVideoProtocol()) {
+    references.value = []
+    formNotice.value = ''
+    resetParameters()
+  }
+}
+
+/** 生视频不让用户选协议：由所选模型决定走哪个接口。返回协议是否发生了变化。 */
+function syncVideoProtocol(): boolean {
+  if (props.mode !== 'video') return false
+  const protocol = resolveCreationVideoProtocol(selectedGroup.value, selectedModel.value) ?? protocolOptions.value[0] ?? 'seedance'
+  if (protocol === selectedProtocol.value) return false
+  selectedProtocol.value = protocol
+  return true
+}
 
 function syncGroupContext(): void {
   const groups = availableGroups.value
@@ -257,6 +586,7 @@ function syncGroupContext(): void {
 
 function syncModel(): void {
   selectedModel.value = models.value[0]?.id ?? ''
+  syncVideoProtocol()
 }
 
 function resetParameters(): void {
@@ -277,8 +607,7 @@ function isProtocol(value: string): value is CreationProtocol {
   return ['openai', 'gemini', 'seedance', 'minimax_v1', 'minimax_v2', 'grok'].includes(value)
 }
 
-function changeProtocol(event: Event): void {
-  const value = (event.target as HTMLSelectElement).value
+function changeProtocol(value: string): void {
   if (!isProtocol(value) || !protocolOptions.value.includes(value)) return
   selectedProtocol.value = value
   references.value = []
@@ -292,16 +621,52 @@ function maskKey(value: string): string {
   return `${value.slice(0, 5)}…${value.slice(-4)}`
 }
 
-function normalizeImageCount(): void {
+function normalizeImageCount(): number {
   const value = Math.floor(Number(imageCount.value))
-  imageCount.value = Number.isFinite(value) ? Math.max(1, value) : 1
-  if (selectedProtocol.value === 'gemini') imageCount.value = 1
+  const count = selectedProtocol.value === 'gemini' || !Number.isFinite(value) ? 1 : Math.max(1, value)
+  imageCount.value = count
+  return count
+}
+
+function stepImageCount(direction: 1 | -1): void {
+  imageCount.value = Math.max(1, normalizeImageCount() + direction)
 }
 
 function normalizeDuration(): void {
   if (props.mode !== 'video' || selectedProtocol.value === 'openai') return
   const duration = clampVideoDuration(videoDuration.value, selectedProtocol.value, selectedModel.value, videoCapability.value)
   videoDuration.value = duration === undefined ? '' : String(duration)
+}
+
+function setDuration(value: number | null): void {
+  videoDuration.value = value === null ? '' : String(value)
+}
+
+/**
+ * 步进时长：留空时从协议默认值（没有则从区间端点）起步；
+ * 之后沿方向找到下一个合法取值，兼容只允许离散档位的模型（如 Veo 3.1 的 4/6/8 秒）。
+ */
+function stepDuration(direction: 1 | -1): void {
+  const protocol = selectedProtocol.value
+  if (props.mode !== 'video' || protocol === 'openai') return
+  const model = selectedModel.value
+  const capability = videoCapability.value
+  const range = durationRange.value
+  const current = clampVideoDuration(videoDuration.value, protocol, model, capability)
+  if (current === undefined) {
+    const start = defaultVideoDuration(protocol, model, capability) ?? (direction > 0 ? range.min : range.max) ?? 5
+    setDuration(clampVideoDuration(start, protocol, model, capability) ?? start)
+    return
+  }
+  const limit = direction > 0 ? range.max ?? current + 60 : range.min ?? 1
+  for (let candidate = current + direction; direction > 0 ? candidate <= limit : candidate >= limit; candidate += direction) {
+    const next = clampVideoDuration(candidate, protocol, model, capability)
+    if (next !== undefined && next !== current) {
+      setDuration(next)
+      return
+    }
+  }
+  setDuration(current)
 }
 
 function updateReferences(images: CreationReferenceImage[]): void {
@@ -337,7 +702,7 @@ function submit(): void {
     formError.value = t('creation.composer.required')
     return
   }
-  normalizeImageCount()
+  const count = normalizeImageCount()
   if (props.mode === 'image') {
     const protocol = selectedProtocol.value
     if (protocol !== 'openai' && protocol !== 'gemini') return
@@ -347,7 +712,7 @@ function submit(): void {
       platform: group.platform,
       model,
       prompt: text,
-      n: protocol === 'gemini' ? 1 : imageCount.value,
+      n: protocol === 'gemini' ? 1 : count,
       referenceImages: references.value.length ? references.value : undefined,
     }
     const submitAsync = submitsAsync.value

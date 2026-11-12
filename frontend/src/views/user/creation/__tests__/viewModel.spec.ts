@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { AsyncTask } from '@/api/asyncTasks'
 import type {
   CreationGroup,
   CreationImageProtocol,
@@ -8,17 +9,26 @@ import type {
   CreationVideoProtocol,
 } from '@/features/creation/types'
 import {
+  buildCreationHistory,
   clampVideoDuration,
   creationHistoryKey,
+  creationImageTier,
+  creationPreviewShape,
   creationPriceEntries,
+  creationPriceRange,
   creationSelectionKey,
+  creationVideoModels,
   defaultVideoDuration,
   defaultVideoRatios,
   defaultVideoResolutions,
+  estimateCreationCost,
   filterCreationGroups,
   filterCreationModels,
+  formatCreationElapsed,
   formatCreationPrice,
+  parseCreationAspect,
   readCreationHistory,
+  resolveCreationVideoProtocol,
   restoreSelectedGroupId,
   safeMediaUrl,
   saveSelectedGroupId,
@@ -26,6 +36,7 @@ import {
   writeCreationHistory,
 } from '../viewModel'
 import type { CreationSessionRecord } from '../viewModel'
+import type { CreationSubmission } from '../types'
 
 function makeGroup(
   id: number,
@@ -505,5 +516,300 @@ describe('creation model pricing display', () => {
       .toEqual([{ label: '1K', price: '$0.04' }, { label: '2K', price: '$0.08' }])
     expect(creationPriceEntries({ unit: 'request', price: 2, tiers: [] })).toEqual([{ label: '', price: '$2.00' }])
     expect(creationPriceEntries({ unit: 'image', tiers: [] })).toEqual([])
+  })
+})
+
+describe('creation task card helpers', () => {
+  function imageSubmission(input: Partial<Extract<CreationSubmission, { kind: 'image' }>['input']>): CreationSubmission {
+    return {
+      kind: 'image', groupId: 1, groupName: 'Studio', apiKey: 'sk-test',
+      input: { apiKey: 'sk-test', protocol: 'openai', platform: 'openai', model: 'gpt-image-1', prompt: 'cat', ...input },
+    }
+  }
+
+  function videoSubmission(ratio?: string): CreationSubmission {
+    return {
+      kind: 'video', groupId: 1, groupName: 'Studio', apiKey: 'sk-test',
+      input: { apiKey: 'sk-test', protocol: 'seedance', model: 'seedance-1', prompt: 'cat', ratio },
+    }
+  }
+
+  it('parses ratios and pixel sizes, and rejects values without a fixed aspect', () => {
+    expect(parseCreationAspect('16:9')).toEqual({ w: 16, h: 9 })
+    expect(parseCreationAspect('19.5:9')).toEqual({ w: 19.5, h: 9 })
+    expect(parseCreationAspect('1536x1024')).toEqual({ w: 1536, h: 1024 })
+    expect(parseCreationAspect(' 9 : 16 ')).toEqual({ w: 9, h: 16 })
+    for (const value of ['auto', 'adaptive', '', '0:9', '16:0', '1K', '16:9:1', undefined, null, 169]) {
+      expect(parseCreationAspect(value)).toBeNull()
+    }
+  })
+
+  it('shapes image placeholders from the requested count and size', () => {
+    expect(creationPreviewShape(imageSubmission({ n: 4, size: '1536x1024' }))).toEqual({ previewCount: 4, aspectW: 1536, aspectH: 1024 })
+    expect(creationPreviewShape(imageSubmission({ aspectRatio: '9:16' }))).toEqual({ previewCount: 1, aspectW: 9, aspectH: 16 })
+    expect(creationPreviewShape(imageSubmission({ n: 2, size: 'auto' }))).toEqual({ previewCount: 2, aspectW: 1, aspectH: 1 })
+  })
+
+  it('keeps the placeholder count within one to eight tiles', () => {
+    expect(creationPreviewShape(imageSubmission({ n: 50 })).previewCount).toBe(8)
+    expect(creationPreviewShape(imageSubmission({ n: 0 })).previewCount).toBe(1)
+    expect(creationPreviewShape(imageSubmission({ n: Number.NaN })).previewCount).toBe(1)
+  })
+
+  it('shapes video placeholders from the ratio and defaults to 16:9', () => {
+    expect(creationPreviewShape(videoSubmission('9:16'))).toEqual({ previewCount: 1, aspectW: 9, aspectH: 16 })
+    expect(creationPreviewShape(videoSubmission('adaptive'))).toEqual({ previewCount: 1, aspectW: 16, aspectH: 9 })
+    expect(creationPreviewShape(videoSubmission())).toEqual({ previewCount: 1, aspectW: 16, aspectH: 9 })
+  })
+
+  it('formats elapsed time as mm:ss and switches to h:mm:ss after an hour', () => {
+    expect(formatCreationElapsed(0)).toBe('00:00')
+    expect(formatCreationElapsed(42_900)).toBe('00:42')
+    expect(formatCreationElapsed(125_000)).toBe('02:05')
+    expect(formatCreationElapsed(3_725_000)).toBe('1:02:05')
+    expect(formatCreationElapsed(-5_000)).toBe('00:00')
+    expect(formatCreationElapsed(Number.NaN)).toBe('00:00')
+  })
+
+  it('summarises model pricing as a single price or a range', () => {
+    expect(creationPriceRange(null)).toBe('')
+    expect(creationPriceRange({ unit: 'image', tiers: [] })).toBe('')
+    expect(creationPriceRange({ unit: 'image', price: 0.04, tiers: [] })).toBe('$0.04')
+    expect(creationPriceRange({ unit: 'second', tiers: [{ label: '720p', price: 0.12 }, { label: '480p', price: 0.05 }] })).toBe('$0.05 – $0.12')
+    expect(creationPriceRange({ unit: 'image', tiers: [{ label: '1K', price: 0.04 }, { label: '2K', price: 0.04 }] })).toBe('$0.04')
+  })
+})
+
+describe('creation history feed', () => {
+  const nothingHidden = { taskIds: new Set<string>(), recordIds: new Set<string>() }
+
+  function serverTask(overrides: Partial<AsyncTask> = {}): AsyncTask {
+    return {
+      id: 'imgtask_1', task_id: 'imgtask_1', kind: 'image', protocol: 'openai', model: 'gpt-image-2',
+      status: 'completed', api_key_id: 9, created_at: 1_700_000_100, expires_at: 1_700_090_000,
+      result_url: 'https://cdn.example.com/first.png', ...overrides,
+    }
+  }
+
+  it('turns a completed image task into a card with its result', () => {
+    expect(buildCreationHistory([serverTask()], [], nothingHidden)).toEqual([{
+      key: 'server:imgtask_1', source: 'server', kind: 'image', protocol: 'openai', model: 'gpt-image-2',
+      status: 'completed', prompt: '', taskId: 'imgtask_1', createdAt: 1_700_000_100_000,
+      images: ['https://cdn.example.com/first.png'], videoUrl: '', downloadId: '', error: '',
+    }])
+  })
+
+  it('restores the prompt and every image from the record saved on this device', () => {
+    const record: CreationSessionRecord = {
+      ...makeRecord('local'), taskId: 'imgtask_1', prompt: 'a lighthouse',
+      assets: [{ kind: 'image', url: 'https://cdn.example.com/1.png' }, { kind: 'image', url: 'https://cdn.example.com/2.png' }],
+    }
+
+    const items = buildCreationHistory([serverTask()], [record], nothingHidden)
+
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      source: 'server', prompt: 'a lighthouse',
+      images: ['https://cdn.example.com/1.png', 'https://cdn.example.com/2.png'],
+    })
+  })
+
+  it('plays Seedance links directly and sends other videos through the download endpoint', () => {
+    const [seedance, protectedLink, veo] = buildCreationHistory([
+      serverTask({ id: 'vidtask_a', task_id: 'cgt-a', kind: 'video', protocol: 'seedance', result_url: 'https://cdn.example.com/a.mp4' }),
+      serverTask({ id: 'vidtask_b', task_id: 'cgt-b', kind: 'video', protocol: 'seedance', result_url: '/api/v1/user/async-tasks/vidtask_b/content' }),
+      serverTask({ id: 'vidtask_c', task_id: 'op-c', kind: 'video', protocol: 'gemini', result_url: 'https://generativelanguage.googleapis.com/v1beta/files/c' }),
+    ], [], nothingHidden)
+
+    expect(seedance).toMatchObject({ videoUrl: 'https://cdn.example.com/a.mp4', downloadId: '', images: [] })
+    expect(protectedLink).toMatchObject({ videoUrl: '', downloadId: 'vidtask_b' })
+    expect(veo).toMatchObject({ videoUrl: '', downloadId: 'vidtask_c' })
+  })
+
+  it('shows no media for unfinished tasks, missing results, or unsafe links', () => {
+    const items = buildCreationHistory([
+      serverTask({ id: 'a', task_id: 'a', status: 'processing', result_url: undefined }),
+      serverTask({ id: 'b', task_id: 'b', status: 'failed', error: 'blocked' }),
+      serverTask({ id: 'c', task_id: 'c', result_url: 'javascript:alert(1)' }),
+      serverTask({ id: 'd', task_id: 'd', kind: 'video', protocol: 'seedance', result_url: undefined }),
+    ], [], nothingHidden)
+
+    expect(items).toHaveLength(4)
+    for (const item of items) expect(item).toMatchObject({ images: [], videoUrl: '', downloadId: '' })
+    expect(items[1]?.error).toBe('blocked')
+  })
+
+  it('keeps local-only records and orders everything newest first', () => {
+    const older = { ...makeRecord('older'), createdAt: 1_700_000_000_000 }
+    const newer = { ...makeRecord('newer', 'video'), createdAt: 1_700_000_200_000 }
+
+    const items = buildCreationHistory([serverTask()], [older, newer], nothingHidden)
+
+    expect(items.map(item => item.key)).toEqual(['local:newer', 'server:imgtask_1', 'local:older'])
+    expect(items[0]).toMatchObject({ source: 'local', status: 'completed', videoUrl: 'https://cdn.example.com/newer.media', images: [] })
+    expect(items[2]).toMatchObject({ images: ['https://cdn.example.com/older.media'], taskId: '' })
+  })
+
+  it('leaves out tasks and records already shown as live cards', () => {
+    const tracked = { ...makeRecord('tracked'), taskId: 'imgtask_2' }
+
+    const items = buildCreationHistory(
+      [serverTask(), serverTask({ id: 'imgtask_2', task_id: 'imgtask_2' })],
+      [makeRecord('live-record'), tracked, makeRecord('kept')],
+      { taskIds: new Set(['imgtask_1', 'imgtask_2']), recordIds: new Set(['live-record']) },
+    )
+
+    expect(items.map(item => item.key)).toEqual(['local:kept'])
+  })
+
+  it('round-trips the task id of a saved record', () => {
+    const storage = createStorage()
+
+    writeCreationHistory(storage, 7, [{ ...makeRecord('with-task'), taskId: 'imgtask_9' }, makeRecord('without-task')])
+    const [withTask, withoutTask] = readCreationHistory(storage, 7, 'image')
+
+    expect(withTask?.taskId).toBe('imgtask_9')
+    expect(withoutTask).not.toHaveProperty('taskId')
+  })
+})
+
+describe('creation cost estimate', () => {
+  const imageTiers = { unit: 'image' as const, tiers: [{ label: '1K', price: 0.042 }, { label: '2K', price: 0.063 }, { label: '4K', price: 0.167 }] }
+  const videoTiers = { unit: 'second' as const, tiers: [{ label: '480p', price: 0.05 }, { label: '720p', price: 0.08 }, { label: '768p', price: 0.09 }, { label: '1080p', price: 0.12 }] }
+
+  it('classifies image sizes into billing tiers by the longest edge', () => {
+    expect(creationImageTier('1024x1024')).toBe('1K')
+    expect(creationImageTier('1536x1024')).toBe('2K')
+    expect(creationImageTier('1024x1536')).toBe('2K')
+    expect(creationImageTier('3840x2160')).toBe('4K')
+    expect(creationImageTier('2K')).toBe('2K')
+    expect(creationImageTier(' 4k ')).toBe('4K')
+    for (const size of ['auto', '', '0x0', '1024', 'wide']) expect(creationImageTier(size)).toBeNull()
+  })
+
+  it('multiplies the tier price by the image count', () => {
+    const estimate = estimateCreationCost(imageTiers, { kind: 'image', size: '1536x1024', count: 2 })
+
+    expect(estimate).toMatchObject({ unit: 'image', unitPrice: 0.063, quantity: 2, tier: '2K', assumed: false })
+    expect(estimate?.amount).toBeCloseTo(0.126)
+    expect(estimateCreationCost(imageTiers, { kind: 'image', size: '4K', count: 1 })?.amount).toBeCloseTo(0.167)
+  })
+
+  it('falls back to the 2K tier for an automatic size and marks the estimate as approximate', () => {
+    expect(estimateCreationCost(imageTiers, { kind: 'image', size: 'auto', count: 1 }))
+      .toMatchObject({ unitPrice: 0.063, tier: '2K', assumed: true })
+  })
+
+  it('uses a flat image price whatever the size is', () => {
+    const estimate = estimateCreationCost({ unit: 'image', price: 0.04, tiers: [] }, { kind: 'image', size: 'auto', count: 3 })
+
+    expect(estimate).toMatchObject({ unitPrice: 0.04, quantity: 3, tier: '', assumed: false })
+    expect(estimate?.amount).toBeCloseTo(0.12)
+  })
+
+  it('normalises the image count to a positive integer', () => {
+    expect(estimateCreationCost(imageTiers, { kind: 'image', size: '1K', count: 2.9 })?.quantity).toBe(2)
+    expect(estimateCreationCost(imageTiers, { kind: 'image', size: '1K', count: 0 })?.quantity).toBe(1)
+    expect(estimateCreationCost(imageTiers, { kind: 'image', size: '1K', count: Number.NaN })?.quantity).toBe(1)
+  })
+
+  it('multiplies the resolution price by the video duration', () => {
+    const estimate = estimateCreationCost(videoTiers, { kind: 'video', protocol: 'seedance', resolution: '1080p', duration: 8 })
+
+    expect(estimate).toMatchObject({ unit: 'second', unitPrice: 0.12, quantity: 8, tier: '1080p', assumed: false })
+    expect(estimate?.amount).toBeCloseTo(0.96)
+    expect(estimateCreationCost(videoTiers, { kind: 'video', protocol: 'minimax_v2', resolution: '768P', duration: 6 }))
+      .toMatchObject({ unitPrice: 0.09, tier: '768p', assumed: false })
+  })
+
+  it('uses each protocol’s billing defaults for an unspecified resolution or duration', () => {
+    expect(estimateCreationCost(videoTiers, { kind: 'video', protocol: 'seedance', resolution: '' }))
+      .toMatchObject({ unitPrice: 0.08, quantity: 5, tier: '720p', assumed: true })
+    expect(estimateCreationCost(videoTiers, { kind: 'video', protocol: 'gemini', resolution: '' }))
+      .toMatchObject({ unitPrice: 0.08, quantity: 8, tier: '720p', assumed: true })
+    expect(estimateCreationCost(videoTiers, { kind: 'video', protocol: 'minimax_v1', resolution: '' }))
+      .toMatchObject({ unitPrice: 0.09, quantity: 6, tier: '768p', assumed: true })
+    expect(estimateCreationCost(videoTiers, { kind: 'video', protocol: 'grok', resolution: '', duration: 10 }))
+      .toMatchObject({ unitPrice: 0.05, quantity: 10, tier: '480p', assumed: true })
+    expect(estimateCreationCost(videoTiers, { kind: 'video', protocol: 'seedance', resolution: '720p', duration: -1 }))
+      .toMatchObject({ quantity: 5, assumed: true })
+  })
+
+  it('charges a fixed amount for per-request pricing', () => {
+    const perRequest = { unit: 'request' as const, price: 0.6, tiers: [] }
+
+    expect(estimateCreationCost(perRequest, { kind: 'video', protocol: 'minimax_v2', resolution: '', duration: 10 }))
+      .toEqual({ amount: 0.6, unit: 'request', unitPrice: 0.6, quantity: 1, tier: '', assumed: false })
+    expect(estimateCreationCost({ unit: 'request', tiers: [] }, { kind: 'video', protocol: 'grok', resolution: '' })).toBeNull()
+  })
+
+  it('returns no estimate when the price is missing, invalid, or for another kind', () => {
+    expect(estimateCreationCost(null, { kind: 'image', size: '1K', count: 1 })).toBeNull()
+    expect(estimateCreationCost({ unit: 'image', tiers: [{ label: '1K', price: 0.04 }] }, { kind: 'image', size: '2K', count: 1 })).toBeNull()
+    expect(estimateCreationCost({ unit: 'image', tiers: [] }, { kind: 'image', size: '1K', count: 1 })).toBeNull()
+    expect(estimateCreationCost({ unit: 'image', price: -1, tiers: [] }, { kind: 'image', size: '1K', count: 1 })).toBeNull()
+    expect(estimateCreationCost(videoTiers, { kind: 'image', size: '1K', count: 1 })).toBeNull()
+    expect(estimateCreationCost(imageTiers, { kind: 'video', protocol: 'seedance', resolution: '720p', duration: 5 })).toBeNull()
+    expect(estimateCreationCost(videoTiers, { kind: 'video', protocol: 'seedance', resolution: '2k', duration: 5 })).toBeNull()
+  })
+
+  it('treats a zero price as free rather than missing', () => {
+    expect(estimateCreationCost({ unit: 'image', price: 0, tiers: [] }, { kind: 'image', size: '1K', count: 4 })?.amount).toBe(0)
+  })
+})
+
+describe('video protocol follows the model', () => {
+  const group = makeGroup(1, null, videoCapability(['minimax_v1', 'minimax_v2', 'seedance'], [
+    { id: 'doubao-seedance-1-0-pro', protocols: ['seedance'], pricing: null },
+    { id: 'MiniMax-H3', protocols: ['minimax_v1', 'minimax_v2'], pricing: null },
+    { id: 'MiniMax-Hailuo-02', protocols: ['minimax_v1', 'minimax_v2'], pricing: null },
+    { id: 'studio-alias', protocols: [], pricing: null },
+    { id: 'veo-3.1', protocols: ['gemini'], pricing: null },
+    { id: 'doubao-seedance-1-0-pro', protocols: ['seedance'], pricing: null },
+  ]))
+
+  it('lists every video model of the group once, whatever protocol it uses', () => {
+    expect(creationVideoModels(group).map(model => model.id)).toEqual([
+      'doubao-seedance-1-0-pro', 'MiniMax-H3', 'MiniMax-Hailuo-02', 'studio-alias',
+    ])
+    expect(creationVideoModels(null)).toEqual([])
+    expect(creationVideoModels(makeGroup(2, imageCapability()))).toEqual([])
+  })
+
+  it('leaves out models whose protocols the group does not support', () => {
+    expect(creationVideoModels(group).some(model => model.id === 'veo-3.1')).toBe(false)
+    expect(resolveCreationVideoProtocol(group, 'veo-3.1')).toBeNull()
+  })
+
+  it('uses the only protocol a model declares', () => {
+    expect(resolveCreationVideoProtocol(group, 'doubao-seedance-1-0-pro')).toBe('seedance')
+  })
+
+  it('sends H3 models to the v2 endpoint and other MiniMax models to v1', () => {
+    expect(resolveCreationVideoProtocol(group, 'MiniMax-H3')).toBe('minimax_v2')
+    expect(resolveCreationVideoProtocol(group, 'MiniMax-Hailuo-02')).toBe('minimax_v1')
+    const v1Only = makeGroup(3, null, videoCapability(['minimax_v1'], [{ id: 'MiniMax-Hailuo-02', protocols: [], pricing: null }]))
+    expect(resolveCreationVideoProtocol(v1Only, 'MiniMax-Hailuo-02')).toBe('minimax_v1')
+  })
+
+  it('matches a model without declared protocols by its name, then falls back to a fixed order', () => {
+    const mixed = makeGroup(4, null, videoCapability(['gemini', 'grok', 'minimax_v2', 'seedance'], [
+      { id: 'veo-3.1-generate-preview', protocols: [], pricing: null },
+      { id: 'xai/grok-imagine-video', protocols: [], pricing: null },
+      { id: 'my-seedance-alias', protocols: [], pricing: null },
+      { id: 'custom-video', protocols: [], pricing: null },
+    ]))
+
+    expect(resolveCreationVideoProtocol(mixed, 'veo-3.1-generate-preview')).toBe('gemini')
+    expect(resolveCreationVideoProtocol(mixed, 'xai/grok-imagine-video')).toBe('grok')
+    expect(resolveCreationVideoProtocol(mixed, 'my-seedance-alias')).toBe('seedance')
+    expect(resolveCreationVideoProtocol(mixed, 'custom-video')).toBe('seedance')
+    expect(resolveCreationVideoProtocol(group, 'studio-alias')).toBe('seedance')
+  })
+
+  it('returns no protocol for an unknown model or a group without video', () => {
+    expect(resolveCreationVideoProtocol(group, 'missing')).toBeNull()
+    expect(resolveCreationVideoProtocol(null, 'MiniMax-H3')).toBeNull()
+    expect(resolveCreationVideoProtocol(makeGroup(5, imageCapability()), 'MiniMax-H3')).toBeNull()
   })
 })
