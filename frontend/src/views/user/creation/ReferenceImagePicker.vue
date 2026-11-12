@@ -1,49 +1,77 @@
 <template>
-  <div v-if="rule.maxImages > 0" class="space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <label for="creation-reference-files" class="input-label mb-0">{{ t('creation.composer.referenceImages') }}</label>
-      <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('creation.composer.referenceLimit', { count: rule.maxImages }) }}</span>
+  <div v-if="rule.maxImages > 0" class="cs-field">
+    <div class="cs-field-head">
+      <span id="creation-reference-label" class="cs-field-label">{{ t('creation.composer.referenceImages') }}</span>
+      <span class="cs-field-counter">{{ drafts.length ? `${drafts.length} / ${rule.maxImages}` : t('creation.composer.referenceLimit', { count: rule.maxImages }) }}</span>
     </div>
-    <div v-if="rule.roles.length > 1">
-      <label for="creation-upload-role" class="sr-only">{{ t('creation.composer.role') }}</label>
-      <select id="creation-upload-role" v-model="uploadRole" class="input">
-        <option v-for="role in rule.roles" :key="role" :value="role">{{ t(`creation.composer.roles.${role}`) }}</option>
-      </select>
-    </div>
-    <label for="creation-reference-files" class="btn btn-secondary flex cursor-pointer justify-center" :class="drafts.length >= rule.maxImages ? 'pointer-events-none opacity-50' : ''">
-      <Icon name="upload" size="sm" class="mr-2" />{{ t('creation.composer.addImages') }}
-    </label>
-    <input id="creation-reference-files" type="file" accept="image/png,image/jpeg,image/webp" :multiple="rule.maxImages > 1" :disabled="drafts.length >= rule.maxImages" class="sr-only" @change="addFiles" />
-    <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">{{ t('creation.composer.imageTypes', { size: MAX_FILE_MB }) }}</p>
-    <p v-if="isVeo31" class="text-xs leading-5 text-amber-700 dark:text-amber-300">{{ t('creation.composer.veoReferenceHint') }}</p>
-    <p v-if="error" role="alert" class="text-xs leading-5 text-red-600 dark:text-red-400">{{ error }}</p>
 
-    <ul v-if="drafts.length" class="grid grid-cols-2 gap-3 sm:grid-cols-3" role="list">
-      <li v-for="draft in drafts" :key="draft.id" class="min-w-0 overflow-hidden rounded-lg border border-gray-200 dark:border-dark-700">
-        <div class="relative aspect-square bg-gray-100 dark:bg-dark-800">
-          <img :src="draft.previewUrl" :alt="draft.file.name" class="h-full w-full object-cover" />
-          <button type="button" class="absolute right-1 top-1 rounded-full bg-gray-950/70 p-1.5 text-white hover:bg-gray-950" :aria-label="t('creation.composer.removeImage', { name: draft.file.name })" @click="removeImage(draft.id)"><Icon name="x" size="xs" /></button>
+    <!-- 新上传图片的用途（首帧 / 尾帧 / 参考图） -->
+    <template v-if="rule.roles.length > 1">
+      <span id="creation-upload-role-label" class="sr-only">{{ t('creation.composer.role') }}</span>
+      <CreationChipGroup
+        name="creation-upload-role"
+        :model-value="uploadRole"
+        :options="roleOptions"
+        labelledby="creation-upload-role-label"
+        @update:model-value="setUploadRole"
+      />
+    </template>
+
+    <ul :class="drafts.length ? 'cs-thumb-list' : undefined" aria-labelledby="creation-reference-label">
+      <li v-for="draft in drafts" :key="draft.id" class="min-w-0">
+        <div class="cs-thumb" :title="draft.file.name">
+          <img :src="draft.previewUrl" :alt="draft.file.name" />
+          <span v-if="rule.roles.length === 1 && draft.role !== 'reference_image'" class="cs-thumb-label">{{ t(`creation.composer.roles.${draft.role}`) }}</span>
+          <button type="button" class="cs-thumb-remove" :aria-label="t('creation.composer.removeImage', { name: draft.file.name })" @click="removeImage(draft.id)">
+            <X aria-hidden="true" />
+          </button>
         </div>
-        <div class="p-2">
-          <p class="truncate text-xs text-gray-600 dark:text-gray-300" :title="draft.file.name">{{ draft.file.name }}</p>
-          <template v-if="rule.roles.length > 1">
-            <label :for="`creation-image-role-${draft.id}`" class="sr-only">{{ t('creation.composer.role') }}</label>
-            <select :id="`creation-image-role-${draft.id}`" :value="draft.role" class="input mt-2 h-8 px-2 py-1 text-xs" @change="changeRole(draft, $event)">
-              <option v-for="role in rule.roles" :key="role" :value="role">{{ t(`creation.composer.roles.${role}`) }}</option>
-            </select>
+        <template v-if="rule.roles.length > 1">
+          <label :for="`creation-image-role-${draft.id}`" class="sr-only">{{ t('creation.composer.role') }}</label>
+          <select :id="`creation-image-role-${draft.id}`" :value="draft.role" class="cs-thumb-role" @change="changeRole(draft, $event)">
+            <option v-for="role in rule.roles" :key="role" :value="role">{{ t(`creation.composer.roles.${role}`) }}</option>
+          </select>
+        </template>
+      </li>
+      <!-- 达到数量上限后只保留缩略图，上传入口隐藏 -->
+      <li v-if="drafts.length < rule.maxImages">
+        <label
+          class="cs-dropzone"
+          :class="{ 'cs-dropzone--tile': drafts.length > 0 }"
+          :data-dragover="dragover ? 'true' : undefined"
+          @dragover.prevent="dragover = true"
+          @dragleave="dragover = false"
+          @drop.prevent="onDrop"
+        >
+          <input id="creation-reference-files" type="file" accept="image/png,image/jpeg,image/webp" :multiple="rule.maxImages > 1" class="sr-only" @change="addFiles" />
+          <Upload class="cs-dropzone-icon" aria-hidden="true" />
+          <span :class="drafts.length ? undefined : 'cs-dropzone-title'">{{ t('creation.composer.addImages') }}</span>
+          <template v-if="!drafts.length">
+            <span class="cs-dropzone-hint">{{ t('creation.composer.dragHint') }}</span>
+            <span class="cs-dropzone-hint">{{ t('creation.composer.imageTypes', { size: MAX_FILE_MB }) }}</span>
           </template>
-        </div>
+        </label>
       </li>
     </ul>
+
+    <p v-if="isVeo31" class="cs-field-warning">
+      <TriangleAlert aria-hidden="true" />
+      <span>{{ t('creation.composer.veoReferenceHint') }}</span>
+    </p>
+    <p v-if="error" role="alert" class="cs-field-error">
+      <CircleX aria-hidden="true" />
+      <span>{{ error }}</span>
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Icon from '@/components/icons/Icon.vue'
+import { CircleX, TriangleAlert, Upload, X } from '@lucide/vue'
+import CreationChipGroup from './CreationChipGroup.vue'
 import type { CreationImageRole, CreationProtocol, CreationReferenceImage } from '@/features/creation/types'
-import type { ReferenceImageDraft } from './types'
+import type { CreationChipOption, ReferenceImageDraft } from './types'
 
 const MAX_FILE_MB = 10
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024
@@ -64,6 +92,7 @@ const { t } = useI18n()
 const drafts = ref<ReferenceImageDraft[]>([])
 const uploadRole = ref<CreationImageRole>('reference_image')
 const error = ref('')
+const dragover = ref(false)
 let nextId = 0
 
 const isVeo31 = computed(() => props.kind === 'video' && props.protocol === 'gemini' && props.model.toLowerCase().includes('3.1'))
@@ -95,6 +124,15 @@ const rule = computed(() => {
       return { maxImages: 0, roles: [] as CreationImageRole[], noMix: false }
   }
 })
+
+const roleOptions = computed<CreationChipOption[]>(() => rule.value.roles.map(role => ({
+  value: role, label: t(`creation.composer.roles.${role}`),
+})))
+
+function setUploadRole(value: string): void {
+  const role = parseRole(value)
+  if (role && rule.value.roles.includes(role)) uploadRole.value = role
+}
 
 function roleFamily(role: CreationImageRole): 'frame' | 'reference' {
   return role === 'reference_image' ? 'reference' : 'frame'
@@ -129,6 +167,15 @@ function addFiles(event: Event): void {
   const input = event.target as HTMLInputElement
   const files = Array.from(input.files ?? [])
   input.value = ''
+  acceptFiles(files)
+}
+
+function onDrop(event: DragEvent): void {
+  dragover.value = false
+  acceptFiles(Array.from(event.dataTransfer?.files ?? []))
+}
+
+function acceptFiles(files: File[]): void {
   error.value = ''
   if (!files.length || !canUseRole(uploadRole.value)) return
   const slots = Math.max(0, rule.value.maxImages - drafts.value.length)

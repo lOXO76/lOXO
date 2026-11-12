@@ -214,6 +214,9 @@ describe('CreationView async tasks', () => {
     expect(asyncTasksAPI.list).toHaveBeenCalledTimes(1)
     expect(asyncTasksAPI.refresh).toHaveBeenCalledTimes(1)
     expect(asyncTasksAPI.refresh).toHaveBeenCalledWith('vidtask_older', expect.any(AbortSignal))
+    // 本页正在跟踪的任务只显示一张卡片，服务端的同一条记录不会重复出现。
+    expect(view.findAll('[data-testid="creation-task"]')).toHaveLength(1)
+    expect(view.findAll('[data-testid="creation-history-item"]')).toHaveLength(1)
   })
 
   it('stops polling every task when the page is left', async () => {
@@ -231,5 +234,87 @@ describe('CreationView async tasks', () => {
     const calls = vi.mocked(asyncTasksAPI.list).mock.calls.length
     await vi.advanceTimersByTimeAsync(30_000)
     expect(asyncTasksAPI.list).toHaveBeenCalledTimes(calls)
+  })
+
+  it('shows finished images and videos inline in one history list, whatever the form mode is', async () => {
+    const originalCreate = URL.createObjectURL
+    const originalRevoke = URL.revokeObjectURL
+    URL.createObjectURL = vi.fn(() => 'blob:protected-video')
+    URL.revokeObjectURL = vi.fn()
+    // 测试环境默认的 IntersectionObserver 不会回调；这里让元素一被观察就算进入视口。
+    vi.stubGlobal('IntersectionObserver', class {
+      private readonly notify: IntersectionObserverCallback
+      constructor(callback: IntersectionObserverCallback) { this.notify = callback }
+      observe(): void { this.notify([{ isIntersecting: true } as IntersectionObserverEntry], this as unknown as IntersectionObserver) }
+      disconnect(): void {}
+      unobserve(): void {}
+    })
+    try {
+      const base = { api_key_id: 9, created_at: 100, expires_at: 200 }
+      const items: AsyncTask[] = [
+        { ...base, id: 'imgtask_a', task_id: 'imgtask_a', kind: 'image', protocol: 'openai', model: 'gpt-image-1', status: 'completed', result_url: 'https://cdn.example/a.png' },
+        { ...base, id: 'vidtask_b', task_id: 'cgt-b', kind: 'video', protocol: 'seedance', model: 'seedance-1', status: 'completed', result_url: 'https://cdn.example/b.mp4' },
+        { ...base, id: 'vidtask_c', task_id: 'op-c', kind: 'video', protocol: 'gemini', model: 'veo-3', status: 'completed', result_url: '/api/v1/user/async-tasks/vidtask_c/content' },
+        { ...base, id: 'imgtask_d', task_id: 'imgtask_d', kind: 'image', protocol: 'openai', model: 'gpt-image-1', status: 'failed', error: 'blocked by policy' },
+      ]
+      vi.mocked(asyncTasksAPI.list).mockResolvedValue({ items, total: items.length, page: 1, page_size: 20 })
+      vi.mocked(asyncTasksAPI.download).mockResolvedValue(new Blob(['video'], { type: 'video/mp4' }))
+
+      const view = await mountView()
+      await flushPromises()
+
+      const cards = view.findAll('[data-testid="creation-history-item"]')
+      expect(cards).toHaveLength(4)
+      expect(cards[0]?.find('img').attributes('src')).toBe('https://cdn.example/a.png')
+      expect(cards[1]?.find('video').attributes('src')).toBe('https://cdn.example/b.mp4')
+      // 不能直接播放的视频经站内下载接口取回。
+      expect(asyncTasksAPI.download).toHaveBeenCalledTimes(1)
+      expect(asyncTasksAPI.download).toHaveBeenCalledWith('vidtask_c')
+      expect(cards[2]?.find('video').attributes('src')).toBe('blob:protected-video')
+      expect(cards[3]?.text()).toContain('blocked by policy')
+
+      // 图片链接失效时显示占位，而不是裂图。
+      await cards[0]!.get('img').trigger('error')
+      expect(cards[0]?.find('img').exists()).toBe(false)
+      expect(cards[0]?.text()).toContain('creation.history.imageUnavailable')
+
+      // 历史不随左侧的生图 / 生视频模式切换而改变，也不按模式筛选。
+      await showVideoMode(view)
+      expect(view.findAll('[data-testid="creation-history-item"]')).toHaveLength(4)
+      expect(vi.mocked(asyncTasksAPI.list).mock.calls.every(([params]) => params.kind === '')).toBe(true)
+
+      // 离开页面时释放下载得到的视频地址（jsdom 没有 URL.revokeObjectURL，须在还原前卸载）。
+      view.unmount()
+      wrapper = null
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:protected-video')
+    } finally {
+      vi.unstubAllGlobals()
+      URL.createObjectURL = originalCreate
+      URL.revokeObjectURL = originalRevoke
+    }
+  })
+
+  it('filters history by kind and appends older pages on demand', async () => {
+    const all = Array.from({ length: 25 }, (_, index): AsyncTask => ({
+      id: `imgtask_${index}`, task_id: `imgtask_${index}`, kind: 'image', protocol: 'openai', model: 'gpt-image-1',
+      status: 'failed', api_key_id: 9, created_at: 1000 - index, expires_at: 2000,
+    }))
+    vi.mocked(asyncTasksAPI.list).mockImplementation(async params => ({
+      items: all.slice((params.page - 1) * params.page_size, params.page * params.page_size),
+      total: all.length, page: params.page, page_size: params.page_size,
+    }))
+    const view = await mountView()
+    expect(view.findAll('[data-testid="creation-history-item"]')).toHaveLength(20)
+
+    await view.get('[data-testid="creation-history-more"]').trigger('click')
+    await flushPromises()
+    expect(view.findAll('[data-testid="creation-history-item"]')).toHaveLength(25)
+    expect(view.find('[data-testid="creation-history-more"]').exists()).toBe(false)
+
+    vi.mocked(asyncTasksAPI.list).mockClear()
+    await view.get('[data-testid="creation-filter-video"]').trigger('click')
+    await flushPromises()
+    expect(asyncTasksAPI.list).toHaveBeenCalledTimes(1)
+    expect(asyncTasksAPI.list).toHaveBeenCalledWith(expect.objectContaining({ page: 1, kind: 'video' }), expect.any(AbortSignal))
   })
 })
