@@ -112,9 +112,9 @@ export async function submitImageRequest(input: ImageGenerationInput): Promise<C
     if ((input.n ?? 1) !== 1) throw new CreationGatewayError('Gemini generates one image request at a time. Set the image count to 1.', 0, 'INVALID_INPUT')
     const references = []
     for (const reference of input.referenceImages ?? []) references.push(await readReferenceImage(reference.file, input.signal))
-    const { body, response } = await requestJSON(input.apiKey, `/v1beta/models/${encodeURIComponent(input.model.replace(/^models\//, ''))}:generateContent`, jsonRequest(buildGeminiImageBody(input, references), input.signal), true)
+    const { body, response, clientRequestId } = await requestJSON(input.apiKey, `/v1beta/models/${encodeURIComponent(input.model.replace(/^models\//, ''))}:generateContent`, jsonRequest(buildGeminiImageBody(input, references), input.signal), true)
     if (body.error) throw responseError(body, response, 'Image generation failed.')
-    return { handle: null, snapshot: { status: 'succeeded', assets: await imageAssets(input.apiKey, body, 'gemini', input.signal) } }
+    return { handle: null, clientRequestId, snapshot: { status: 'succeeded', assets: await imageAssets(input.apiKey, body, 'gemini', input.signal) } }
   }
   const editing = Boolean(input.referenceImages?.length)
   const path = `/v1/images/${editing ? 'edits' : 'generations'}${input.preferAsync ? '/async' : ''}`
@@ -132,7 +132,7 @@ export async function submitImageRequest(input: ImageGenerationInput): Promise<C
     }
     init = { method: 'POST', body: form, signal: input.signal }
   } else init = jsonRequest(payload, input.signal)
-  const { body, response, retryAfterMs } = await requestJSON(input.apiKey, path, init)
+  const { body, response, retryAfterMs, clientRequestId } = await requestJSON(input.apiKey, path, init)
   if (body.error) throw responseError(body, response, 'Image generation failed.')
   if (input.preferAsync || response.status === 202) {
     const taskId = text(body.task_id) || text(body.id)
@@ -140,9 +140,9 @@ export async function submitImageRequest(input: ImageGenerationInput): Promise<C
     const handle: CreationTaskHandle = { kind: 'image', protocol: 'openai', taskId, model: input.model }
     const pollUrl = text(body.poll_url) || response.headers.get('Location')
     if (pollUrl) pollURLs.set(handle, pollUrl)
-    return { handle, snapshot: { status: 'processing', assets: [], retryAfterMs: retryAfterMs ?? 3000 } }
+    return { handle, clientRequestId, snapshot: { status: 'processing', assets: [], retryAfterMs: retryAfterMs ?? 3000 } }
   }
-  return { handle: null, snapshot: { status: 'succeeded', assets: await imageAssets(input.apiKey, body, 'openai', input.signal) } }
+  return { handle: null, clientRequestId, snapshot: { status: 'succeeded', assets: await imageAssets(input.apiKey, body, 'openai', input.signal) } }
 }
 
 export async function pollImageTask(apiKey: string, handle: CreationTaskHandle, signal?: AbortSignal): Promise<CreationTaskSnapshot> {

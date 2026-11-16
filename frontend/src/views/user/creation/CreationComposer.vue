@@ -1,5 +1,5 @@
 <template>
-  <form class="card cs-form-panel" :aria-label="t('creation.composer.title')" @submit.prevent="submit">
+  <form ref="panel" class="card cs-form-panel" :aria-label="t('creation.composer.title')" @submit.prevent="submit">
     <div class="cs-form-body">
       <!-- 分组与密钥 -->
       <section class="cs-group" aria-labelledby="creation-section-access">
@@ -186,51 +186,40 @@
         <h2 id="creation-section-params" class="cs-group-title">{{ t('creation.composer.sections.params') }}</h2>
 
         <template v-if="mode === 'image'">
-          <template v-if="imageParamStyle === 'openai'">
-            <div class="cs-field">
-              <span id="creation-image-size-label" class="cs-field-label">{{ t('creation.composer.size') }}</span>
-              <CreationChipGroup
-                v-model="imageSizeOpenAI"
-                name="creation-image-size"
-                :options="sizeChipOptions"
-                labelledby="creation-image-size-label"
-                grid
-                glyph
-                chip-min="7.5rem"
-              />
-            </div>
-            <div class="cs-field">
-              <span id="creation-image-quality-label" class="cs-field-label">{{ t('creation.composer.quality') }}</span>
-              <CreationChipGroup
-                v-model="imageQuality"
-                name="creation-image-quality"
-                :options="qualityChipOptions"
-                labelledby="creation-image-quality-label"
-              />
-            </div>
-          </template>
-          <template v-else>
-            <div class="cs-field">
-              <span id="creation-image-ratio-label" class="cs-field-label">{{ t('creation.composer.aspectRatio') }}</span>
-              <CreationChipGroup
-                v-model="imageAspectRatio"
-                name="creation-image-ratio"
-                :options="imageRatioChipOptions"
-                labelledby="creation-image-ratio-label"
-                grid
-                glyph
-              />
-            </div>
-            <div class="cs-field">
-              <span id="creation-image-resolution-label" class="cs-field-label">{{ t('creation.composer.imageSize') }}</span>
-              <CreationChipGroup
-                v-model="imageResolution"
-                name="creation-image-resolution"
-                :options="imageResolutionChipOptions"
-                labelledby="creation-image-resolution-label"
-              />
-            </div>
-          </template>
+          <!-- 所有厂商统一：先选分辨率，再选画面比例；参数映射见 features/creation/imageSizePresets.ts -->
+          <div class="cs-field">
+            <span id="creation-image-resolution-label" class="cs-field-label">{{ t('creation.composer.resolution') }}</span>
+            <CreationChipGroup
+              v-model="imageResolution"
+              name="creation-image-resolution"
+              :options="imageResolutionChipOptions"
+              labelledby="creation-image-resolution-label"
+            />
+          </div>
+          <!-- openai 的「自动」由后端挑尺寸，没有比例可选 → 整个比例组隐藏 -->
+          <div v-if="imageRatioChipOptions.length" class="cs-field">
+            <span id="creation-image-ratio-label" class="cs-field-label">{{ t('creation.composer.aspectRatio') }}</span>
+            <CreationChipGroup
+              v-model="imageAspectRatio"
+              name="creation-image-ratio"
+              :options="imageRatioChipOptions"
+              labelledby="creation-image-ratio-label"
+              grid
+              glyph
+            />
+            <p v-if="imageOutputSize" class="cs-field-hint" data-testid="creation-output-size">
+              {{ t('creation.composer.outputSize', { size: imageOutputSize }) }}
+            </p>
+          </div>
+          <div v-if="imageVendor === 'openai'" class="cs-field">
+            <span id="creation-image-quality-label" class="cs-field-label">{{ t('creation.composer.quality') }}</span>
+            <CreationChipGroup
+              v-model="imageQuality"
+              name="creation-image-quality"
+              :options="qualityChipOptions"
+              labelledby="creation-image-quality-label"
+            />
+          </div>
           <div class="cs-field cs-field--inline">
             <label for="creation-image-count" class="cs-field-label">{{ t('creation.composer.count') }}</label>
             <CreationStepper
@@ -323,7 +312,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CircleX, KeyRound, Plus, RefreshCw, Sparkles, TriangleAlert } from '@lucide/vue'
 import Select from '@/components/common/Select.vue'
@@ -352,6 +341,13 @@ import {
   videoDurationRange,
 } from './viewModel'
 import type { CreationChipOption, CreationSubmission } from './types'
+import {
+  imageRatiosFor,
+  imageSizePixels,
+  imageSizePreset,
+  resolveImageSize,
+  type CreationImageVendor,
+} from '@/features/creation/imageSizePresets'
 
 const props = defineProps<{
   mode: CreationKind
@@ -375,12 +371,6 @@ const emit = defineEmits<{
   reloadKeys: []
 }>()
 const { t } = useI18n()
-const openAISizes = ['1024x1024', '1536x1024', '1024x1536', 'auto']
-const geminiRatios = ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', 'auto']
-const geminiSizes = ['1K', '2K', '4K']
-// xAI Imagine 官方比例与分辨率档，与后端 grokImagineAspectRatioValues 一致。
-const grokRatios = ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '2:1', '1:2', '19.5:9', '9:19.5', '20:9', '9:20']
-const grokResolutions = ['1K', '2K']
 const imageQualities = ['low', 'medium', 'high', 'auto']
 
 const selectedGroupId = ref(0)
@@ -389,9 +379,8 @@ const selectedProtocol = ref<CreationProtocol>('openai')
 const selectedModel = ref('')
 const prompt = ref('')
 const references = ref<CreationReferenceImage[]>([])
-const imageSizeOpenAI = ref('1024x1024')
-const imageAspectRatio = ref('1:1')
 const imageResolution = ref('1K')
+const imageAspectRatio = ref('1:1')
 const imageQuality = ref('auto')
 /** null 表示输入框被清空，失焦或提交时归一化为 1。 */
 const imageCount = ref<number | null>(1)
@@ -418,12 +407,21 @@ const selectedPricing = computed(() => models.value.find(model => model.id === s
 const priceEntries = computed(() => creationPriceEntries(selectedPricing.value))
 const priceUnit = computed(() => selectedPricing.value ? t(`creation.composer.priceUnit.${selectedPricing.value.unit}`) : '')
 // Grok 分组虽走 OpenAI Images 协议，但 xAI Imagine 只认比例 + 分辨率档，不支持 size / quality。
-const imageParamStyle = computed<'openai' | 'gemini' | 'grok'>(() => {
+const imageVendor = computed<CreationImageVendor>(() => {
   if (selectedProtocol.value === 'gemini') return 'gemini'
   return selectedGroup.value?.platform === 'grok' ? 'grok' : 'openai'
 })
-const imageRatioOptions = computed(() => imageParamStyle.value === 'grok' ? grokRatios : geminiRatios)
-const imageResolutionOptions = computed(() => imageParamStyle.value === 'grok' ? grokResolutions : geminiSizes)
+/** 当前厂商的分辨率 / 比例全集（顺序即显示顺序）。 */
+const imagePreset = computed(() => imageSizePreset(imageVendor.value))
+/** 当前分辨率下可选的比例：openai 是子集，gemini / grok 是全集，openai 的「自动」为空。 */
+const imageRatioOptions = computed(() => imageRatiosFor(imageVendor.value, imageResolution.value))
+/** 选中的组合翻译成请求参数；不支持时为 null（openai 的「自动」永远可用）。 */
+const imageResolvedSize = computed(() => resolveImageSize(imageVendor.value, imageResolution.value, imageAspectRatio.value))
+/** openai 的「输出尺寸」提示（2048×1152）；其它厂商或自动档不显示。 */
+const imageOutputSize = computed(() => {
+  const resolved = imageResolvedSize.value
+  return imageVendor.value === 'openai' && resolved?.kind === 'size' ? imageSizePixels(resolved.size) : ''
+})
 const availableKeys = computed(() => props.apiKeys.filter(key => key.status === 'active' && key.group_id === selectedGroupId.value))
 const selectedKey = computed(() => availableKeys.value.find(key => key.id === selectedKeyId.value) ?? null)
 const durationRange = computed(() => props.mode === 'video' && selectedProtocol.value !== 'openai'
@@ -441,13 +439,19 @@ const canSubmit = computed(() => Boolean(selectedGroup.value && selectedKey.valu
 const submitsAsync = computed(() => props.mode === 'video' || Boolean(selectedProtocol.value === 'openai' && imageCapability.value?.async_supported))
 
 // ---- 预计费用 ----
+/** 计费用的尺寸入参：openai 传解析出的像素尺寸（自动档传 auto），gemini / grok 传分辨率档。 */
+const imageCostSize = computed(() => {
+  if (imageVendor.value !== 'openai') return imageResolution.value
+  const resolved = imageResolvedSize.value
+  return resolved?.kind === 'size' ? resolved.size : imageResolution.value
+})
 /** 按当前模型的实付单价和已选参数估算；与提交时发出的参数保持一致。 */
 const costEstimate = computed(() => {
   const pricing = selectedPricing.value
   if (props.mode === 'image') {
     return estimateCreationCost(pricing, {
       kind: 'image',
-      size: imageParamStyle.value === 'openai' ? imageSizeOpenAI.value : imageResolution.value,
+      size: imageCostSize.value,
       count: selectedProtocol.value === 'gemini' ? 1 : imageCount.value ?? 1,
     })
   }
@@ -513,10 +517,9 @@ function chipOptions(values: readonly string[]): CreationChipOption[] {
   return values.map(value => ({ value, label: value === 'auto' ? t('creation.composer.auto') : value }))
 }
 const protocolChipOptions = computed(() => chipOptions(protocolOptions.value))
-const sizeChipOptions = computed(() => chipOptions(openAISizes))
 const qualityChipOptions = computed(() => chipOptions(imageQualities))
 const imageRatioChipOptions = computed(() => chipOptions(imageRatioOptions.value))
-const imageResolutionChipOptions = computed(() => chipOptions(imageResolutionOptions.value))
+const imageResolutionChipOptions = computed(() => chipOptions(imagePreset.value.resolutions))
 const videoResolutionChipOptions = computed<CreationChipOption[]>(() => [
   { value: '', label: t('creation.composer.auto'), title: t('creation.composer.resolutionAuto') },
   ...chipOptions(resolutionOptions.value),
@@ -590,7 +593,6 @@ function syncModel(): void {
 }
 
 function resetParameters(): void {
-  imageSizeOpenAI.value = '1024x1024'
   imageAspectRatio.value = '1:1'
   imageResolution.value = '1K'
   imageQuality.value = 'auto'
@@ -716,10 +718,16 @@ function submit(): void {
       referenceImages: references.value.length ? references.value : undefined,
     }
     const submitAsync = submitsAsync.value
+    const resolved = imageResolvedSize.value
+    // 分辨率与比例的组合不被支持时不应提交（openai 切到 1K 后比例会被纠正，正常不会发生）。
+    if (!resolved) {
+      formError.value = t('creation.composer.required')
+      return
+    }
     let input: ImageGenerationInput
-    if (protocol === 'gemini') input = { ...common, protocol, aspectRatio: imageAspectRatio.value, imageSize: imageResolution.value }
-    else if (imageParamStyle.value === 'grok') input = { ...common, protocol, aspectRatio: imageAspectRatio.value, imageSize: imageResolution.value, preferAsync: submitAsync }
-    else input = { ...common, protocol, size: imageSizeOpenAI.value, quality: imageQuality.value, preferAsync: submitAsync }
+    if (resolved.kind === 'size') input = { ...common, protocol, size: resolved.size, quality: imageQuality.value, preferAsync: submitAsync }
+    else if (imageVendor.value === 'grok') input = { ...common, protocol, aspectRatio: resolved.aspectRatio, imageSize: resolved.imageSize, preferAsync: submitAsync }
+    else input = { ...common, protocol, aspectRatio: resolved.aspectRatio, imageSize: resolved.imageSize }
     startCooldown()
     emit('submit', { kind: 'image', groupId: group.id, groupName: group.name, apiKey: apiKey.key, input })
     return
@@ -743,5 +751,68 @@ watch(availableKeys, keys => {
   if (!keys.some(key => key.id === selectedKeyId.value)) selectedKeyId.value = keys[0]?.id ?? 0
 }, { immediate: true })
 watch([videoResolution, () => props.mode], enforceVeoDuration)
+/** 换分辨率后当前比例可能不可选（openai 的 1K 没有 16:9 / 9:16），自动落到该分辨率下的第一个比例。 */
+watch([imageVendor, imageResolution], () => {
+  const ratios = imageRatioOptions.value
+  if (!ratios.length || ratios.includes(imageAspectRatio.value)) return
+  imageAspectRatio.value = ratios[0]!
+})
+
+// ---- 桌面端：把面板当前的顶部位置写给 CSS，提交栏才不会在未滚动时被顶出视口 ----
+/**
+ * 面板用 sticky 吸顶，但初始位置在页面标题和模式切换下方（约 240px）：
+ * 若高度直接按「视口 - 吸顶偏移」算，未滚动时底部会超出视口一截。
+ * 所以把面板当前的 rect.top 写成 --cs-panel-top，CSS 用它算高度（吸顶后它自然等于吸顶偏移）。
+ * 移动端不需要，清掉变量走原本的 sticky 吸底。
+ */
+const panel = ref<HTMLElement | null>(null)
+let panelFrame = 0
+let panelMedia: MediaQueryList | undefined
+let panelResize: ResizeObserver | undefined
+
+function measurePanelTop(): void {
+  panelFrame = 0
+  const el = panel.value
+  if (!el) return
+  // matchMedia 缺失（非浏览器 / 未 mock 的环境）时不做任何改动，保持 CSS 默认值。
+  if (panelMedia && !panelMedia.matches) {
+    el.style.removeProperty('--cs-panel-top')
+    return
+  }
+  const top = el.getBoundingClientRect().top
+  if (!Number.isFinite(top)) return
+  el.style.setProperty('--cs-panel-top', `${Math.max(0, Math.round(top))}px`)
+}
+
+function schedulePanelMeasure(): void {
+  if (panelFrame) return
+  panelFrame = requestAnimationFrame(measurePanelTop)
+}
+
+onMounted(() => {
+  if (!panel.value || typeof window === 'undefined') return
+  if (typeof window.matchMedia === 'function') panelMedia = window.matchMedia('(min-width: 768px)')
+  window.addEventListener('scroll', schedulePanelMeasure, { passive: true })
+  window.addEventListener('resize', schedulePanelMeasure)
+  panelMedia?.addEventListener('change', schedulePanelMeasure)
+  // 页面其它区域变高 / 变矮（历史列表加载、横幅出现）也会改变面板顶部位置。
+  if (typeof ResizeObserver === 'function') {
+    panelResize = new ResizeObserver(schedulePanelMeasure)
+    panelResize.observe(document.body)
+  }
+  measurePanelTop()
+})
+
+onBeforeUnmount(() => {
+  if (panelFrame) cancelAnimationFrame(panelFrame)
+  panelFrame = 0
+  window.removeEventListener('scroll', schedulePanelMeasure)
+  window.removeEventListener('resize', schedulePanelMeasure)
+  panelMedia?.removeEventListener('change', schedulePanelMeasure)
+  panelMedia = undefined
+  panelResize?.disconnect()
+  panelResize = undefined
+  panel.value?.style.removeProperty('--cs-panel-top')
+})
 onBeforeUnmount(() => clearTimeout(cooldownTimer))
 </script>

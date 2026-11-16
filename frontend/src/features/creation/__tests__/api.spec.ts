@@ -27,6 +27,16 @@ describe('creation catalog', () => {
     expect(creationAPI.getCatalog).toBe(getCreationCatalog)
   })
 
+  it('queries actual charges using the original client request IDs and forwards cancellation', async () => {
+    const signal = new AbortController().signal
+    const costs = { items: [{ request_id: 'client-original', actual_cost: 0.04 }] }
+    get.mockResolvedValue({ data: costs })
+    expect(await creationAPI.getCosts(['client-original', 'another/id'], signal)).toBe(costs)
+    expect(get).toHaveBeenCalledWith('/user/creation/costs', {
+      params: { request_ids: 'client-original,another/id' }, signal,
+    })
+  })
+
   it('filters models by capability and includes models without protocol restrictions', () => {
     expect(groupSupports(group, 'image')).toBe(true)
     expect(groupSupports(group, 'video')).toBe(false)

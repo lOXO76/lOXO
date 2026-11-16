@@ -54,6 +54,21 @@ describe('creation gateway', () => {
     expect(init.headers.has('Content-Type')).toBe(false)
   })
 
+  it('returns the client request ID for synchronous OpenAI images without substituting upstream IDs', async () => {
+    fetchMock.mockResolvedValueOnce(json({ data: [{ url: 'https://cdn.example/image.png' }] }, 200, {
+      'X-Client-Request-ID': 'original/client-request', 'X-Request-Id': 'upstream-id',
+    }))
+    expect(await submitImage(input)).toMatchObject({ clientRequestId: 'original/client-request', handle: null })
+  })
+
+  it('returns the client request ID for synchronous Gemini images', async () => {
+    fetchMock.mockResolvedValueOnce(json({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/png', data: 'iVBORw0KGgo=' } }] } }] }, 200, {
+      'X-Client-Request-ID': 'gemini-client-request',
+    }))
+    expect(await submitImage({ ...input, protocol: 'gemini', platform: 'gemini' }))
+      .toMatchObject({ clientRequestId: 'gemini-client-request', handle: null, snapshot: { status: 'succeeded' } })
+  })
+
   it('honors the returned async poll URL and Retry-After', async () => {
     fetchMock.mockResolvedValueOnce(json({ id: 'imgtask_1', poll_url: '/v1/images/tasks/imgtask_1?poll=1' }, 202, { 'Retry-After': '7' }))
     fetchMock.mockResolvedValueOnce(json({ status: 'completed', result: { data: [{ url: '/v1/image-tasks/owned/content' }] } }))

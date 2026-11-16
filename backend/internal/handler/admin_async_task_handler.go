@@ -113,8 +113,7 @@ func (h *AsyncImageHandler) RefreshAdminTask(c *gin.Context) {
 	owned, recorder, release := newAsyncImageContext(c, nil, 30*time.Second)
 	defer release()
 	owned.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: task.UserID})
-	h.RefreshUserTask(owned)
-	if recorder.Code >= 300 {
+	if _, refreshed := h.refreshUserTask(owned); !refreshed {
 		c.Data(recorder.Code, "application/json", recorder.Body.Bytes())
 		return
 	}

@@ -144,6 +144,8 @@
   }
 
   /* ================= 表单面板 ================= */
+  /* 桌面端：面板高度锁定为视口可用高度，表单体自己滚，提交栏始终贴在面板底部；
+     移动端：面板高度随内容，提交栏相对视口吸底（见下方 .cs-form-footer）。 */
   .cs-form-panel {
     @apply flex min-w-0 flex-col;
   }
@@ -152,9 +154,16 @@
     .cs-form-panel {
       position: sticky;
       top: var(--cs-sticky-top);
-      max-height: calc(100vh - var(--cs-sticky-top) - 1.5rem);
-      max-height: calc(100dvh - var(--cs-sticky-top) - 1.5rem);
-      overflow: hidden; /* 只在桌面裁切：移动端底部提交栏需要相对视口 sticky */
+      /* --cs-panel-top 由组件按面板当前顶部位置写入（px）：
+         未滚动时面板在页面标题下方，高度随之收窄，提交栏才不会被顶出视口；
+         吸顶后它自然等于 --cs-sticky-top，高度就是整屏可用高度。 */
+      height: calc(100vh - var(--cs-panel-top, var(--cs-sticky-top)) - 1.5rem);
+      height: calc(100dvh - var(--cs-panel-top, var(--cs-sticky-top)) - 1.5rem);
+      /* hidden 兜底，clip 禁止任何程序滚动（focus / scrollIntoView）：
+         否则点胶囊时浏览器会把溢出的 sr-only radio 滚进可见区，整个面板被滚成空白。 */
+      overflow: hidden;
+      overflow: clip;
+      /* 只在桌面裁切：移动端底部提交栏需要相对视口 sticky */
     }
   }
 
@@ -164,6 +173,12 @@
 
   @screen md {
     .cs-form-body {
+      /* 占满 footer 之外的剩余高度并独立滚动（min-h-0 让 flex 子项允许被压缩）。 */
+      flex: 1 1 auto;
+      /* 做所有绝对定位后代的包含块（sr-only 的 radio / 文件 input 等）：
+         它们的 offsetParent 必须在这里而不是吸顶的面板上，才能随表单体滚动、被表单体裁切，
+         否则会溢出到面板外，focus 时把面板滚成空白。 */
+      position: relative;
       overflow-y: auto;
       overscroll-behavior: contain;
     }
@@ -171,6 +186,13 @@
 
   .cs-form-footer {
     @apply space-y-3 rounded-b-2xl border-t border-gray-100 bg-gray-50/60 p-4 dark:border-dark-700 dark:bg-dark-900/40 sm:px-5;
+  }
+
+  @screen md {
+    /* 桌面端：不参与收缩，永远贴着面板底部；圆角沿用卡片（面板 overflow:hidden 负责裁切）。 */
+    .cs-form-footer {
+      flex: 0 0 auto;
+    }
   }
 
   @media (max-width: 767.98px) {
@@ -588,6 +610,15 @@
   /* ================= 结果列 / 区块标题 ================= */
   .cs-results {
     @apply min-w-0 space-y-6;
+  }
+
+  @screen md {
+    /* 结果列至少占满一屏可用高度：面板高度随滚动位置变化，若结果列比面板还矮，
+       行高就会被面板高度反过来撑大（滚动→变高→更能滚）。这里钉住行高的下限，避免反馈。 */
+    .cs-results {
+      min-height: calc(100vh - var(--cs-sticky-top) - 1.5rem);
+      min-height: calc(100dvh - var(--cs-sticky-top) - 1.5rem);
+    }
   }
 
   .cs-section {

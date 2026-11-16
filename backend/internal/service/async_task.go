@@ -8,30 +8,35 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"go.uber.org/zap"
 )
 
 // AsyncTask exposes only user-owned task metadata. Internal routing fields are
 // stored separately by the repository and never serialized into panel responses.
 type AsyncTask struct {
-	ID          string `json:"id"`
-	TaskID      string `json:"task_id"`
-	Kind        string `json:"kind"`
-	Protocol    string `json:"protocol"`
-	Model       string `json:"model,omitempty"`
-	Status      string `json:"status"`
-	APIKeyID    int64  `json:"api_key_id"`
-	GroupID     *int64 `json:"group_id,omitempty"`
-	ResultURL   string `json:"result_url,omitempty"`
-	Error       string `json:"error,omitempty"`
-	CreatedAt   int64  `json:"created_at"`
-	CompletedAt *int64 `json:"completed_at,omitempty"`
-	ExpiresAt   int64  `json:"expires_at"`
+	ID          string   `json:"id"`
+	TaskID      string   `json:"task_id"`
+	Kind        string   `json:"kind"`
+	Protocol    string   `json:"protocol"`
+	Model       string   `json:"model,omitempty"`
+	Status      string   `json:"status"`
+	APIKeyID    int64    `json:"api_key_id"`
+	GroupID     *int64   `json:"group_id,omitempty"`
+	ResultURL   string   `json:"result_url,omitempty"`
+	Error       string   `json:"error,omitempty"`
+	CreatedAt   int64    `json:"created_at"`
+	CompletedAt *int64   `json:"completed_at,omitempty"`
+	ExpiresAt   int64    `json:"expires_at"`
+	ActualCost  *float64 `json:"actual_cost,omitempty"`
 }
 
 type AsyncTaskRecord struct {
 	AsyncTask
-	UserID    int64  `json:"user_id"`
-	RequestID string `json:"request_id"`
+	UserID           int64  `json:"user_id"`
+	RequestID        string `json:"request_id"`
+	BillingRequestID string `json:"billing_request_id,omitempty"`
 }
 
 type AsyncTaskStore interface {
@@ -73,7 +78,7 @@ func (s *ImageTaskService) ListUserTasks(ctx context.Context, userID int64, page
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 20
 	}
-	items := make([]AsyncTask, 0, len(records))
+	items := make([]AsyncTaskRecord, 0, len(records))
 	search = strings.ToLower(strings.TrimSpace(search))
 	for _, record := range records {
 		if record.UserID != userID || record.ExpiresAt <= time.Now().Unix() {
@@ -85,7 +90,7 @@ func (s *ImageTaskService) ListUserTasks(ctx context.Context, userID int64, page
 		if search != "" && !strings.Contains(strings.ToLower(record.TaskID+" "+record.Model), search) {
 			continue
 		}
-		items = append(items, record.AsyncTask)
+		items = append(items, record)
 	}
 	sort.Slice(items, func(i, j int) bool {
 		if items[i].CreatedAt == items[j].CreatedAt {
@@ -95,7 +100,13 @@ func (s *ImageTaskService) ListUserTasks(ctx context.Context, userID int64, page
 	})
 	total := len(items)
 	start := min((page-1)*pageSize, total)
-	return &AsyncTaskPage{Items: items[start:min(start+pageSize, total)], Total: total, Page: page, PageSize: pageSize}, nil
+	items = items[start:min(start+pageSize, total)]
+	s.populateUserTaskCosts(ctx, userID, items)
+	public := make([]AsyncTask, len(items))
+	for i := range items {
+		public[i] = items[i].AsyncTask
+	}
+	return &AsyncTaskPage{Items: public, Total: total, Page: page, PageSize: pageSize}, nil
 }
 
 func (s *ImageTaskService) GetUserTask(ctx context.Context, userID int64, id string) (*AsyncTaskRecord, error) {
@@ -111,6 +122,30 @@ func (s *ImageTaskService) GetUserTask(ctx context.Context, userID int64, id str
 		return nil, ErrImageTaskNotFound
 	}
 	return record, nil
+}
+
+// PopulateUserTaskCost decorates a user task JSON response. Routing, downloads
+// and administrative reads use GetUserTask without querying usage_logs.
+func (s *ImageTaskService) PopulateUserTaskCost(ctx context.Context, userID int64, task *AsyncTaskRecord) {
+	if task == nil {
+		return
+	}
+	records := []AsyncTaskRecord{*task}
+	s.populateUserTaskCosts(ctx, userID, records)
+	task.ActualCost = records[0].ActualCost
+}
+
+func (s *ImageTaskService) populateUserTaskCosts(ctx context.Context, userID int64, records []AsyncTaskRecord) {
+	for i := range records {
+		records[i].ActualCost = nil
+	}
+	if s.costs == nil || len(records) == 0 {
+		return
+	}
+	if err := s.costs.populateTasks(ctx, userID, records); err != nil {
+		logger.FromContext(ctx).Warn("async_task.cost_query_failed",
+			zap.Int64("user_id", userID), zap.Int("task_count", len(records)), zap.Error(err))
+	}
 }
 
 func (s *ImageTaskService) ObserveVideoTask(ctx context.Context, key *APIKey, requestID, model, protocol string, result *OpenAIForwardResult, deleting bool) error {

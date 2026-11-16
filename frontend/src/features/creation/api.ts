@@ -7,7 +7,18 @@ export async function getCreationCatalog(signal?: AbortSignal): Promise<Creation
   return data
 }
 
-export const creationAPI = { getCatalog: getCreationCatalog }
+export interface CreationCosts {
+  items: Array<{ request_id: string; actual_cost: number }>
+}
+
+export async function getCreationCosts(requestIds: string[], signal?: AbortSignal): Promise<CreationCosts> {
+  const { data } = await apiClient.get<CreationCosts>('/user/creation/costs', {
+    params: { request_ids: requestIds.join(',') }, signal,
+  })
+  return data
+}
+
+export const creationAPI = { getCatalog: getCreationCatalog, getCosts: getCreationCosts }
 
 export function groupSupports(group: CreationGroup, kind: CreationKind): boolean {
   return Boolean(group[kind]?.protocols.length)

@@ -34,6 +34,9 @@
       <span>{{ task.protocol }}</span>
       <span class="cs-dot-sep" aria-hidden="true" />
       <time :datetime="new Date(task.createdAt).toISOString()">{{ formatTime(task.createdAt) }}</time>
+      <span v-if="task.status === 'succeeded'" class="cs-param-pill" data-testid="creation-task-cost" aria-live="polite">
+        {{ t('creation.cost.actual') }} {{ task.actualCost !== undefined ? formatCreationPrice(task.actualCost) : task.costSettling ? t('creation.cost.settling') : '—' }}
+      </span>
     </div>
 
     <!-- 提示词默认两行截断，点击展开 -->
@@ -133,7 +136,7 @@ import { Ban, CircleCheck, CircleX, Copy, Film, ImageIcon, LoaderCircle, Triangl
 import { useClipboard } from '@/composables/useClipboard'
 import type { CreationAsset, CreationKind, CreationTaskStatus } from '@/features/creation/types'
 import CreationMedia from './CreationMedia.vue'
-import { formatCreationElapsed, safeMediaUrl } from './viewModel'
+import { formatCreationElapsed, formatCreationPrice, safeMediaUrl } from './viewModel'
 import type { CreationCurrentTask, CreationLightboxItem } from './types'
 
 const props = defineProps<{ task: CreationCurrentTask }>()

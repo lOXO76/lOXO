@@ -71,6 +71,7 @@ export default {
       duplicateFrame: '{role}只能上传一张，请更改图片用途或移除已有图片。',
       veoReferenceHint: 'Veo 3.1 参考图最多 3 张，且时长必须为 8 秒。',
       size: '尺寸',
+      outputSize: '输出尺寸 {size}',
       aspectRatio: '画面比例',
       imageSize: '分辨率档',
       quality: '画质',
@@ -165,6 +166,8 @@ export default {
       task: '任务 {id}',
     },
     cost: {
+      actual: '实扣',
+      settling: '结算中…',
       estimate: '预计费用',
       unavailable: '暂无法估算，以实际扣费为准',
       insufficient: '余额不足，还差 {amount}',

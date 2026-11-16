@@ -101,6 +101,7 @@ export interface GatewayJSONResult {
   body: JsonObject
   response: Response
   retryAfterMs?: number
+  clientRequestId?: string
 }
 
 export async function requestJSON(apiKey: string, path: string, init: RequestInit = {}, google = false): Promise<GatewayJSONResult> {
@@ -121,7 +122,10 @@ export async function requestJSON(apiKey: string, path: string, init: RequestIni
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new CreationGatewayError('The gateway returned an invalid response.', response.status, 'INVALID_RESPONSE', response.headers.get('X-Request-Id') || response.headers.get('Request-Id') || '')
   }
-  return { body: body as JsonObject, response, retryAfterMs: retryAfter(response.headers) }
+  return {
+    body: body as JsonObject, response, retryAfterMs: retryAfter(response.headers),
+    clientRequestId: response.headers.get('X-Client-Request-ID') || undefined,
+  }
 }
 
 export function jsonRequest(body: JsonObject, signal?: AbortSignal): RequestInit {

@@ -37,7 +37,7 @@ func (s *imageTaskStore) Save(ctx context.Context, task *service.ImageTaskRecord
 		Status: task.Status, APIKeyID: task.APIKeyID, GroupID: task.GroupID,
 		ResultURL: gjson.GetBytes(task.Result, "data.0.url").String(), Error: gjson.GetBytes(task.Error, "message").String(),
 		CreatedAt: task.CreatedAt, CompletedAt: task.CompletedAt, ExpiresAt: task.ExpiresAt,
-	}, UserID: task.UserID, RequestID: task.ID}
+	}, UserID: task.UserID, RequestID: task.ID, BillingRequestID: task.BillingRequestID}
 	if err := writeAsyncTask(ctx, pipe, record); err != nil {
 		return err
 	}
@@ -71,7 +71,10 @@ func asyncTaskKey(userID int64, id string) string {
 func asyncTaskIndex(userID int64) string { return fmt.Sprintf("async_tasks:user:%d", userID) }
 
 func writeAsyncTask(ctx context.Context, pipe redis.Pipeliner, task *service.AsyncTaskRecord) error {
-	data, err := json.Marshal(task)
+	// ActualCost is a live view of usage_logs and must never enter Redis.
+	stored := *task
+	stored.ActualCost = nil
+	data, err := json.Marshal(&stored)
 	if err != nil {
 		return err
 	}

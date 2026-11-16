@@ -71,6 +71,7 @@ export default {
       duplicateFrame: 'Only one {role} image is allowed. Change the image role or remove the existing image first.',
       veoReferenceHint: 'Veo 3.1 accepts up to 3 reference images and requires an 8-second duration.',
       size: 'Size',
+      outputSize: 'Output size {size}',
       aspectRatio: 'Aspect ratio',
       imageSize: 'Resolution tier',
       quality: 'Quality',
@@ -165,6 +166,8 @@ export default {
       task: 'Task {id}',
     },
     cost: {
+      actual: 'Charged',
+      settling: 'Settling…',
       estimate: 'Estimated cost',
       unavailable: 'No estimate available; the actual charge applies',
       insufficient: 'Insufficient balance, {amount} short',

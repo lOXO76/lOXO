@@ -39,6 +39,10 @@ export interface CreationCurrentTask {
   /** 占位与结果单元的宽高比，取自请求的尺寸 / 比例。 */
   aspectW: number
   aspectH: number
+  actualCost?: number
+  clientRequestId?: string
+  /** 有限次数的结算查询尚在进行。 */
+  costSettling?: boolean
 }
 
 interface CreationSubmissionBase {
@@ -98,4 +102,7 @@ export interface CreationHistoryItem {
   /** 视频需要经站内下载接口取回后才能播放时，为异步任务的目录 ID。 */
   downloadId: string
   error: string
+  actualCost?: number
+  costSettling?: boolean
+  clientRequestId?: string
 }
