@@ -671,6 +671,29 @@ describe('creation history feed', () => {
     expect(withTask?.taskId).toBe('imgtask_9')
     expect(withoutTask).not.toHaveProperty('taskId')
   })
+
+  it('persists the actual cost and original client request ID, including a zero charge', () => {
+    const storage = createStorage()
+    writeCreationHistory(storage, 7, [{ ...makeRecord('charged'), actualCost: 0, clientRequestId: 'original/client-id' }])
+    expect(readCreationHistory(storage, 7, 'image')[0]).toMatchObject({ actualCost: 0, clientRequestId: 'original/client-id' })
+  })
+
+  it('prefers server charges over saved charges and keeps charges for local-only records', () => {
+    const merged = { ...makeRecord('merged'), taskId: 'imgtask_1', actualCost: 0.9 }
+    const local = { ...makeRecord('sync'), actualCost: 0.035, clientRequestId: 'client-id' }
+    const items = buildCreationHistory([serverTask({ actual_cost: 0 })], [merged, local], nothingHidden)
+    expect(items.find(item => item.source === 'server')?.actualCost).toBe(0)
+    expect(items.find(item => item.source === 'local')?.actualCost).toBe(0.035)
+    expect(buildCreationHistory([serverTask({ actual_cost: null })], [merged], nothingHidden)[0]?.actualCost).toBe(0.9)
+  })
+
+  it('does not persist or display malformed actual costs', () => {
+    const storage = createStorage()
+    writeCreationHistory(storage, 7, [{ ...makeRecord('invalid'), actualCost: -1 }])
+    expect(readCreationHistory(storage, 7, 'image')[0]).not.toHaveProperty('actualCost')
+    const items = buildCreationHistory([serverTask({ actual_cost: Number.NaN })], [], nothingHidden)
+    expect(items[0]).not.toHaveProperty('actualCost')
+  })
 })
 
 describe('creation cost estimate', () => {

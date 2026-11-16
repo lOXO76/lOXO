@@ -13,6 +13,8 @@ export interface AsyncTask {
   error?: string
   created_at: number
   completed_at?: number
+  /** 用户实扣金额（美元）；扣费尚未入账时为空。 */
+  actual_cost?: number | null
   expires_at: number
 }
 

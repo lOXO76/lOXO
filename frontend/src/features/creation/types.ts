@@ -126,6 +126,8 @@ export interface CreationSubmitResult {
   /** 同步出图时为 null，此时 snapshot 已是终态。 */
   handle: CreationTaskHandle | null
   snapshot: CreationTaskSnapshot
+  /** 网关响应头的 X-Client-Request-ID，用来查询同步生成的实扣金额。 */
+  clientRequestId?: string
 }
 
 export type CreationImageRole = 'first_frame' | 'last_frame' | 'reference_image'

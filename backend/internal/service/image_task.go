@@ -32,19 +32,20 @@ var (
 // ImageTaskRecord is the private Redis representation of an asynchronous image
 // request. Ownership fields are intentionally omitted from the public view.
 type ImageTaskRecord struct {
-	Model       string          `json:"model,omitempty"`
-	Platform    string          `json:"platform,omitempty"`
-	GroupID     *int64          `json:"group_id,omitempty"`
-	ID          string          `json:"id"`
-	UserID      int64           `json:"user_id"`
-	APIKeyID    int64           `json:"api_key_id"`
-	Status      string          `json:"status"`
-	HTTPStatus  int             `json:"http_status,omitempty"`
-	Result      json.RawMessage `json:"result,omitempty"`
-	Error       json.RawMessage `json:"error,omitempty"`
-	CreatedAt   int64           `json:"created_at"`
-	CompletedAt *int64          `json:"completed_at,omitempty"`
-	ExpiresAt   int64           `json:"expires_at"`
+	BillingRequestID string          `json:"billing_request_id,omitempty"`
+	Model            string          `json:"model,omitempty"`
+	Platform         string          `json:"platform,omitempty"`
+	GroupID          *int64          `json:"group_id,omitempty"`
+	ID               string          `json:"id"`
+	UserID           int64           `json:"user_id"`
+	APIKeyID         int64           `json:"api_key_id"`
+	Status           string          `json:"status"`
+	HTTPStatus       int             `json:"http_status,omitempty"`
+	Result           json.RawMessage `json:"result,omitempty"`
+	Error            json.RawMessage `json:"error,omitempty"`
+	CreatedAt        int64           `json:"created_at"`
+	CompletedAt      *int64          `json:"completed_at,omitempty"`
+	ExpiresAt        int64           `json:"expires_at"`
 }
 
 // ImageTask is the API-safe task representation returned to callers.
@@ -80,6 +81,7 @@ type ImageStorageResolver func() (uploader *ImageResultUploader, enabled bool)
 
 type ImageTaskService struct {
 	store            ImageTaskStore
+	costs            *CreationCostService
 	uploader         *ImageResultUploader
 	enabled          bool
 	resolve          ImageStorageResolver
@@ -87,8 +89,12 @@ type ImageTaskService struct {
 	executionTimeout time.Duration
 }
 
-func NewImageTaskService(store ImageTaskStore) *ImageTaskService {
-	return NewImageTaskServiceWithOptions(store, defaultImageTaskTTL, defaultImageTaskExecutionTimeout)
+func NewImageTaskService(store ImageTaskStore, costs ...*CreationCostService) *ImageTaskService {
+	svc := NewImageTaskServiceWithOptions(store, defaultImageTaskTTL, defaultImageTaskExecutionTimeout)
+	if len(costs) > 0 {
+		svc.costs = costs[0]
+	}
+	return svc
 }
 
 func NewImageTaskServiceWithOptions(store ImageTaskStore, ttl, executionTimeout time.Duration) *ImageTaskService {
@@ -162,8 +168,15 @@ func (s *ImageTaskService) CreateWithMetadata(ctx context.Context, owner ImageTa
 		return nil, ErrImageTaskUnavailable
 	}
 	now := time.Now().UTC()
+	billingRequestID := resolveUsageBillingRequestID(ctx, "")
+	if strings.HasPrefix(billingRequestID, "generated:") {
+		// Without a request context, the later gateway call generates its own
+		// ID. Such records have no stable billing correlation to retain.
+		billingRequestID = ""
+	}
 	task := &ImageTaskRecord{
-		Model: model, Platform: platform, GroupID: groupID,
+		BillingRequestID: billingRequestID,
+		Model:            model, Platform: platform, GroupID: groupID,
 		ID:        "imgtask_" + strings.ReplaceAll(uuid.NewString(), "-", ""),
 		UserID:    owner.UserID,
 		APIKeyID:  owner.APIKeyID,

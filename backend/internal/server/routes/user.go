@@ -39,6 +39,7 @@ func RegisterUserRoutes(
 			registerUserTicketRoutes(user, h.Tickets)
 			user.GET("/profile", h.User.GetProfile)
 			user.GET("/creation/catalog", h.Creation.GetCatalog)
+			user.GET("/creation/costs", h.Creation.GetCosts)
 			user.GET("/reward-tasks", h.RewardTasks.List)
 			user.GET("/reward-tasks/records", h.RewardTasks.Records)
 			user.POST("/reward-tasks/:id/start", panelRateLimiter.Heavy(), h.RewardTasks.Start)

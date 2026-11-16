@@ -23,6 +23,8 @@ export interface CreationSessionRecord {
   createdAt: number
   /** 异步任务的任务 ID，用来与服务端历史合并；同步生成的记录没有。 */
   taskId?: string
+  actualCost?: number
+  clientRequestId?: string
   assets: Array<{
     kind: CreationKind
     url: string
@@ -96,7 +98,7 @@ export interface CreationCostEstimate {
   assumed: boolean
 }
 
-function validPrice(value: unknown): value is number {
+export function validCreationCost(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
@@ -115,12 +117,12 @@ export function estimateCreationCost(
     const price = tiered
       ? pricing.tiers.find(tier => tier.label.trim().toLowerCase() === label.toLowerCase())?.price
       : pricing.price
-    return validPrice(price) ? price : null
+    return validCreationCost(price) ? price : null
   }
 
   if (pricing.unit === 'request') {
-    const price = validPrice(pricing.price) ? pricing.price : pricing.tiers[0]?.price
-    return validPrice(price) ? { amount: price, unit: 'request', unitPrice: price, quantity: 1, tier: '', assumed: false } : null
+    const price = validCreationCost(pricing.price) ? pricing.price : pricing.tiers[0]?.price
+    return validCreationCost(price) ? { amount: price, unit: 'request', unitPrice: price, quantity: 1, tier: '', assumed: false } : null
   }
 
   if (input.kind === 'image') {
@@ -551,6 +553,8 @@ function parseHistoryRecord(value: unknown): CreationSessionRecord | null {
     prompt: value.prompt,
     createdAt: value.createdAt,
     ...(typeof value.taskId === 'string' && value.taskId ? { taskId: value.taskId } : {}),
+    ...(validCreationCost(value.actualCost) ? { actualCost: value.actualCost } : {}),
+    ...(typeof value.clientRequestId === 'string' && value.clientRequestId ? { clientRequestId: value.clientRequestId } : {}),
     assets,
   }
 }
@@ -599,6 +603,8 @@ export function writeCreationHistory(
         prompt: record.prompt,
         createdAt: record.createdAt,
         ...(typeof record.taskId === 'string' && record.taskId ? { taskId: record.taskId } : {}),
+        ...(validCreationCost(record.actualCost) ? { actualCost: record.actualCost } : {}),
+        ...(typeof record.clientRequestId === 'string' && record.clientRequestId ? { clientRequestId: record.clientRequestId } : {}),
         assets,
       }
     })
@@ -659,6 +665,9 @@ export function buildCreationHistory(
       videoUrl,
       downloadId,
       error: task.error ?? '',
+      ...(validCreationCost(task.actual_cost)
+        ? { actualCost: task.actual_cost }
+        : validCreationCost(record?.actualCost) ? { actualCost: record.actualCost } : {}),
     })
   }
 
@@ -679,6 +688,8 @@ export function buildCreationHistory(
       videoUrl: record.assets.find(asset => asset.kind === 'video')?.url ?? '',
       downloadId: '',
       error: '',
+      ...(validCreationCost(record.actualCost) ? { actualCost: record.actualCost } : {}),
+      ...(record.clientRequestId ? { clientRequestId: record.clientRequestId } : {}),
     })
   }
 

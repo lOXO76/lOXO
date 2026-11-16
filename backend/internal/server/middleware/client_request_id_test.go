@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -65,4 +66,24 @@ func TestClientRequestIDPreservesExistingContextID(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "existing-client-request-id", w.Body.String())
 	require.Equal(t, "existing-client-request-id", w.Header().Get(clientRequestIDHeader))
+}
+
+func TestClientRequestIDIsReadableFromAllowedBrowserOrigin(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(CORS(config.CORSConfig{AllowedOrigins: []string{"https://panel.example"}}))
+	router.Use(ClientRequestID())
+	router.POST("/v1/images/generations", func(c *gin.Context) {
+		id, _ := c.Request.Context().Value(ctxkey.ClientRequestID).(string)
+		c.JSON(http.StatusOK, gin.H{"request_id": id})
+	})
+	request := httptest.NewRequest(http.MethodPost, "/v1/images/generations", nil)
+	request.Header.Set("Origin", "https://panel.example")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, "https://panel.example", recorder.Header().Get("Access-Control-Allow-Origin"))
+	require.NotEmpty(t, recorder.Header().Get(clientRequestIDHeader))
+	require.Contains(t, recorder.Header().Get("Access-Control-Expose-Headers"), clientRequestIDHeader)
+	require.Contains(t, recorder.Body.String(), recorder.Header().Get(clientRequestIDHeader))
 }

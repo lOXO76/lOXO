@@ -17,6 +17,9 @@
       <span>{{ item.protocol }}</span>
       <span class="cs-dot-sep" aria-hidden="true" />
       <time :datetime="new Date(item.createdAt).toISOString()">{{ formatTime(item.createdAt) }}</time>
+      <span v-if="item.status === 'completed'" class="cs-param-pill" data-testid="creation-history-cost" aria-live="polite">
+        {{ t('creation.cost.actual') }} {{ item.actualCost !== undefined ? formatCreationPrice(item.actualCost) : item.costSettling ? t('creation.cost.settling') : '—' }}
+      </span>
     </div>
 
     <!-- 提示词默认两行截断，点击展开 -->
@@ -66,6 +69,7 @@ import { Ban, CircleCheck, CircleX, Copy, Film, ImageIcon, LoaderCircle } from '
 import { useClipboard } from '@/composables/useClipboard'
 import CreationMedia from './CreationMedia.vue'
 import CreationRemoteVideo from './CreationRemoteVideo.vue'
+import { formatCreationPrice } from './viewModel'
 import type { CreationHistoryItem, CreationLightboxItem } from './types'
 
 const props = defineProps<{ item: CreationHistoryItem }>()

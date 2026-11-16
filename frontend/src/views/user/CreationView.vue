@@ -165,6 +165,7 @@ import {
   filterCreationGroups,
   readCreationHistory,
   safeMediaUrl,
+  validCreationCost,
   writeCreationHistory,
   type CreationSessionRecord,
 } from './creation/viewModel'
@@ -209,11 +210,19 @@ const MAX_TRACKED_TASKS = 20
 /** 历史中仍有处理中的任务时，自动刷新历史的间隔。 */
 const HISTORY_POLL_MS = 10_000
 const HISTORY_PAGE_SIZE = 20
+/** 结果先展示，扣费最多补查三次；与处理中的历史轮询各自独立。 */
+const COST_RETRY_DELAYS = [2000, 5000, 10_000]
+const BALANCE_REFRESH_DEBOUNCE_MS = 1000
 const taskControllers = new Map<number, AbortController>()
+const costControllers = new Map<string, AbortController>()
+const costLookupsStarted = new Set<string>()
+const pendingCostKeys = reactive(new Set<string>())
+const balanceRefreshCostKeys = new Set<string>()
 let catalogController: AbortController | null = null
 let keysController: AbortController | null = null
 let historyController: AbortController | null = null
 let historyTimer: ReturnType<typeof setInterval> | undefined
+let balanceRefreshTimer: ReturnType<typeof setTimeout> | undefined
 let catalogRequest = 0
 let historyRequest = 0
 let taskSequence = 0
@@ -238,9 +247,10 @@ const activeCounts = computed<Record<CreationKind, number>>(() => ({
   video: activeTasks.value.filter(task => task.kind === 'video').length,
 }))
 const atCapacity = computed(() => activeTasks.value.length >= MAX_ACTIVE_TASKS)
-const feedTasks = computed(() => historyFilter.value === 'all'
+const feedTasks = computed(() => (historyFilter.value === 'all'
   ? tasks.value
   : tasks.value.filter(task => task.kind === historyFilter.value))
+  .map(task => ({ ...task, costSettling: pendingCostKeys.has(taskCostKey(task)) })))
 const hasMoreHistory = computed(() => historyTasks.value.length < historyTotal.value)
 /** 已归档的历史：服务端异步任务与本机记录合并，去掉本页正在用任务卡片展示的那些。 */
 const historyItems = computed(() => {
@@ -258,6 +268,10 @@ const historyItems = computed(() => {
     ? sessionRecords.value
     : sessionRecords.value.filter(record => record.kind === historyFilter.value)
   return buildCreationHistory(historyTasks.value, records, { taskIds, recordIds })
+    .map(item => ({
+      ...item,
+      costSettling: pendingCostKeys.has(item.taskId ? asyncCostKey(item.taskId) : item.clientRequestId ? `request:${item.clientRequestId}` : ''),
+    }))
 })
 const showWorkspace = computed(() => !featureDisabled.value && !catalogError.value && Boolean(catalog.value))
 
@@ -363,6 +377,7 @@ function normalizeHistoryTask(task: AsyncTask): AsyncTask {
     error: task.error,
     created_at: task.created_at,
     completed_at: task.completed_at,
+    actual_cost: task.actual_cost,
     expires_at: task.expires_at,
   }
 }
@@ -391,7 +406,19 @@ async function loadHistory(refreshUpstream = false): Promise<void> {
       for (const task of result.items) loaded.set(task.id, normalizeHistoryTask(task))
       if (result.items.length < HISTORY_PAGE_SIZE) break
     }
+    const previous = historyTasks.value
     historyTasks.value = [...loaded.values()]
+    applyServerCosts(historyTasks.value)
+    for (const task of historyTasks.value) {
+      const prior = previous.find(item => item.id === task.id)
+      if (task.status === 'completed' && validCreationCost(task.actual_cost)
+        && prior && (prior.status === 'processing' || !validCreationCost(prior.actual_cost))) {
+        scheduleBalanceRefresh(asyncCostKey(task.task_id))
+      }
+      if (task.status === 'completed' && previous.some(item => item.id === task.id && item.status === 'processing')) {
+        startAsyncCostLookup(task.task_id, task.kind)
+      }
+    }
     historyTotal.value = Math.max(total, loaded.size)
     if (refreshUpstream) await refreshUntrackedVideos(request, controller.signal)
   } catch (error) {
@@ -420,6 +447,9 @@ async function refreshUntrackedVideos(request: number, signal: AbortSignal): Pro
         if (request !== historyRequest) return
         const position = historyTasks.value.findIndex(item => item.id === task.id)
         if (position >= 0) historyTasks.value[position] = updated
+        applyServerCosts([updated])
+        if (updated.status === 'completed' && validCreationCost(updated.actual_cost)) scheduleBalanceRefresh(asyncCostKey(updated.task_id))
+        if (updated.status === 'completed') startAsyncCostLookup(updated.task_id, updated.kind)
       } catch {
         // 单个任务刷新失败不影响列表，下一轮自动刷新会重试。
       }
@@ -430,6 +460,149 @@ async function refreshUntrackedVideos(request: number, signal: AbortSignal): Pro
 function pollHistory(): void {
   if (document.hidden || loadingHistory.value || featureDisabled.value || !catalog.value) return
   if (historyTasks.value.some(task => task.status === 'processing')) void loadHistory(true)
+}
+
+function asyncCostKey(taskId: string): string {
+  return `task:${taskId.split('/').pop() || taskId}`
+}
+
+function sameTaskId(left: string, right: string): boolean {
+  return asyncCostKey(left) === asyncCostKey(right)
+}
+
+function taskCostKey(task: CreationCurrentTask): string {
+  return task.handle ? asyncCostKey(task.handle.taskId) : task.clientRequestId ? `request:${task.clientRequestId}` : ''
+}
+
+/** 个人余额与企业余额都由当前用户接口更新；只合并本页新发现的扣费。 */
+function scheduleBalanceRefresh(costKey: string): void {
+  if (unmounted || balanceRefreshCostKeys.has(costKey)) return
+  balanceRefreshCostKeys.add(costKey)
+  if (balanceRefreshTimer !== undefined) clearTimeout(balanceRefreshTimer)
+  const accountId = userId.value
+  balanceRefreshTimer = setTimeout(() => {
+    balanceRefreshTimer = undefined
+    if (unmounted || userId.value !== accountId) return
+    void authStore.refreshUser({ fresh: true }).catch(() => {
+      // 后台刷新失败时保留现有余额，不影响生成结果。
+    })
+  }, BALANCE_REFRESH_DEBOUNCE_MS)
+}
+
+/** 一次历史请求可能同时补齐任务卡片与本机记录；服务端金额始终优先。 */
+function applyServerCosts(serverTasks: AsyncTask[]): void {
+  const charged = serverTasks.filter(task => validCreationCost(task.actual_cost))
+  if (!charged.length) return
+  for (const task of tasks.value) {
+    const taskId = task.handle?.taskId
+    const cost = taskId ? charged.find(item => sameTaskId(item.task_id, taskId))?.actual_cost : undefined
+    if (taskId && validCreationCost(cost)) {
+      if (task.actualCost !== cost) scheduleBalanceRefresh(asyncCostKey(taskId))
+      task.actualCost = cost
+    }
+  }
+  let changed = false
+  sessionRecords.value = sessionRecords.value.map(record => {
+    const taskId = record.taskId
+    const cost = taskId ? charged.find(item => sameTaskId(item.task_id, taskId))?.actual_cost : undefined
+    if (!taskId || !validCreationCost(cost) || record.actualCost === cost) return record
+    scheduleBalanceRefresh(asyncCostKey(taskId))
+    changed = true
+    return { ...record, actualCost: cost }
+  })
+  if (changed) writeCreationHistory(localStorage, userId.value, sessionRecords.value)
+}
+
+function waitForCostRetry(milliseconds: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const abort = () => {
+      clearTimeout(timer)
+      signal.removeEventListener('abort', abort)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve() }, milliseconds)
+    signal.addEventListener('abort', abort, { once: true })
+    if (signal.aborted) abort()
+  })
+}
+
+/** 每个生成请求只启动一次有限结算查询，切换筛选或刷新历史不会重新开始。 */
+async function lookupCost(
+  key: string,
+  settled: () => boolean,
+  query: (signal: AbortSignal) => Promise<boolean>,
+  immediate = false,
+): Promise<void> {
+  if (unmounted || costLookupsStarted.has(key) || settled()) return
+  costLookupsStarted.add(key)
+  const controller = new AbortController()
+  costControllers.set(key, controller)
+  pendingCostKeys.add(key)
+  try {
+    for (const delay of immediate ? [0, ...COST_RETRY_DELAYS] : COST_RETRY_DELAYS) {
+      if (delay) await waitForCostRetry(delay, controller.signal)
+      if (controller.signal.aborted || settled()) break
+      try {
+        if (await query(controller.signal)) break
+      } catch (error) {
+        if (controller.signal.aborted || isAbortError(error)) break
+        // 入账延迟或临时网络失败不影响已经生成的结果，只消耗本次有限重试。
+      }
+    }
+  } catch {
+    // 页面卸载或换账号时，等待中的延迟也会被中止。
+  } finally {
+    if (costControllers.get(key) === controller) {
+      costControllers.delete(key)
+      pendingCostKeys.delete(key)
+    }
+  }
+}
+
+function startAsyncCostLookup(taskId: string, kind: CreationKind): void {
+  const settled = () => historyTasks.value.some(task => sameTaskId(task.task_id, taskId) && validCreationCost(task.actual_cost))
+    || tasks.value.some(task => task.handle && sameTaskId(task.handle.taskId, taskId) && validCreationCost(task.actualCost))
+    || sessionRecords.value.some(record => record.taskId && sameTaskId(record.taskId, taskId) && validCreationCost(record.actualCost))
+  void lookupCost(asyncCostKey(taskId), settled, async signal => {
+    // 单独补查对应任务，避免切换历史类型筛选后漏掉本页刚完成的任务。
+    const result = await asyncTasksAPI.list({
+      page: 1, page_size: HISTORY_PAGE_SIZE, kind, status: '', search: taskId.split('/').pop() || taskId,
+    }, signal)
+    if (signal.aborted) return false
+    const server = result.items.find(task => sameTaskId(task.task_id, taskId) && validCreationCost(task.actual_cost))
+    if (!server) return false
+    const position = historyTasks.value.findIndex(task => task.id === server.id)
+    if (position >= 0) historyTasks.value[position] = normalizeHistoryTask(server)
+    applyServerCosts([server])
+    scheduleBalanceRefresh(asyncCostKey(taskId))
+    return true
+  })
+}
+
+function startSyncCostLookup(requestId: string, recordId: string, taskId?: number): void {
+  const settled = () => (taskId !== undefined && validCreationCost(findTask(taskId)?.actualCost))
+    || sessionRecords.value.some(record => record.id === recordId && validCreationCost(record.actualCost))
+  void lookupCost(`request:${requestId}`, settled, async signal => {
+    const result = await creationAPI.getCosts([requestId], signal)
+    if (signal.aborted) return false
+    const charged = result.items.find(item => item.request_id === requestId && validCreationCost(item.actual_cost))
+    if (!charged) return false
+    const current = taskId !== undefined ? findTask(taskId) : undefined
+    if (current) current.actualCost = charged.actual_cost
+    sessionRecords.value = sessionRecords.value.map(record => record.id === recordId ? { ...record, actualCost: charged.actual_cost } : record)
+    writeCreationHistory(localStorage, userId.value, sessionRecords.value)
+    scheduleBalanceRefresh(`request:${requestId}`)
+    return true
+  }, true)
+}
+
+/** 离开页面时还未入账的同步生成，可用保存的请求 ID 在回来后补齐。 */
+function resumeSavedCostLookups(): void {
+  for (const record of sessionRecords.value) {
+    if (!record.taskId && record.clientRequestId && !validCreationCost(record.actualCost)) {
+      startSyncCostLookup(record.clientRequestId, record.id)
+    }
+  }
 }
 
 function sessionRecordId(task: CreationCurrentTask): string {
@@ -453,6 +626,8 @@ function saveSessionRecord(task: CreationCurrentTask): void {
     id: sessionRecordId(task), kind: task.kind, model: task.model, protocol: task.protocol,
     prompt: task.prompt, createdAt: task.createdAt, assets,
     ...(task.handle ? { taskId: task.handle.taskId } : {}),
+    ...(validCreationCost(task.actualCost) ? { actualCost: task.actualCost } : {}),
+    ...(task.clientRequestId ? { clientRequestId: task.clientRequestId } : {}),
   }
   const previous = [
     ...readCreationHistory(localStorage, userId.value, 'image'),
@@ -519,7 +694,10 @@ function applySnapshot(id: number, snapshot: CreationTaskSnapshot): void {
 function notifyFinished(id: number): void {
   const task = findTask(id)
   if (task?.status === 'succeeded') {
+    applyServerCosts(historyTasks.value)
     saveSessionRecord(task)
+    if (task.handle) startAsyncCostLookup(task.handle.taskId, task.kind)
+    else if (task.clientRequestId) startSyncCostLookup(task.clientRequestId, sessionRecordId(task), task.id)
     appStore.showSuccess(t('creation.messages.taskSucceeded'))
   } else if (task?.status === 'failed') {
     appStore.showError(t('creation.messages.taskFailed'))
@@ -560,6 +738,8 @@ async function submit(submission: CreationSubmission): Promise<void> {
       return
     }
     task.handle = result.handle
+    task.clientRequestId = result.clientRequestId
+    task.sync = !result.handle
     task.submitting = false
     applySnapshot(id, result.snapshot)
     if (result.handle && result.snapshot.status === 'processing') {
@@ -617,6 +797,13 @@ function dismissTask(id: number): void {
 }
 
 function clearTasks(): void {
+  if (balanceRefreshTimer !== undefined) clearTimeout(balanceRefreshTimer)
+  balanceRefreshTimer = undefined
+  balanceRefreshCostKeys.clear()
+  for (const controller of costControllers.values()) controller.abort()
+  costControllers.clear()
+  costLookupsStarted.clear()
+  pendingCostKeys.clear()
   for (const controller of taskControllers.values()) controller.abort()
   taskControllers.clear()
   for (const task of tasks.value) revokeAssets(task.assets)
@@ -627,6 +814,7 @@ async function startRequests(): Promise<void> {
   if (!creationEnabled.value) return
   await loadCatalog()
   if (featureDisabled.value) return
+  resumeSavedCostLookups()
   await Promise.all([loadKeys(), loadHistory()])
 }
 
@@ -645,6 +833,7 @@ watch(userId, () => {
   historyTotal.value = 0
   loadSessionHistory()
   if (initialized && creationEnabled.value) {
+    resumeSavedCostLookups()
     void loadKeys()
     void loadHistory()
   }

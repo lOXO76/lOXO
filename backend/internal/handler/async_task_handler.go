@@ -48,33 +48,45 @@ func (h *AsyncImageHandler) GetUserTask(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	h.tasks.PopulateUserTaskCost(c.Request.Context(), subject.UserID, task)
 	c.Header("Cache-Control", "no-store")
 	response.Success(c, h.publicAsyncTask(c, subject.UserID, task.AsyncTask))
 }
 
 func (h *AsyncImageHandler) RefreshUserTask(c *gin.Context) {
+	task, ok := h.refreshUserTask(c)
+	if !ok {
+		return
+	}
+	h.tasks.PopulateUserTaskCost(c.Request.Context(), task.UserID, task)
+	c.Header("Cache-Control", "no-store")
+	response.Success(c, h.publicAsyncTask(c, task.UserID, task.AsyncTask))
+}
+
+// refreshUserTask shares owned-task polling with the admin path. Only the user
+// response wrapper above performs the optional cost query.
+func (h *AsyncImageHandler) refreshUserTask(c *gin.Context) (*service.AsyncTaskRecord, bool) {
 	subject, ok := middleware.GetAuthSubjectFromContext(c)
 	if !ok {
 		response.Unauthorized(c, "User not authenticated")
-		return
+		return nil, false
 	}
 	task, err := h.tasks.GetUserTask(c.Request.Context(), subject.UserID, c.Param("id"))
 	if err != nil {
 		response.ErrorFrom(c, err)
-		return
+		return nil, false
 	}
 	if task.Kind != "video" || task.Status != "processing" {
-		response.Success(c, h.publicAsyncTask(c, subject.UserID, task.AsyncTask))
-		return
+		return task, true
 	}
 	if h.openAI == nil || h.openAI.apiKeyService == nil {
 		response.Error(c, http.StatusServiceUnavailable, "Task refresh unavailable")
-		return
+		return nil, false
 	}
 	key, err := h.openAI.apiKeyService.GetByID(c.Request.Context(), task.APIKeyID)
 	if err != nil || key == nil || key.UserID != subject.UserID || key.User == nil || key.GroupID == nil || task.GroupID == nil || *key.GroupID != *task.GroupID {
 		response.NotFound(c, "Task API key or group is no longer available")
-		return
+		return nil, false
 	}
 	// Reuse the owned-task gateway path, including its account binding and billing
 	// snapshot/claim, without exposing an API key secret to the browser.
@@ -99,15 +111,14 @@ func (h *AsyncImageHandler) RefreshUserTask(c *gin.Context) {
 	h.openAI.handleGrokMedia(poll, endpoint, task.RequestID)
 	if recorder.Code >= 300 {
 		response.ErrorWithDetails(c, http.StatusBadGateway, "Failed to refresh upstream task; retry later", "TASK_REFRESH_FAILED", nil)
-		return
+		return nil, false
 	}
 	task, err = h.tasks.GetUserTask(c.Request.Context(), subject.UserID, task.ID)
 	if err != nil {
 		response.ErrorFrom(c, err)
-		return
+		return nil, false
 	}
-	c.Header("Cache-Control", "no-store")
-	response.Success(c, h.publicAsyncTask(c, subject.UserID, task.AsyncTask))
+	return task, true
 }
 
 func (h *AsyncImageHandler) DownloadUserTask(c *gin.Context) {
