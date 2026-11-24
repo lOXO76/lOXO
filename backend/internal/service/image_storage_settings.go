@@ -35,6 +35,8 @@ type ImageStorageSettings struct {
 	PublicBaseURL    string `json:"public_base_url"`
 	PresignExpiry    int    `json:"presign_expiry_hours"`
 	MaxDownloadBytes int64  `json:"max_download_bytes"`
+	// DeleteAfterHours 对象上传多少小时后删除原文件；<=0 按 defaultImageDeleteAfterHours 处理。
+	DeleteAfterHours int `json:"delete_after_hours"`
 
 	// 以下仅在 ReuseBackupS3 为假时使用
 	Endpoint        string `json:"endpoint"`
@@ -62,6 +64,8 @@ type ImageStorageSettingService struct {
 	resolved bool
 	uploader *ImageResultUploader
 	enabled  bool
+	storage  ImageStorage
+	cfg      *config.ImageStorageConfig
 }
 
 func NewImageStorageSettingService(
@@ -99,7 +103,7 @@ func (s *ImageStorageSettingService) resolve() (*ImageResultUploader, bool) {
 
 	ctx := context.Background()
 	s.resolved = true
-	s.uploader, s.enabled = nil, false
+	s.uploader, s.enabled, s.storage, s.cfg = nil, false, nil, nil
 
 	cfg, err := s.effectiveConfig(ctx)
 	if err != nil {
@@ -122,6 +126,8 @@ func (s *ImageStorageSettingService) resolve() (*ImageResultUploader, bool) {
 	}
 	s.uploader = NewImageResultUploader(storage, cfg.Prefix, cfg.MaxDownloadByte, nil)
 	s.enabled = true
+	s.storage = storage
+	s.cfg = cfg
 	return s.uploader, true
 }
 
@@ -134,6 +140,8 @@ func (s *ImageStorageSettingService) Invalidate() {
 	s.resolved = false
 	s.uploader = nil
 	s.enabled = false
+	s.storage = nil
+	s.cfg = nil
 	s.mu.Unlock()
 }
 
@@ -145,6 +153,9 @@ func (s *ImageStorageSettingService) Get(ctx context.Context) (*ImageStorageSett
 	}
 	if settings == nil {
 		settings = settingsFromConfig(s.fallback)
+	}
+	if settings.DeleteAfterHours <= 0 {
+		settings.DeleteAfterHours = defaultImageDeleteAfterHours
 	}
 	settings.SecretAccessKey = ""
 	return settings, nil
@@ -239,17 +250,18 @@ func (s *ImageStorageSettingService) effectiveConfig(ctx context.Context) (*conf
 
 func (s *ImageStorageSettingService) toImageStorageConfig(ctx context.Context, in *ImageStorageSettings) (*config.ImageStorageConfig, error) {
 	cfg := &config.ImageStorageConfig{
-		Enabled:         in.Enabled,
-		Bucket:          in.Bucket,
-		Prefix:          in.Prefix,
-		PublicBaseURL:   in.PublicBaseURL,
-		PresignExpiry:   in.PresignExpiry,
-		MaxDownloadByte: in.MaxDownloadBytes,
-		Endpoint:        in.Endpoint,
-		Region:          in.Region,
-		AccessKeyID:     in.AccessKeyID,
-		SecretAccessKey: in.SecretAccessKey,
-		ForcePathStyle:  in.ForcePathStyle,
+		Enabled:          in.Enabled,
+		Bucket:           in.Bucket,
+		Prefix:           in.Prefix,
+		PublicBaseURL:    in.PublicBaseURL,
+		PresignExpiry:    in.PresignExpiry,
+		MaxDownloadByte:  in.MaxDownloadBytes,
+		DeleteAfterHours: in.DeleteAfterHours,
+		Endpoint:         in.Endpoint,
+		Region:           in.Region,
+		AccessKeyID:      in.AccessKeyID,
+		SecretAccessKey:  in.SecretAccessKey,
+		ForcePathStyle:   in.ForcePathStyle,
 	}
 
 	if in.ReuseBackupS3 {
@@ -312,6 +324,7 @@ func settingsFromConfig(cfg config.ImageStorageConfig) *ImageStorageSettings {
 		PublicBaseURL:    cfg.PublicBaseURL,
 		PresignExpiry:    cfg.PresignExpiry,
 		MaxDownloadBytes: cfg.MaxDownloadByte,
+		DeleteAfterHours: cfg.DeleteAfterHours,
 		Endpoint:         cfg.Endpoint,
 		Region:           cfg.Region,
 		AccessKeyID:      cfg.AccessKeyID,
@@ -343,5 +356,8 @@ func normalizeImageStorageSettings(in *ImageStorageSettings) {
 	}
 	if in.MaxDownloadBytes <= 0 {
 		in.MaxDownloadBytes = defaultImageMaxDownloadBytes
+	}
+	if in.DeleteAfterHours <= 0 {
+		in.DeleteAfterHours = defaultImageDeleteAfterHours
 	}
 }

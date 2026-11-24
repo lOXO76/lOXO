@@ -114,6 +114,8 @@ export default {
         publicBaseUrl: '公开访问域名',
         publicBaseUrlPlaceholder: '留空则返回预签名临时链接',
         presignExpiryHours: '预签名链接有效期（小时）',
+        deleteAfterHours: '原文件保留时长（小时）',
+        deleteAfterHoursHint: '图片上传超过该时长后自动从对象存储删除（每小时扫描一次前缀下的对象），删除后链接失效。默认 168 小时（7 天）',
         saved: '异步生图对象存储配置已保存'
       },
       schedule: {

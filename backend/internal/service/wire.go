@@ -760,6 +760,13 @@ func ProvideImageStorageSettingService(
 	return NewImageStorageSettingService(settingRepo, encryptor, backup, factory, cfg.ImageStorage)
 }
 
+// ProvideImageStorageCleanupService 构造并启动生图结果原文件的定期清理服务。
+func ProvideImageStorageCleanupService(settings *ImageStorageSettingService) *ImageStorageCleanupService {
+	svc := NewImageStorageCleanupService(settings)
+	svc.Start()
+	return svc
+}
+
 // ProvideImageTaskService 构造异步图片任务服务。
 //
 // 对象存储是异步图片任务的启用前提：仅当开关打开且凭证齐全时功能才可用，否则整体禁用
@@ -950,6 +957,7 @@ var ProviderSet = wire.NewSet(
 	NewGatewayService,
 	ProvideOpenAIGatewayService,
 	ProvideImageStorageSettingService,
+	ProvideImageStorageCleanupService,
 	ProvideImageTaskService,
 	ProvideBatchImageModelPricingResolver,
 	ProvideBatchImagePublicService,
