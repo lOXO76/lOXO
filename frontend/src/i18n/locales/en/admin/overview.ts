@@ -114,6 +114,8 @@ export default {
         publicBaseUrl: 'Public base URL',
         publicBaseUrlPlaceholder: 'Leave empty to return presigned links',
         presignExpiryHours: 'Presigned link TTL (hours)',
+        deleteAfterHours: 'Delete original files after (hours)',
+        deleteAfterHoursHint: 'Images older than this are deleted from object storage automatically (objects under the prefix are scanned hourly); their links stop working. Default 168 hours (7 days).',
         saved: 'Async image object storage saved'
       },
       schedule: {

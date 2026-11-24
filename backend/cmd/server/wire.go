@@ -104,6 +104,7 @@ func provideCleanup(
 	subscriptionExpiry *service.SubscriptionExpiryService,
 	usageCleanup *service.UsageCleanupService,
 	idempotencyCleanup *service.IdempotencyCleanupService,
+	imageStorageCleanup *service.ImageStorageCleanupService,
 	geminiCachedContent *service.GeminiCachedContentService,
 	batchImageCleanup *service.BatchImageCleanupService,
 	batchImageWorker *service.BatchImageWorkerRuntime,
@@ -257,6 +258,12 @@ func provideCleanup(
 			{"IdempotencyCleanupService", func() error {
 				if idempotencyCleanup != nil {
 					idempotencyCleanup.Stop()
+				}
+				return nil
+			}},
+			{"ImageStorageCleanupService", func() error {
+				if imageStorageCleanup != nil {
+					imageStorageCleanup.Stop()
 				}
 				return nil
 			}},

@@ -74,6 +74,7 @@ func TestProvideCleanup_WithMinimalDependencies_NoPanic(t *testing.T) {
 		subscriptionExpirySvc,
 		&service.UsageCleanupService{},
 		idempotencyCleanupSvc,
+		service.NewImageStorageCleanupService(nil),
 		service.NewGeminiCachedContentService(nil, nil, cfg),
 		&service.BatchImageCleanupService{},
 		nil, // batchImageWorker
