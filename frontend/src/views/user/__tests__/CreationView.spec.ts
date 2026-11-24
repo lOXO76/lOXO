@@ -205,6 +205,82 @@ describe('CreationView async tasks', () => {
     expect(composer(view).props('atCapacity')).toBe(false)
   })
 
+  describe('prompts of async tasks that were not followed to the end', () => {
+    function asyncImageTask(status: AsyncTask['status']): AsyncTask {
+      return {
+        id: 'imgtask_1', task_id: 'imgtask_1', kind: 'image', protocol: 'openai', model: 'gpt-image-1',
+        status, api_key_id: 9, created_at: 100, expires_at: 200,
+        ...(status === 'completed' ? { result_url: 'https://cdn.example/edited.png' } : { error: 'upstream rejected' }),
+      }
+    }
+
+    async function submitAsyncImage(view: VueWrapper): Promise<void> {
+      vi.mocked(submitImage).mockResolvedValue({
+        handle: { kind: 'image', protocol: 'openai', taskId: 'imgtask_1', model: 'gpt-image-1' },
+        snapshot: { status: 'processing', assets: [] },
+      })
+      composer(view).vm.$emit('submit', imageSubmission('edit the sky', true))
+      await flushPromises()
+    }
+
+    async function remountWith(task: AsyncTask): Promise<VueWrapper> {
+      wrapper?.unmount()
+      wrapper = null
+      vi.mocked(asyncTasksAPI.list).mockResolvedValue({ items: [task], total: 1, page: 1, page_size: 20 })
+      return mountView()
+    }
+
+    it('keeps the prompt when the page is reloaded before the task finishes', async () => {
+      const view = await mountView()
+      await submitAsyncImage(view)
+      const saved = JSON.parse(localStorage.getItem('sub2api.creation.history.7') || '[]')
+      expect(saved).toHaveLength(1)
+      expect(saved[0]).toMatchObject({ taskId: 'imgtask_1', prompt: 'edit the sky', pending: true, assets: [] })
+      expect(view.findAll('[data-testid="creation-history-item"]')).toHaveLength(0)
+
+      const restored = await remountWith(asyncImageTask('completed'))
+      const cards = restored.findAll('[data-testid="creation-history-item"]')
+      expect(cards).toHaveLength(1)
+      expect(cards[0]?.get('.cs-task-prompt').text()).toBe('edit the sky')
+      expect(cards[0]?.get('img').attributes('src')).toBe('https://cdn.example/edited.png')
+    })
+
+    it('keeps the prompt of a failed task', async () => {
+      const view = await mountView()
+      await submitAsyncImage(view)
+      waits[0]?.resolve({ status: 'failed', assets: [], error: 'upstream rejected' })
+      await flushPromises()
+      expect(JSON.parse(localStorage.getItem('sub2api.creation.history.7') || '[]')[0]).toMatchObject({ pending: true })
+
+      const restored = await remountWith(asyncImageTask('failed'))
+      const card = restored.get('[data-testid="creation-history-item"]')
+      expect(card.get('.cs-task-prompt').text()).toBe('edit the sky')
+      expect(card.text()).toContain('upstream rejected')
+    })
+
+    it('replaces the pending record with the result once the task succeeds', async () => {
+      const view = await mountView()
+      await submitAsyncImage(view)
+      waits[0]?.resolve({ status: 'succeeded', assets: [{ kind: 'image', url: 'https://cdn.example/edited.png' }] })
+      await flushPromises()
+
+      const saved = JSON.parse(localStorage.getItem('sub2api.creation.history.7') || '[]')
+      expect(saved).toHaveLength(1)
+      expect(saved[0]).toMatchObject({ taskId: 'imgtask_1', assets: [{ kind: 'image', url: 'https://cdn.example/edited.png' }] })
+      expect(saved[0]).not.toHaveProperty('pending')
+    })
+
+    it('does not show a pending record on its own when the server no longer lists the task', async () => {
+      const view = await mountView()
+      await submitAsyncImage(view)
+      wrapper?.unmount()
+      wrapper = null
+
+      const restored = await mountView()
+      expect(restored.findAll('[data-testid="creation-history-item"]')).toHaveLength(0)
+    })
+  })
+
   it('queries synchronous image charges and saves the amount with the original request ID', async () => {
     vi.mocked(submitImage).mockResolvedValue({
       handle: null, clientRequestId: 'client-original',

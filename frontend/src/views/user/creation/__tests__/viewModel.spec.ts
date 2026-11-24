@@ -672,6 +672,41 @@ describe('creation history feed', () => {
     expect(withoutTask).not.toHaveProperty('taskId')
   })
 
+  it('round-trips the pending flag only for records with a task id', () => {
+    const storage = createStorage()
+    storage.setItem(creationHistoryKey(7), JSON.stringify([
+      { ...makeRecord('pending'), taskId: 'imgtask_9', pending: true },
+      { ...makeRecord('no-task'), pending: true },
+      { ...makeRecord('truthy'), taskId: 'imgtask_8', pending: 'yes' },
+    ]))
+
+    const [pending, noTask, truthy] = readCreationHistory(storage, 7, 'image')
+    expect(pending?.pending).toBe(true)
+    expect(noTask).not.toHaveProperty('pending')
+    expect(truthy).not.toHaveProperty('pending')
+
+    writeCreationHistory(storage, 7, [
+      { ...makeRecord('pending'), taskId: 'imgtask_9', pending: true },
+      { ...makeRecord('no-task'), pending: true },
+    ])
+    const written = JSON.parse(storage.getItem(creationHistoryKey(7)) || '[]')
+    expect(written[0]).toMatchObject({ taskId: 'imgtask_9', pending: true })
+    expect(written[1]).not.toHaveProperty('pending')
+  })
+
+  it('uses a pending record only to restore the prompt of its server task', () => {
+    const pending: CreationSessionRecord = { ...makeRecord('pending'), taskId: 'imgtask_1', prompt: 'edit the sky', assets: [], pending: true }
+    const orphan: CreationSessionRecord = { ...makeRecord('orphan'), taskId: 'imgtask_gone', assets: [], pending: true }
+
+    const items = buildCreationHistory([serverTask({ status: 'failed', result_url: undefined, error: 'blocked' })], [pending, orphan], nothingHidden)
+
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({ source: 'server', status: 'failed', prompt: 'edit the sky', error: 'blocked' })
+    expect(buildCreationHistory([serverTask()], [pending], nothingHidden)[0]).toMatchObject({
+      prompt: 'edit the sky', images: ['https://cdn.example.com/first.png'],
+    })
+  })
+
   it('persists the actual cost and original client request ID, including a zero charge', () => {
     const storage = createStorage()
     writeCreationHistory(storage, 7, [{ ...makeRecord('charged'), actualCost: 0, clientRequestId: 'original/client-id' }])
