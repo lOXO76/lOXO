@@ -23,6 +23,11 @@ export interface CreationSessionRecord {
   createdAt: number
   /** 异步任务的任务 ID，用来与服务端历史合并；同步生成的记录没有。 */
   taskId?: string
+  /**
+   * 异步任务提交后、本机拿到结果前先写下的记录，只用来给服务端历史补提示词。
+   * 刷新、离开页面或任务失败后它会一直保持这个状态；对不上服务端任务时不单独展示。
+   */
+  pending?: true
   actualCost?: number
   clientRequestId?: string
   assets: Array<{
@@ -553,6 +558,7 @@ function parseHistoryRecord(value: unknown): CreationSessionRecord | null {
     prompt: value.prompt,
     createdAt: value.createdAt,
     ...(typeof value.taskId === 'string' && value.taskId ? { taskId: value.taskId } : {}),
+    ...(value.pending === true && typeof value.taskId === 'string' && value.taskId ? { pending: true as const } : {}),
     ...(validCreationCost(value.actualCost) ? { actualCost: value.actualCost } : {}),
     ...(typeof value.clientRequestId === 'string' && value.clientRequestId ? { clientRequestId: value.clientRequestId } : {}),
     assets,
@@ -603,6 +609,7 @@ export function writeCreationHistory(
         prompt: record.prompt,
         createdAt: record.createdAt,
         ...(typeof record.taskId === 'string' && record.taskId ? { taskId: record.taskId } : {}),
+        ...(record.pending === true && typeof record.taskId === 'string' && record.taskId ? { pending: true } : {}),
         ...(validCreationCost(record.actualCost) ? { actualCost: record.actualCost } : {}),
         ...(typeof record.clientRequestId === 'string' && record.clientRequestId ? { clientRequestId: record.clientRequestId } : {}),
         assets,
@@ -616,7 +623,8 @@ export function writeCreationHistory(
 
 /**
  * 合并出历史记录：服务端的异步任务为主，本机记录补上提示词和全部图片；
- * 没有对应服务端任务的本机记录（如同步生图）单独成条。按创建时间倒序。
+ * 没有对应服务端任务的本机记录（如同步生图）单独成条，但还没拿到结果的异步记录（pending）不单独成条。
+ * 按创建时间倒序。
  *
  * hidden 是本页已经用任务卡片展示的任务与记录，这里不再重复。
  */
@@ -674,6 +682,8 @@ export function buildCreationHistory(
   for (const record of records) {
     if (merged.has(record.id) || hidden.recordIds.has(record.id)) continue
     if (record.taskId && hidden.taskIds.has(record.taskId)) continue
+    // 服务端任务可能在后面的分页里或已过期；这条记录没有结果，单独展示会被当成「已完成」。
+    if (record.pending) continue
     items.push({
       key: `local:${record.id}`,
       source: 'local',

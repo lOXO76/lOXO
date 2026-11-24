@@ -616,7 +616,11 @@ function loadSessionHistory(): void {
   ].sort((left, right) => right.createdAt - left.createdAt)
 }
 
-function saveSessionRecord(task: CreationCurrentTask): void {
+/**
+ * 把任务写进本机记录。异步任务一拿到任务 ID 就以 pending 写一次，
+ * 这样刷新、离开页面或任务失败后，历史里的这条任务仍能显示提示词；成功后再用结果覆盖。
+ */
+function saveSessionRecord(task: CreationCurrentTask, pending = false): void {
   const assets = task.assets.flatMap(asset => {
     const candidate = !asset.url.startsWith('data:') && !asset.url.startsWith('blob:') ? asset.url : asset.sourceUrl
     const url = safeMediaUrl(candidate)
@@ -626,6 +630,7 @@ function saveSessionRecord(task: CreationCurrentTask): void {
     id: sessionRecordId(task), kind: task.kind, model: task.model, protocol: task.protocol,
     prompt: task.prompt, createdAt: task.createdAt, assets,
     ...(task.handle ? { taskId: task.handle.taskId } : {}),
+    ...(pending && task.handle ? { pending: true as const } : {}),
     ...(validCreationCost(task.actualCost) ? { actualCost: task.actualCost } : {}),
     ...(task.clientRequestId ? { clientRequestId: task.clientRequestId } : {}),
   }
@@ -742,6 +747,7 @@ async function submit(submission: CreationSubmission): Promise<void> {
     task.sync = !result.handle
     task.submitting = false
     applySnapshot(id, result.snapshot)
+    if (result.handle) saveSessionRecord(task, true)
     if (result.handle && result.snapshot.status === 'processing') {
       appStore.showSuccess(t('creation.messages.taskSubmitted'))
       void loadHistory()
